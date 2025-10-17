@@ -1,0 +1,51 @@
+<div class="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8 bg-slate-800 p-10 rounded-lg shadow-md">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-slate-100">
+        Inicia sesión en tu cuenta
+      </h2>
+    </div>
+    <form class="mt-8 space-y-6" (ngSubmit)="login()" #loginForm="ngForm">
+      <div class="rounded-md shadow-sm -space-y-px">
+        <div>
+          <label for="email-address" class="sr-only">Correo electrónico</label>
+          <input id="email-address" name="email" type="email" autocomplete="email" required
+                 [(ngModel)]="email"
+                 class="relative block w-full px-3 py-2 border rounded-t-md bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm"
+                 placeholder="Correo electrónico">
+        </div>
+        <div>
+          <label for="password" class="sr-only">Contraseña</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required
+                 [(ngModel)]="password"
+                 class="relative block w-full px-3 py-2 border rounded-b-md bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm"
+                 placeholder="Contraseña">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end">
+        <div class="text-sm">
+          <a routerLink="/forgot-password" class="font-medium text-amber-500 hover:text-amber-400">
+            ¿Olvidaste tu contraseña?
+          </a>
+        </div>
+      </div>
+
+      @if (errorMessage()) {
+        <p class="text-rose-400 text-sm mt-2">{{ errorMessage() }}</p>
+      }
+
+      <div>
+        <button type="submit" [disabled]="!loginForm.form.valid"
+                class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:bg-slate-600">
+          Iniciar sesión
+        </button>
+      </div>
+      <div class="text-sm text-center mt-4">
+        <a routerLink="/register" class="font-medium text-amber-500 hover:text-amber-400">
+          ¿No tienes una cuenta? Regístrate
+        </a>
+      </div>
+    </form>
+  </div>
+</div>

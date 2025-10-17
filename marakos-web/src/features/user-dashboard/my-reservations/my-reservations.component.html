@@ -1,0 +1,49 @@
+<div>
+  <h1 class="text-3xl font-bold text-slate-100 mb-6">Mis Reservas</h1>
+  <div class="space-y-4">
+    @for (reservation of reservations(); track reservation.id) {
+      <div [class]="getReservationContainerClass(reservation.status)">
+        <div class="flex-grow">
+          <div class="flex items-center gap-4">
+             <span [class]="getStatusBadgeClass(reservation.status)">
+               {{ reservation.status }}
+             </span>
+            <p class="font-bold text-slate-100 text-lg">
+              Reserva para el {{ reservation.date }}
+            </p>
+          </div>
+          <p class="text-slate-400 mt-2">
+            {{ reservation.guests }} comensales a las {{ reservation.time }} en la Mesa #{{ reservation.table?.id }}.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <a [routerLink]="['/dashboard/reservations', reservation.id]" class="px-4 py-2 bg-slate-600 text-slate-100 rounded-md hover:bg-slate-500 text-sm font-medium transition-colors">
+            Ver Detalle
+          </a>
+          @if (reservation.status === 'Confirmada') {
+            <a [routerLink]="['/dashboard/reservations/edit', reservation.id]" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm font-medium transition-colors">
+              Editar
+            </a>
+            <button (click)="requestCancellation(reservation.id!)" class="px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 text-sm font-medium transition-colors">
+              Cancelar
+            </button>
+          }
+        </div>
+      </div>
+    } @empty {
+      <div class="text-center text-slate-400 py-8 border-2 border-dashed border-slate-700 rounded-lg">
+        <p>No tienes reservas en tu historial.</p>
+        <a routerLink="/booking" class="mt-4 inline-block px-6 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600">Hacer una reserva</a>
+      </div>
+    }
+  </div>
+</div>
+
+<app-confirmation-modal
+  [isOpen]="isCancelModalOpen()"
+  title="Confirmar Cancelación"
+  message="¿Estás seguro de que quieres cancelar esta reserva? Esta acción no se puede deshacer."
+  confirmButtonText="Sí, Cancelar Reserva"
+  (confirm)="confirmCancellation()"
+  (close)="closeCancelModal()">
+</app-confirmation-modal>

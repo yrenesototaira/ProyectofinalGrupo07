@@ -1,0 +1,73 @@
+<div>
+  <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
+    <h1 class="text-3xl font-bold text-slate-100">Gestionar Reservas</h1>
+    <div class="flex gap-4">
+      <input type="date" [(ngModel)]="filterDate" class="bg-slate-700 border-slate-600 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
+      <select [(ngModel)]="filterStatus" class="bg-slate-700 border-slate-600 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
+        <option value="all">Todos los Estados</option>
+        <option value="Confirmada">Confirmada</option>
+        <option value="Completada">Completada</option>
+        <option value="Cancelada">Cancelada</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="bg-slate-900/50 rounded-lg overflow-x-auto">
+    <table class="min-w-full text-left text-sm whitespace-nowrap">
+      <thead class="tracking-wider border-b border-slate-700">
+        <tr>
+          <th scope="col" class="px-6 py-3">Cliente</th>
+          <th scope="col" class="px-6 py-3">Fecha y Hora</th>
+          <th scope="col" class="px-6 py-3">Comensales</th>
+          <th scope="col" class="px-6 py-3">Estado</th>
+          <th scope="col" class="px-6 py-3 text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (reservation of filteredReservations(); track reservation.id) {
+          <tr class="border-b border-slate-700/50 hover:bg-slate-800/40 transition-colors">
+            <td class="px-6 py-4">
+              <div class="font-medium text-slate-200">{{ reservation.customerName }}</div>
+              <div class="text-slate-400">{{ reservation.customerEmail }}</div>
+            </td>
+            <td class="px-6 py-4">{{ reservation.date }} @ {{ reservation.time }}</td>
+            <td class="px-6 py-4">{{ reservation.guests }}</td>
+            <td class="px-6 py-4">
+              <span [class]="getStatusBadgeClass(reservation.status)">
+                {{ reservation.status }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-right">
+              @if(reservation.status === 'Confirmada') {
+                 <div class="flex justify-end gap-2">
+                    <!-- The edit route is reusable for admins -->
+                    <a [routerLink]="['/admin/reservations/edit', reservation.id]" class="px-3 py-1 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-xs font-medium transition-colors">
+                      Editar
+                    </a>
+                    <button (click)="requestCancellation(reservation.id!)" class="px-3 py-1 bg-rose-600 text-white rounded-md hover:bg-rose-700 text-xs font-medium transition-colors">
+                      Cancelar
+                    </button>
+                 </div>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="text-center text-slate-400 py-8">
+              No se encontraron reservas con los filtros seleccionados.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<app-confirmation-modal
+  [isOpen]="isCancelModalOpen()"
+  title="Confirmar Cancelación"
+  message="¿Estás seguro de que quieres cancelar esta reserva? Esta acción no se puede deshacer."
+  confirmButtonText="Sí, Cancelar Reserva"
+  (confirm)="confirmCancellation()"
+  (close)="closeCancelModal()">
+</app-confirmation-modal>

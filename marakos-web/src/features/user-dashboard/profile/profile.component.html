@@ -1,0 +1,101 @@
+<div>
+  <h1 class="text-3xl font-bold text-slate-100 mb-6">Mi Perfil</h1>
+
+  <div class="space-y-8">
+    
+    <!-- Sección de Información Personal -->
+    <div class="bg-slate-700/50 border border-slate-700 p-6 rounded-lg">
+      <h2 class="text-xl font-bold text-slate-200 mb-1">Información Personal</h2>
+      <p class="text-slate-400 text-sm mb-4">Actualiza tu nombre y correo electrónico.</p>
+      <form (ngSubmit)="updateDetails()" #detailsForm="ngForm" class="space-y-4">
+        <div>
+          <label for="name" class="block text-sm font-medium text-slate-300 mb-1">Nombre Completo</label>
+          <input type="text" id="name" name="name" [(ngModel)]="name" required
+                 class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
+        </div>
+        <div>
+          <label for="email" class="block text-sm font-medium text-slate-300 mb-1">Correo Electrónico</label>
+          <input type="email" id="email" name="email" [(ngModel)]="email" readonly
+                 class="w-full bg-slate-800 border-slate-600 text-slate-400 rounded-md p-2 cursor-not-allowed">
+        </div>
+        <div class="flex justify-between items-center">
+          @if (detailsMessage()) {
+            <p class="text-sm animate-fade-in" [class.text-emerald-400]="detailsMessage()?.type === 'success'" [class.text-rose-400]="detailsMessage()?.type === 'error'">{{ detailsMessage()?.text }}</p>
+          } @else {
+            <span></span> <!-- Placeholder for alignment -->
+          }
+          <button type="submit" [disabled]="!detailsForm.form.valid" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:bg-slate-600 transition-colors">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Sección de Cambio de Contraseña -->
+    <div class="bg-slate-700/50 border border-slate-700 p-6 rounded-lg">
+      <h2 class="text-xl font-bold text-slate-200 mb-1">Cambiar Contraseña</h2>
+      <p class="text-slate-400 text-sm mb-4">Para tu seguridad, te recomendamos usar una contraseña segura.</p>
+      <form (ngSubmit)="updatePassword()" #passwordForm="ngForm" class="space-y-4">
+        <div>
+          <label for="currentPassword" class="block text-sm font-medium text-slate-300 mb-1">Contraseña Actual</label>
+          <input type="password" id="currentPassword" name="currentPassword" [(ngModel)]="currentPassword" required
+                 class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
+        </div>
+        <div>
+          <label for="newPassword" class="block text-sm font-medium text-slate-300 mb-1">Nueva Contraseña</label>
+          <input type="password" id="newPassword" name="newPassword" [(ngModel)]="newPassword" required
+                 class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
+        </div>
+        <div>
+          <label for="confirmPassword" class="block text-sm font-medium text-slate-300 mb-1">Confirmar Nueva Contraseña</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" [(ngModel)]="confirmPassword" required
+                 class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
+        </div>
+        <div class="flex justify-between items-center">
+          @if (passwordMessage()) {
+            <p class="text-sm animate-fade-in" [class.text-emerald-400]="passwordMessage()?.type === 'success'" [class.text-rose-400]="passwordMessage()?.type === 'error'">{{ passwordMessage()?.text }}</p>
+          } @else {
+            <span></span>
+          }
+          <button type="submit" [disabled]="!passwordForm.form.valid" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:bg-slate-600 transition-colors">Actualizar Contraseña</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Sección de Información de Reembolso -->
+    <div class="bg-slate-700/50 border border-slate-700 p-6 rounded-lg">
+      <h2 class="text-xl font-bold text-slate-200 mb-1">Información de Reembolso</h2>
+      <p class="text-slate-400 text-sm mb-4">Agrega tus datos bancarios para procesar reembolsos en caso de cancelación de eventos o reservas especiales. Tu información es confidencial.</p>
+      <form (ngSubmit)="updateBankInfo()" #bankForm="ngForm" class="space-y-4">
+        <div>
+          <label for="bankName" class="block text-sm font-medium text-slate-300 mb-1">Nombre del Banco</label>
+          <select id="bankName" name="bankName" [(ngModel)]="bankName"
+                  class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
+            <option value="" disabled>Seleccione un banco</option>
+            <option value="BCP">BCP</option>
+            <option value="BBVA">BBVA</option>
+            <option value="Banbif">Banbif</option>
+            <option value="Interbank">Interbank</option>
+            <option value="ScotiaBank">ScotiaBank</option>
+          </select>
+        </div>
+        <div>
+          <label for="accountNumber" class="block text-sm font-medium text-slate-300 mb-1">Número de Cuenta</label>
+          <input type="text" id="accountNumber" name="accountNumber" [(ngModel)]="accountNumber"
+                 class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
+        </div>
+        <div>
+          <label for="cci" class="block text-sm font-medium text-slate-300 mb-1">Número de Cuenta Interbancaria (CCI)</label>
+          <input type="text" id="cci" name="cci" [(ngModel)]="cci"
+                 class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
+        </div>
+        <div class="flex justify-between items-center">
+           @if (bankMessage()) {
+            <p class="text-sm animate-fade-in" [class.text-emerald-400]="bankMessage()?.type === 'success'" [class.text-rose-400]="bankMessage()?.type === 'error'">{{ bankMessage()?.text }}</p>
+          } @else {
+            <span></span>
+          }
+          <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:bg-slate-600 transition-colors">Guardar Información Bancaria</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

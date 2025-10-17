@@ -1,0 +1,61 @@
+<div>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-slate-100">Gestionar Usuarios</h1>
+    <a routerLink="/admin/users/new" class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-500 text-sm font-medium transition-colors">
+      Crear Usuario
+    </a>
+  </div>
+
+  <div class="bg-slate-900/50 rounded-lg overflow-x-auto">
+    <table class="min-w-full text-left text-sm whitespace-nowrap">
+      <thead class="tracking-wider border-b border-slate-700">
+        <tr>
+          <th scope="col" class="px-6 py-3">Nombre</th>
+          <th scope="col" class="px-6 py-3">Correo Electrónico</th>
+          <th scope="col" class="px-6 py-3">Teléfono</th>
+          <th scope="col" class="px-6 py-3">Rol</th>
+          <th scope="col" class="px-6 py-3 text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of users(); track user.id) {
+          <tr class="border-b border-slate-700/50 hover:bg-slate-800/40 transition-colors">
+            <td class="px-6 py-4 font-medium text-slate-200">{{ user.name }}</td>
+            <td class="px-6 py-4 text-slate-400">{{ user.email }}</td>
+            <td class="px-6 py-4 text-slate-400">{{ user.phone }}</td>
+            <td class="px-6 py-4">
+              <span [class]="getRoleBadgeClass(user.role)">
+                {{ user.role }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-right">
+              <div class="flex justify-end gap-2">
+                <a [routerLink]="['/admin/users/edit', user.id]" class="px-3 py-1 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-xs font-medium transition-colors">
+                  Editar
+                </a>
+                <button (click)="requestDeletion(user.id)" class="px-3 py-1 bg-rose-600 text-white rounded-md hover:bg-rose-700 text-xs font-medium transition-colors">
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="text-center text-slate-400 py-8">
+              No hay usuarios registrados en el sistema.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<app-confirmation-modal
+  [isOpen]="isDeleteModalOpen()"
+  title="Confirmar Eliminación"
+  message="¿Estás seguro de que quieres eliminar este usuario? Esta acción es permanente."
+  confirmButtonText="Sí, Eliminar Usuario"
+  (confirm)="confirmDeletion()"
+  (close)="closeDeleteModal()">
+</app-confirmation-modal>

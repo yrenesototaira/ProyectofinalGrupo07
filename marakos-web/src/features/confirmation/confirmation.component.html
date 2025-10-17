@@ -1,0 +1,45 @@
+<div class="max-w-2xl mx-auto text-center py-12 animate-fade-in">
+  @if (reservation()?.id) {
+    <div class="bg-slate-800 p-8 rounded-lg shadow-2xl">
+      <h1 class="text-4xl font-extrabold text-emerald-400 mb-4">¡Reserva Confirmada!</h1>
+      <p class="text-slate-300 mb-8">Gracias por reservar con nosotros, {{ reservation()?.customerName }}. Por favor, presenta este código QR al llegar para un check-in rápido.</p>
+
+      <div class="flex justify-center mb-8">
+        @if (qrCodeUrl()) {
+          <img [src]="qrCodeUrl()" alt="Código QR de la Reserva" class="bg-white p-2 rounded-lg" width="200" height="200">
+        } @else {
+          <div class="w-48 h-48 bg-slate-700 flex items-center justify-center rounded-lg">
+            <p class="text-sm text-slate-400">Generando código QR...</p>
+          </div>
+        }
+      </div>
+      
+      <div class="text-left bg-slate-700 p-6 rounded-lg space-y-3">
+        <h3 class="text-xl font-bold border-b border-slate-600 pb-2 mb-3">Los Detalles de tu Reserva</h3>
+        <p><strong>ID de Reserva:</strong> <span class="font-mono text-amber-500">{{ reservation()?.id }}</span></p>
+        <p><strong>Nombre:</strong> {{ reservation()?.customerName }}</p>
+        <p><strong>Fecha y Hora:</strong> {{ reservation()?.date }} a las {{ reservation()?.time }}</p>
+        <p><strong>Comensales:</strong> {{ reservation()?.guests }}</p>
+        <p><strong>Mesa:</strong> Mesa #{{ reservation()?.table?.id }}</p>
+        @if (reservation()?.specialRequests) {
+          <p><strong>Peticiones Especiales:</strong> {{ reservation()?.specialRequests }}</p>
+        }
+        @if (reservation()?.paymentMethod) {
+            <p><strong>Pago:</strong> {{ reservation()?.paymentMethod }} (Total: {{ reservation()?.totalCost | currency }})</p>
+        }
+      </div>
+
+      <a routerLink="/" class="inline-block mt-8 bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all">
+        Volver al Inicio
+      </a>
+    </div>
+  } @else {
+    <div class="bg-slate-800 p-8 rounded-lg shadow-2xl">
+      <h1 class="text-4xl font-extrabold text-rose-400 mb-4">Reserva Inválida</h1>
+      <p class="text-slate-300 mb-8">No pudimos encontrar los detalles de esta reserva. Puede que haya expirado o sea inválida.</p>
+       <a routerLink="/booking" class="inline-block mt-8 bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all">
+        Hacer una Nueva Reserva
+      </a>
+    </div>
+  }
+</div>

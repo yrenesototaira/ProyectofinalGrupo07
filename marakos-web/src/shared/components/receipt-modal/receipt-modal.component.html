@@ -1,0 +1,69 @@
+@if (isOpen()) {
+  <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center animate-fade-in-fast print:hidden" (click)="onClose()">
+    <div class="bg-slate-800 rounded-lg shadow-xl w-full max-w-md mx-4" (click)="$event.stopPropagation()">
+      <div id="receipt-content" class="bg-white text-gray-800 p-8 rounded-t-lg">
+        @if (reservation(); as res) {
+          <div class="space-y-4">
+            <div class="text-center mb-6">
+              <h3 class="text-2xl font-bold text-gray-900">Marakos Grill</h3>
+              <p class="text-sm text-gray-500">Gracias por su preferencia</p>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">ID Reserva:</span>
+              <span class="font-mono font-semibold">{{ res.id }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Cliente:</span>
+              <span class="font-semibold">{{ getCustomerName() }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Fecha y Hora:</span>
+              <span>{{ res.date }} - {{ res.time }}</span>
+            </div>
+            <div class="border-t border-gray-200 my-4"></div>
+            <h4 class="font-bold text-lg mb-2">Detalles del Consumo:</h4>
+            <div class="space-y-2">
+              @for (menuItem of res.menuItems; track menuItem.item.id) {
+                <div class="flex justify-between items-center">
+                  <div>
+                    <p>{{ menuItem.item.name }} (x{{ menuItem.quantity }})</p>
+                    <p class="text-xs text-gray-500">{{ menuItem.item.price | currency:'PEN' }} c/u</p>
+                  </div>
+                  <span class="font-medium">{{ (menuItem.item.price * menuItem.quantity) | currency:'PEN' }}</span>
+                </div>
+              }
+            </div>
+            <div class="border-t border-gray-200 my-4"></div>
+            <div class="flex justify-between font-bold text-xl">
+              <span>TOTAL:</span>
+              <span>{{ res.totalCost | currency:'PEN' }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Método de Pago:</span>
+              <span>{{ res.paymentMethod }}</span>
+            </div>
+          </div>
+        } @else {
+          <p class="text-center text-gray-500">No hay información de la reserva para mostrar.</p>
+        }
+      </div>
+      <footer class="p-4 bg-slate-700 text-right rounded-b-lg flex justify-end gap-3">
+         <button (click)="printReceipt()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 px-4 rounded-md transition-colors">Imprimir</button>
+         <button (click)="onClose()" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-md transition-colors">Cerrar</button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- Printable version (hidden by default) -->
+<div class="hidden print:block">
+  @if(reservation(); as res) {
+    <div class="bg-white text-gray-800 p-8">
+        <div class="text-center mb-6">
+          <h3 class="text-2xl font-bold text-gray-900">Marakos Grill</h3>
+          <p class="text-sm text-gray-500">Comprobante de Pago</p>
+        </div>
+        <!-- ... content duplicated for printing ... -->
+    </div>
+  }
+</div>

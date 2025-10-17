@@ -1,0 +1,253 @@
+<div class="max-w-4xl mx-auto bg-slate-800 rounded-lg shadow-2xl shadow-black/30 overflow-hidden">
+  <!-- Progress Bar -->
+  <div class="p-6 border-b border-slate-700">
+    <div class="flex items-center justify-between">
+      @for(stepInfo of ['Detalles', 'Mesa', 'Menú', 'Resumen', 'Pago']; track stepInfo; let i = $index) {
+        <div class="flex items-center" [class.opacity-50]="step() < i + 1">
+          <div class="flex items-center justify-center w-10 h-10 rounded-full" [class]="step() >= i + 1 ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-slate-400'">
+            <span class="font-bold">{{ i + 1 }}</span>
+          </div>
+          <span class="ml-3 font-medium" [class]="step() >= i + 1 ? 'text-amber-500' : 'text-slate-400'">
+            {{ stepInfo }}
+          </span>
+        </div>
+        @if (i < 4) {
+          <div class="flex-auto border-t-2 mx-4" [class]="step() > i + 1 ? 'border-amber-500' : 'border-slate-700'"></div>
+        }
+      }
+    </div>
+  </div>
+
+  <div class="p-8">
+    @switch (step()) {
+      <!-- Step 1: Date, Time, Guests -->
+      @case (1) {
+        <div class="animate-fade-in">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6">1. Encuentra tu Mesa</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label for="guests" class="block text-sm font-medium text-slate-300 mb-2">Comensales</label>
+              <select id="guests" [ngModel]="guests()" (ngModelChange)="guests.set($event)" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+                @for(i of [1,2,3,4,5,6,7,8]; track i) { <option [value]="i">{{ i }} Comensal{{ i > 1 ? 'es' : '' }}</option> }
+              </select>
+            </div>
+            <div>
+              <label for="date" class="block text-sm font-medium text-slate-300 mb-2">Fecha</label>
+              <input type="date" id="date" [ngModel]="selectedDate()" (ngModelChange)="selectedDate.set($event)" [min]="getTodayDateString()" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+            </div>
+            <div>
+              <label for="time" class="block text-sm font-medium text-slate-300 mb-2">Hora</label>
+              <select id="time" [ngModel]="selectedTime()" (ngModelChange)="selectedTime.set($event)" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+                <option value="18:00">06:00 PM</option>
+                <option value="19:00">07:00 PM</option>
+                <option value="20:00">08:00 PM</option>
+                <option value="21:00">09:00 PM</option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-8 text-center">
+            <button (click)="checkAvailability()" [disabled]="isCheckingAvailability()" class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed">
+              @if (isCheckingAvailability()) {
+                <span>Verificando...</span>
+              } @else {
+                <span>Verificar Disponibilidad</span>
+              }
+            </button>
+            @if (availabilityMessage()) {
+              <p class="mt-4 text-sm" [class.text-emerald-400]="availabilityMessage().startsWith('¡Perfecto!')" [class.text-rose-400]="availabilityMessage().startsWith('Lo sentimos')">{{ availabilityMessage() }}</p>
+            }
+          </div>
+        </div>
+      }
+      <!-- Step 2: Select Table -->
+      @case (2) {
+        <div class="animate-fade-in">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6">2. Selecciona tu Mesa</h2>
+          <div class="p-6 bg-slate-900 rounded-lg">
+            <div class="grid grid-cols-4 gap-4">
+              @for(table of tables(); track table.id) {
+                <div 
+                  class="flex items-center justify-center h-20 w-20 text-slate-100 font-bold transition-all duration-300"
+                  [class.bg-emerald-600]="table.isAvailable"
+                  [class.bg-rose-700]="!table.isAvailable"
+                  [class.opacity-50]="!table.isAvailable || table.capacity < guests()"
+                  [class.cursor-pointer]="table.isAvailable && table.capacity >= guests()"
+                  [class.cursor-not-allowed]="!table.isAvailable || table.capacity < guests()"
+                  [class.ring-4]="isTableSelected(table)"
+                  [class.ring-amber-500]="isTableSelected(table)"
+                  [class.rounded-lg]="table.shape === 'square'"
+                  [class.rounded-full]="table.shape === 'round'"
+                  (click)="selectTable(table)">
+                  T{{ table.id }} ({{ table.capacity }})
+                </div>
+              }
+            </div>
+          </div>
+          <div class="mt-8 flex justify-between">
+            <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
+          </div>
+        </div>
+      }
+      <!-- Step 3: Menu -->
+      @case (3) {
+        <div class="animate-fade-in">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6">3. Pre-ordena tu Comida (Opcional)</h2>
+          <div class="space-y-4 max-h-96 overflow-y-auto pr-2">
+            @for(item of menu(); track item.id) {
+              <div class="flex items-center justify-between bg-slate-700 p-4 rounded-lg gap-4">
+                <div class="flex items-center gap-4 flex-grow">
+                  @if(item.imageUrl) {
+                    <img [src]="item.imageUrl" [alt]="item.name" class="w-20 h-20 object-cover rounded-md flex-shrink-0">
+                  } @else {
+                    <div class="w-20 h-20 bg-slate-600 rounded-md flex-shrink-0 flex items-center justify-center text-xs text-slate-400">Sin foto</div>
+                  }
+                  <div>
+                    <h4 class="font-bold text-lg">{{ item.name }}</h4>
+                    <p class="text-sm text-slate-400">{{ item.description }}</p>
+                    <p class="text-amber-500 font-semibold mt-1">{{ item.price | currency }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-3 flex-shrink-0">
+                  @if (getItemQuantity(item.id) > 0) {
+                    <button (click)="removeMenuItemFromBooking(item.id)" class="w-8 h-8 rounded-full bg-slate-600 hover:bg-slate-500">-</button>
+                    <span class="w-8 text-center font-bold">{{ getItemQuantity(item.id) }}</span>
+                  }
+                  <button (click)="addMenuItemToBooking(item)" class="w-8 h-8 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-900">+</button>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="mt-8 flex justify-between items-center">
+            <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
+            <button (click)="nextStep()" class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all">Continuar al Resumen</button>
+          </div>
+        </div>
+      }
+      <!-- Step 4: Summary -->
+      @case (4) {
+        <div class="animate-fade-in">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6">4. Resumen de la Reserva</h2>
+          <div class="bg-slate-700 p-6 rounded-lg space-y-4">
+            <div class="flex justify-between"><span class="text-slate-400">Fecha y Hora:</span> <span class="font-bold">{{ currentReservation().date }} a las {{ currentReservation().time }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Comensales:</span> <span class="font-bold">{{ currentReservation().guests }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Mesa:</span> <span class="font-bold">Mesa #{{ currentReservation().table?.id }}</span></div>
+            <hr class="border-slate-600">
+            <h4 class="text-lg font-semibold text-slate-100">Pedido del Menú:</h4>
+            @if(currentReservation().menuItems.length > 0) {
+              @for(orderItem of currentReservation().menuItems; track orderItem.item.id) {
+                <div class="flex justify-between">
+                  <span>{{ orderItem.item.name }} x {{ orderItem.quantity }}</span>
+                  <span>{{ (orderItem.item.price * orderItem.quantity) | currency }}</span>
+                </div>
+              }
+              <hr class="border-slate-600">
+              <div class="flex justify-between text-xl font-bold text-amber-500"><span>Costo Total:</span><span>{{ menuTotal() | currency }}</span></div>
+            } @else {
+              <p class="text-slate-400">No se pre-ordenó comida.</p>
+            }
+          </div>
+
+          <div class="mt-6 bg-slate-700 p-6 rounded-lg space-y-4">
+            <h4 class="text-lg font-semibold text-slate-100">Tus Detalles</h4>
+            <div>
+              <label for="customerName" class="block text-sm font-medium text-slate-300 mb-2">Nombre Completo</label>
+              <input type="text" id="customerName" required
+                     [value]="currentReservation().customerName" 
+                     (input)="updateCustomerDetails('name', $event.target.value)"
+                     [readOnly]="!!currentUser()"
+                     class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
+                     [class.cursor-not-allowed]="!!currentUser()"
+                     [class.bg-slate-800]="!!currentUser()">
+            </div>
+            <div>
+              <label for="customerEmail" class="block text-sm font-medium text-slate-300 mb-2">Correo Electrónico</label>
+              <input type="email" id="customerEmail" required
+                     [value]="currentReservation().customerEmail" 
+                     (input)="updateCustomerDetails('email', $event.target.value)"
+                     [readOnly]="!!currentUser()"
+                     class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
+                     [class.cursor-not-allowed]="!!currentUser()"
+                     [class.bg-slate-800]="!!currentUser()">
+            </div>
+            <div>
+              <label for="specialRequests" class="block text-sm font-medium text-slate-300 mb-2">Peticiones Especiales (Opcional)</label>
+              <textarea id="specialRequests" [value]="currentReservation().specialRequests" (input)="updateSpecialRequests($event)" rows="3" class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500" placeholder="Ej: Alergias, celebración de cumpleaños, etc."></textarea>
+            </div>
+          </div>
+
+          @if(menuTotal() > 0) {
+            <div class="mt-6">
+              <label class="flex items-center">
+                <input type="checkbox" [checked]="termsAccepted()" (change)="updateTerms($event)" class="h-4 w-4 rounded border-slate-500 bg-slate-600 text-amber-600 focus:ring-amber-500">
+                <span class="ml-2 text-slate-300">Acepto los <button type="button" (click)="isTermsModalOpen.set(true)" class="text-amber-500 hover:underline inline font-medium">términos y condiciones</button> de la pre-orden.</span>
+              </label>
+            </div>
+          }
+
+          <div class="mt-8 flex justify-between items-center">
+            <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
+            <button (click)="completeBooking()"
+                    [disabled]="(menuTotal() > 0 && !termsAccepted()) || !currentReservation().customerName || !currentReservation().customerEmail"
+                    class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed">
+              @if(menuTotal() > 0) {
+                <span>Confirmar y Pagar</span>
+              } @else {
+                <span>Confirmar Reserva</span>
+              }
+            </button>
+          </div>
+        </div>
+      }
+      <!-- Step 5: Payment -->
+      @case (5) {
+        <div class="animate-fade-in">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6">5. Detalles del Pago</h2>
+          <div class="bg-slate-700 p-6 rounded-lg space-y-4">
+            <div class="flex justify-between text-xl font-bold text-amber-500">
+                <span>Monto a Pagar:</span><span>{{ menuTotal() | currency }}</span>
+            </div>
+            <div class="mt-6">
+              <label class="block text-sm font-medium text-slate-300 mb-2">Método de Pago</label>
+              <div class="flex space-x-4">
+                <button (click)="paymentMethod.set('Tarjeta')" class="flex-1 p-4 rounded-lg border-2 transition" [class.bg-amber-500]="paymentMethod() === 'Tarjeta'" [class.border-amber-500]="paymentMethod() === 'Tarjeta'" [class.border-slate-600]="paymentMethod() !== 'Tarjeta'">Tarjeta</button>
+                <button (click)="paymentMethod.set('Efectivo')" class="flex-1 p-4 rounded-lg border-2 transition" [class.bg-amber-500]="paymentMethod() === 'Efectivo'" [class.border-amber-500]="paymentMethod() === 'Efectivo'" [class.border-slate-600]="paymentMethod() !== 'Efectivo'">Efectivo (Pagar en el restaurante)</button>
+              </div>
+            </div>
+            @if(paymentMethod() === 'Tarjeta') {
+              <div class="mt-4 space-y-4 animate-fade-in">
+                <input type="text" placeholder="Número de Tarjeta" class="w-full bg-slate-600 p-3 rounded-md">
+                <div class="flex space-x-4">
+                  <input type="text" placeholder="MM/AA" class="w-1/2 bg-slate-600 p-3 rounded-md">
+                  <input type="text" placeholder="CVC" class="w-1/2 bg-slate-600 p-3 rounded-md">
+                </div>
+              </div>
+            }
+          </div>
+          <div class="mt-8 flex justify-between">
+            <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
+            <button (click)="processPayment()" [disabled]="!paymentMethod()" class="bg-emerald-500 text-white font-bold py-3 px-8 rounded-full hover:bg-emerald-600 transition-all disabled:bg-slate-600">Finalizar Pago</button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>
+
+<app-modal [isOpen]="isTermsModalOpen()" title="Términos y Condiciones de Pre-orden" (closeModal)="isTermsModalOpen.set(false)">
+  <div class="space-y-4 text-slate-300 max-h-[60vh] overflow-y-auto pr-4 text-sm">
+    <h4 class="font-bold text-slate-100 text-base">1. Pre-orden y Pago</h4>
+    <p>Al pre-ordenar un menú, usted acepta pagar el monto total indicado en el resumen de la reserva. El pago se procesará a través de nuestra pasarela de pagos segura. Este pago garantiza la preparación de sus platos y no es reembolsable.</p>
+    
+    <h4 class="font-bold text-slate-100 text-base">2. Política de Cancelación</h4>
+    <p>La reserva de la mesa puede ser cancelada hasta 24 horas antes de la hora programada sin penalización. Sin embargo, el costo de la comida pre-ordenada no es reembolsable, ya que los ingredientes se adquieren y preparan con antelación.</p>
+    
+    <h4 class="font-bold text-slate-100 text-base">3. Puntualidad</h4>
+    <p>Le solicitamos llegar a tiempo a su reserva. Mantendremos su mesa por un período de gracia de 15 minutos. Pasado este tiempo, la mesa podría ser asignada a otros clientes y su pre-orden será mantenida para cuando usted llegue, aunque no podemos garantizarle una mesa de inmediato.</p>
+
+    <h4 class="font-bold text-slate-100 text-base">4. Cambios en la Reserva</h4>
+    <p>Cualquier cambio en el número de comensales o en la hora de la reserva debe ser notificado con al menos 6 horas de antelación y está sujeto a disponibilidad. No se pueden realizar cambios en los platos pre-ordenados una vez confirmada la reserva.</p>
+    
+    <h4 class="font-bold text-slate-100 text-base">5. Alergias y Restricciones Dietéticas</h4>
+    <p>Es responsabilidad del cliente informar sobre cualquier alergia o restricción dietética en la sección de "Peticiones Especiales". Marakos Grill hará todo lo posible por acomodar sus necesidades, pero no se hace responsable de reacciones adversas si no se ha notificado previamente.</p>
+  </div>
+</app-modal>

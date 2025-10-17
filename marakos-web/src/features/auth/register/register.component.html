@@ -1,0 +1,47 @@
+<div class="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8 bg-slate-800 p-10 rounded-lg shadow-md">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-slate-100">
+        Crea una nueva cuenta
+      </h2>
+    </div>
+    <form class="mt-8 space-y-6" (ngSubmit)="register()" #registerForm="ngForm">
+      <div class="rounded-md shadow-sm">
+        <div class="mb-4">
+          <label for="name" class="sr-only">Nombre</label>
+          <input id="name" name="name" type="text" required [(ngModel)]="name"
+                 class="rounded relative block w-full px-3 py-2 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                 placeholder="Nombre completo">
+        </div>
+        <div class="mb-4">
+          <label for="email-address" class="sr-only">Correo electrónico</label>
+          <input id="email-address" name="email" type="email" autocomplete="email" required [(ngModel)]="email"
+                 class="rounded relative block w-full px-3 py-2 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                 placeholder="Correo electrónico">
+        </div>
+        <div>
+          <label for="password" class="sr-only">Contraseña</label>
+          <input id="password" name="password" type="password" autocomplete="new-password" required [(ngModel)]="password"
+                 class="rounded relative block w-full px-3 py-2 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                 placeholder="Contraseña">
+        </div>
+      </div>
+      
+      @if (errorMessage()) {
+        <p class="text-rose-400 text-sm mt-2">{{ errorMessage() }}</p>
+      }
+
+      <div>
+        <button type="submit" [disabled]="!registerForm.form.valid"
+                class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:bg-slate-600 mt-4">
+          Registrarse
+        </button>
+      </div>
+      <div class="text-sm text-center mt-4">
+        <a routerLink="/login" class="font-medium text-amber-500 hover:text-amber-400">
+          ¿Ya tienes una cuenta? Inicia sesión
+        </a>
+      </div>
+    </form>
+  </div>
+</div>

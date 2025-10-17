@@ -1,0 +1,29 @@
+<header class="bg-slate-900/80 backdrop-blur-sm fixed top-0 left-0 right-0 z-50 border-b border-slate-700">
+  <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+    <a routerLink="/" class="text-2xl font-bold text-amber-500 hover:text-amber-400 transition-colors">
+      Marakos Grill
+    </a>
+    <div class="hidden md:flex items-center space-x-4">
+      <a routerLink="/" routerLinkActive="text-amber-400" [routerLinkActiveOptions]="{exact: true}" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Inicio</a>
+      <a routerLink="/booking" routerLinkActive="text-amber-400" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Reservar</a>
+      @if (currentUser()) {
+        @if(authService.isAdmin()){
+          <a routerLink="/admin" routerLinkActive="text-amber-400" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Panel de Admin</a>
+        } @else {
+          <a routerLink="/dashboard" routerLinkActive="text-amber-400" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Mis Reservas</a>
+        }
+        <button (click)="logout()" class="ml-4 px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 text-sm font-medium transition-colors">Cerrar Sesión</button>
+      } @else {
+        <a routerLink="/login" class="ml-4 px-4 py-2 bg-amber-500 text-slate-900 rounded-md hover:bg-amber-600 text-sm font-medium transition-colors">Iniciar Sesión</a>
+      }
+    </div>
+    <!-- Mobile menu button -->
+    <div class="md:hidden">
+        <button class="text-slate-300 focus:outline-none">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
+        </button>
+    </div>
+  </nav>
+</header>

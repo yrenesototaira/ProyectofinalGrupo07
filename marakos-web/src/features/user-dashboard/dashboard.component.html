@@ -1,0 +1,28 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="flex flex-col md:flex-row gap-8">
+    <!-- Side Navigation -->
+    <aside class="md:w-1/4">
+      <div class="bg-slate-800 p-4 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold text-slate-100 mb-4">Panel de Usuario</h2>
+        <nav class="space-y-2">
+          <a routerLink="reservations" routerLinkActive="bg-amber-500/10 text-amber-400" class="flex items-center px-4 py-2 text-slate-300 hover:bg-slate-700/50 rounded-md transition-colors">
+            <span class="truncate">Mis Reservas</span>
+          </a>
+          <a routerLink="profile" routerLinkActive="bg-amber-500/10 text-amber-400" class="flex items-center px-4 py-2 text-slate-300 hover:bg-slate-700/50 rounded-md transition-colors">
+            <span class="truncate">Mi Perfil</span>
+          </a>
+          <button (click)="logout()" class="w-full flex items-center px-4 py-2 text-rose-400 hover:bg-rose-500/10 rounded-md transition-colors">
+            Cerrar Sesión
+          </button>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="md:w-3/4">
+      <div class="bg-slate-800 p-8 rounded-lg shadow-md min-h-[300px]">
+        <router-outlet></router-outlet>
+      </div>
+    </main>
+  </div>
+</div>

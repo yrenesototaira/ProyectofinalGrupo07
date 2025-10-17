@@ -1,0 +1,100 @@
+<div>
+  <a [routerLink]="returnPath()" class="inline-flex items-center gap-2 text-amber-500 hover:text-amber-400 mb-6">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+    Cancelar y Volver
+  </a>
+
+  @if(reservation(); as res) {
+    <h1 class="text-3xl font-bold text-slate-100 mb-2">Editar Reserva</h1>
+    <p class="text-slate-400 mb-6">ID: <span class="font-mono">{{ res.id }}</span></p>
+
+    <div class="space-y-8">
+      <!-- Detalles de la Reserva -->
+      <div class="bg-slate-700/50 border border-slate-700 p-6 rounded-lg">
+        <h2 class="text-xl font-bold text-slate-200 mb-4">Detalles de la Reserva</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label for="guests" class="block text-sm font-medium text-slate-300 mb-2">Comensales</label>
+            <select id="guests" [ngModel]="guests()" (ngModelChange)="guests.set($event); onDetailsChange()" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+              @for(i of [1,2,3,4,5,6,7,8]; track i) { <option [value]="i">{{ i }} Comensal{{ i > 1 ? 'es' : '' }}</option> }
+            </select>
+          </div>
+          <div>
+            <label for="date" class="block text-sm font-medium text-slate-300 mb-2">Fecha</label>
+            <input type="date" id="date" [ngModel]="selectedDate()" (ngModelChange)="selectedDate.set($event); onDetailsChange()" [min]="getTodayDateString()" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+          </div>
+          <div>
+            <label for="time" class="block text-sm font-medium text-slate-300 mb-2">Hora</label>
+            <select id="time" [ngModel]="selectedTime()" (ngModelChange)="selectedTime.set($event); onDetailsChange()" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+              <option value="18:00">06:00 PM</option>
+              <option value="19:00">07:00 PM</option>
+              <option value="20:00">08:00 PM</option>
+              <option value="21:00">09:00 PM</option>
+            </select>
+          </div>
+        </div>
+         @if(detailsChanged()){
+          <div class="mt-6 text-center">
+              <button (click)="checkAvailability()" [disabled]="isCheckingAvailability()" class="bg-sky-600 text-white font-bold py-2 px-6 rounded-full hover:bg-sky-500 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed">
+                @if (isCheckingAvailability()) {
+                  <span>Verificando...</span>
+                } @else {
+                  <span>Verificar Nueva Disponibilidad</span>
+                }
+              </button>
+              @if (availabilityMessage()) {
+                <p class="mt-4 text-sm" [class.text-emerald-400]="availabilityMessage().startsWith('¡Perfecto!')" [class.text-rose-400]="availabilityMessage().startsWith('Lo sentimos')">{{ availabilityMessage() }}</p>
+              }
+          </div>
+        }
+      </div>
+
+      <!-- Pedido del Menú -->
+      <div class="bg-slate-700/50 border border-slate-700 p-6 rounded-lg">
+        <h2 class="text-xl font-bold text-slate-200 mb-4">Pedido del Menú</h2>
+        <div class="space-y-4 max-h-96 overflow-y-auto pr-2">
+          @for(item of menu(); track item.id) {
+            <div class="flex items-center justify-between bg-slate-700 p-4 rounded-lg">
+              <div>
+                <h4 class="font-bold text-lg">{{ item.name }}</h4>
+                <p class="text-sm text-slate-400">{{ item.description }}</p>
+                <p class="text-amber-500 font-semibold mt-1">{{ item.price | currency }}</p>
+              </div>
+              <div class="flex items-center space-x-3">
+                @if (getItemQuantity(item.id) > 0) {
+                  <button (click)="removeMenuItem(item.id)" class="w-8 h-8 rounded-full bg-slate-600 hover:bg-slate-500">-</button>
+                  <span class="w-8 text-center font-bold">{{ getItemQuantity(item.id) }}</span>
+                }
+                <button (click)="addMenuItem(item)" class="w-8 h-8 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-900">+</button>
+              </div>
+            </div>
+          }
+        </div>
+        @if(menuItems().length > 0) {
+           <div class="mt-4 pt-4 border-t border-slate-600 flex justify-between text-lg font-bold text-amber-500">
+            <span>Nuevo Costo Total:</span><span>{{ totalCost() | currency }}</span>
+           </div>
+        }
+      </div>
+
+      <!-- Peticiones Especiales -->
+      <div class="bg-slate-700/50 border border-slate-700 p-6 rounded-lg">
+        <h2 class="text-xl font-bold text-slate-200 mb-4">Peticiones Especiales</h2>
+        <textarea [ngModel]="specialRequests()" (ngModelChange)="specialRequests.set($event)" rows="3" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500" placeholder="Ej: Alergias, celebración de cumpleaños, etc."></textarea>
+      </div>
+
+      <!-- Acciones -->
+      <div class="flex justify-end gap-4 mt-8">
+        <a [routerLink]="returnPath()" class="px-6 py-3 bg-slate-600 text-slate-100 rounded-md hover:bg-slate-500 font-medium transition-colors">Cancelar</a>
+        <button (click)="saveChanges()" 
+                [disabled]="detailsChanged() && !availabilityChecked()"
+                class="px-6 py-3 bg-emerald-600 text-white rounded-md hover:bg-emerald-500 font-medium transition-colors disabled:bg-slate-500 disabled:cursor-not-allowed">
+          Guardar Cambios
+        </button>
+      </div>
+
+    </div>
+  } @else {
+    <p class="text-rose-400">No se pudo cargar la información de la reserva.</p>
+  }
+</div>

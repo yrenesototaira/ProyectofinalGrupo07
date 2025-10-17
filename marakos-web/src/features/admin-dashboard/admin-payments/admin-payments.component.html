@@ -1,0 +1,74 @@
+<div>
+  <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
+    <h1 class="text-3xl font-bold text-slate-100">Gestionar Pagos</h1>
+    <div class="flex gap-4">
+      <input type="date" [(ngModel)]="filterDate" class="bg-slate-700 border-slate-600 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
+    </div>
+  </div>
+
+  <div class="bg-slate-900/50 rounded-lg overflow-x-auto">
+    <table class="min-w-full text-left text-sm whitespace-nowrap">
+      <thead class="tracking-wider border-b border-slate-700">
+        <tr>
+          <th scope="col" class="px-6 py-3">Cliente</th>
+          <th scope="col" class="px-6 py-3">Fecha</th>
+          <th scope="col" class="px-6 py-3">Monto</th>
+          <th scope="col" class="px-6 py-3">Estado</th>
+          <th scope="col" class="px-6 py-3 text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (reservation of paidReservations(); track reservation.id) {
+          <tr class="border-b border-slate-700/50 hover:bg-slate-800/40 transition-colors">
+            <td class="px-6 py-4">
+              <div class="font-medium text-slate-200">{{ getUserName(reservation.userId) }}</div>
+              <div class="text-slate-400 font-mono text-xs">{{ reservation.id }}</div>
+            </td>
+            <td class="px-6 py-4">{{ reservation.date }}</td>
+            <td class="px-6 py-4 font-mono">{{ reservation.totalCost | currency }}</td>
+            <td class="px-6 py-4">
+              @if(reservation.paymentStatus === 'Reembolsado') {
+                <span class="font-bold px-3 py-1 text-xs rounded-full bg-amber-400/20 text-amber-300">Reembolsado</span>
+              } @else {
+                 <span class="font-bold px-3 py-1 text-xs rounded-full bg-emerald-400/20 text-emerald-300">Pagado</span>
+              }
+            </td>
+            <td class="px-6 py-4 text-right">
+               <div class="flex justify-end gap-2">
+                  <button (click)="viewReceipt(reservation)" class="px-3 py-1 bg-sky-600 text-white rounded-md hover:bg-sky-700 text-xs font-medium transition-colors">
+                    Ver Comprobante
+                  </button>
+                  @if(reservation.paymentStatus !== 'Reembolsado') {
+                    <button (click)="requestRefund(reservation)" class="px-3 py-1 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-xs font-medium transition-colors">
+                      Reembolsar
+                    </button>
+                  }
+               </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="text-center text-slate-400 py-8">
+              No se encontraron pagos con los filtros seleccionados.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<app-receipt-modal 
+  [isOpen]="isReceiptModalOpen()" 
+  [reservation]="selectedReservation()"
+  (closeModal)="closeReceiptModal()">
+</app-receipt-modal>
+
+<app-confirmation-modal
+  [isOpen]="isRefundModalOpen()"
+  title="Confirmar Reembolso"
+  [message]="'¿Estás seguro de que quieres reembolsar el pago de ' + (reservationToRefund()?.totalCost | currency) + ' para la reserva ' + reservationToRefund()?.id + '?'"
+  confirmButtonText="Sí, Procesar Reembolso"
+  (confirm)="confirmRefund()"
+  (close)="closeRefundModal()">
+</app-confirmation-modal>
