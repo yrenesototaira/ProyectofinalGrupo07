@@ -8,6 +8,14 @@ export const APP_ROUTES: Routes = [
     loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent)
   },
   {
+    path: 'nosotros',
+    loadComponent: () => import('./features/nosotros/nosotros.component').then(m => m.NosotrosComponent)
+  },
+  {
+    path: 'carta',
+    loadComponent: () => import('./features/carta/carta.component').then(m => m.CartaComponent)
+  },
+  {
     path: 'booking',
     loadComponent: () => import('./features/booking/booking.component').then(m => m.BookingComponent)
   },
