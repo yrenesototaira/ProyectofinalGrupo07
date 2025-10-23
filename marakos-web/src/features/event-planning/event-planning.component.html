@@ -1,0 +1,779 @@
+<div class="max-w-6xl mx-auto bg-slate-800 rounded-lg shadow-2xl shadow-black/30 overflow-hidden">
+  <!-- Progress Bar -->
+  <div class="p-6 border-b border-slate-700">
+    <div class="flex items-center justify-between">
+      @for(stepInfo of ['Datos', 'Fecha', 'Distribución', 'Servicios', 'Resumen', 'Pago']; track stepInfo; let i = $index) {
+        <div class="flex items-center" [class.opacity-50]="step() < i + 1">
+          <div class="flex items-center justify-center w-10 h-10 rounded-full" 
+               [class]="step() >= i + 1 ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-slate-400'">
+            <span class="font-bold">{{ i + 1 }}</span>
+          </div>
+          <span class="ml-3 font-medium hidden md:block" 
+                [class]="step() >= i + 1 ? 'text-amber-500' : 'text-slate-400'">
+            {{ stepInfo }}
+          </span>
+        </div>
+        @if (i < 5) {
+          <div class="flex-auto border-t-2 mx-2 md:mx-4" 
+               [class]="step() > i + 1 ? 'border-amber-500' : 'border-slate-700'"></div>
+        }
+      }
+    </div>
+  </div>
+
+  <div class="p-8">
+    @switch (step()) {
+      <!-- Step 1: Customer Details, Event Type, Payment Method -->
+      @case (1) {
+        <div class="animate-fade-in">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">
+            🎉 Reservar Evento Marakos Grill
+          </h2>
+          <p class="text-slate-300 text-center mb-8">Planifica tu evento perfecto con nosotros</p>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Customer Details -->
+            <div class="space-y-6">
+              <h3 class="text-xl font-semibold text-amber-500 mb-4">📋 Datos del Titular</h3>
+              
+              <div>
+                <label for="customerName" class="block text-sm font-medium text-slate-300 mb-2">
+                  Nombre y Apellido *
+                </label>
+                <input 
+                  type="text" 
+                  id="customerName" 
+                  required
+                  [value]="eventReservation().customerName"
+                  (input)="updateCustomerField('customerName', $event.target.value)"
+                  [readOnly]="!!currentUser()"
+                  class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
+                  [class.cursor-not-allowed]="!!currentUser()"
+                  [class.bg-slate-800]="!!currentUser()"
+                  placeholder="Ingresa tu nombre completo">
+              </div>
+
+              <div>
+                <label for="customerEmail" class="block text-sm font-medium text-slate-300 mb-2">
+                  Correo Electrónico *
+                </label>
+                <input 
+                  type="email" 
+                  id="customerEmail" 
+                  required
+                  [value]="eventReservation().customerEmail"
+                  (input)="updateCustomerField('customerEmail', $event.target.value)"
+                  [readOnly]="!!currentUser()"
+                  class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
+                  [class.cursor-not-allowed]="!!currentUser()"
+                  [class.bg-slate-800]="!!currentUser()"
+                  placeholder="tu@email.com">
+              </div>
+
+              <div>
+                <label for="customerPhone" class="block text-sm font-medium text-slate-300 mb-2">
+                  Teléfono *
+                </label>
+                <input 
+                  type="tel" 
+                  id="customerPhone" 
+                  required
+                  [value]="eventReservation().customerPhone"
+                  (input)="updateCustomerField('customerPhone', $event.target.value)"
+                  class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
+                  placeholder="+51 999 999 999">
+              </div>
+
+              <!-- Payment Method -->
+              <div>
+                <h4 class="text-lg font-semibold text-amber-500 mb-3">💳 Método de Pago</h4>
+                <div class="grid grid-cols-2 gap-4">
+                  <button 
+                    (click)="selectPaymentMethod('online')"
+                    class="p-4 rounded-lg border-2 transition-all duration-300"
+                    [class.bg-amber-500]="eventReservation().paymentMethod === 'online'"
+                    [class.border-amber-500]="eventReservation().paymentMethod === 'online'"
+                    [class.text-slate-900]="eventReservation().paymentMethod === 'online'"
+                    [class.border-slate-600]="eventReservation().paymentMethod !== 'online'"
+                    [class.text-slate-300]="eventReservation().paymentMethod !== 'online'">
+                    <div class="text-center">
+                      <div class="text-2xl mb-2">💳</div>
+                      <div class="font-semibold">Online</div>
+                      <div class="text-xs opacity-75">Pago con tarjeta</div>
+                    </div>
+                  </button>
+                  
+                  <button 
+                    (click)="selectPaymentMethod('presencial')"
+                    class="p-4 rounded-lg border-2 transition-all duration-300"
+                    [class.bg-amber-500]="eventReservation().paymentMethod === 'presencial'"
+                    [class.border-amber-500]="eventReservation().paymentMethod === 'presencial'"
+                    [class.text-slate-900]="eventReservation().paymentMethod === 'presencial'"
+                    [class.border-slate-600]="eventReservation().paymentMethod !== 'presencial'"
+                    [class.text-slate-300]="eventReservation().paymentMethod !== 'presencial'">
+                    <div class="text-center">
+                      <div class="text-2xl mb-2">🏪</div>
+                      <div class="font-semibold">Presencial</div>
+                      <div class="text-xs opacity-75">Pago en local</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Event Type Selection -->
+            <div>
+              <h3 class="text-xl font-semibold text-amber-500 mb-4">🎊 Tipo de Evento</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                @for(eventType of eventTypes(); track eventType.id) {
+                  <button 
+                    (click)="selectEventType(eventType)"
+                    class="p-4 rounded-lg border-2 transition-all duration-300 text-left"
+                    [class.bg-amber-500]="eventReservation().eventType?.id === eventType.id"
+                    [class.border-amber-500]="eventReservation().eventType?.id === eventType.id"
+                    [class.text-slate-900]="eventReservation().eventType?.id === eventType.id"
+                    [class.border-slate-600]="eventReservation().eventType?.id !== eventType.id"
+                    [class.text-slate-300]="eventReservation().eventType?.id !== eventType.id"
+                    [class.hover:border-amber-400]="eventReservation().eventType?.id !== eventType.id">
+                    <div class="flex items-center">
+                      <span class="text-2xl mr-3">{{ eventType.icon }}</span>
+                      <div>
+                        <div class="font-semibold">{{ eventType.name }}</div>
+                        <div class="text-xs opacity-75">{{ eventType.description }}</div>
+                        <div class="text-sm font-bold mt-1">S/ {{ eventType.basePrice }}</div>
+                      </div>
+                    </div>
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 text-center">
+            <button 
+              (click)="nextStep()" 
+              [disabled]="!canProceedFromStep1()"
+              class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
+              Continuar 🠮
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Step 2: Calendar, Shift, Guest Count -->
+      @case (2) {
+        <div class="animate-fade-in">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">📅 Fecha y Horario</h2>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Calendar -->
+            <div>
+              <h3 class="text-xl font-semibold text-amber-500 mb-4">Selecciona la Fecha</h3>
+              <div class="bg-slate-700 rounded-lg p-6">
+                <!-- Calendar Header -->
+                <div class="flex items-center justify-between mb-4">
+                  <button (click)="previousMonth()" class="p-2 rounded-full hover:bg-slate-600 transition-colors">
+                    <span class="text-xl">‹</span>
+                  </button>
+                  <h4 class="text-lg font-semibold">{{ getMonthName() }} {{ currentCalendarYear() }}</h4>
+                  <button (click)="nextMonth()" class="p-2 rounded-full hover:bg-slate-600 transition-colors">
+                    <span class="text-xl">›</span>
+                  </button>
+                </div>
+
+                <!-- Days of week -->
+                <div class="grid grid-cols-7 gap-1 mb-2">
+                  @for(day of ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']; track day) {
+                    <div class="text-center text-sm font-medium text-slate-400 p-2">{{ day }}</div>
+                  }
+                </div>
+
+                <!-- Calendar Days -->
+                <div class="grid grid-cols-7 gap-1">
+                  @for(day of getCalendarDays(); track day) {
+                    <button 
+                      (click)="selectCalendarDate(day)"
+                      [disabled]="!isDateAvailable(day)"
+                      class="p-3 text-sm rounded-lg transition-all duration-200"
+                      [class.bg-amber-500]="isDateSelected(day)"
+                      [class.text-slate-900]="isDateSelected(day)"
+                      [class.font-bold]="isDateSelected(day)"
+                      [class.bg-emerald-600]="isDateAvailable(day) && !isDateSelected(day)"
+                      [class.hover:bg-emerald-500]="isDateAvailable(day) && !isDateSelected(day)"
+                      [class.text-white]="isDateAvailable(day) && !isDateSelected(day)"
+                      [class.bg-slate-600]="!isDateAvailable(day)"
+                      [class.text-slate-500]="!isDateAvailable(day)"
+                      [class.cursor-not-allowed]="!isDateAvailable(day)">
+                      {{ day || '' }}
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Shift and Guest Selection -->
+            <div class="space-y-6">
+              <!-- Guest Count -->
+              <div>
+                <h3 class="text-xl font-semibold text-amber-500 mb-4">👥 Número de Invitados</h3>
+                <div class="flex items-center gap-4">
+                  <button 
+                    (click)="updateGuestCount(eventReservation().numberOfGuests - 5)"
+                    [disabled]="eventReservation().numberOfGuests <= 5"
+                    class="w-10 h-10 rounded-full bg-slate-600 hover:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    -
+                  </button>
+                  <div class="flex-1 text-center">
+                    <input 
+                      type="number" 
+                      min="1" 
+                      max="100"
+                      [value]="eventReservation().numberOfGuests"
+                      (input)="updateGuestCount(Number($event.target.value))"
+                      class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 text-center text-xl font-bold focus:ring-amber-500 focus:border-amber-500">
+                    <div class="text-sm text-slate-400 mt-1">personas (máx. 100)</div>
+                  </div>
+                  <button 
+                    (click)="updateGuestCount(eventReservation().numberOfGuests + 5)"
+                    [disabled]="eventReservation().numberOfGuests >= 100"
+                    class="w-10 h-10 rounded-full bg-slate-600 hover:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <!-- Time Shift Selection -->
+              <div>
+                <h3 class="text-xl font-semibold text-amber-500 mb-4">⏰ Turno</h3>
+                <div class="space-y-3">
+                  @for(shift of eventShifts(); track shift.id) {
+                    <button 
+                      (click)="selectShift(shift)"
+                      class="w-full p-4 rounded-lg border-2 transition-all duration-300 text-left"
+                      [class.bg-amber-500]="eventReservation().selectedShift?.id === shift.id"
+                      [class.border-amber-500]="eventReservation().selectedShift?.id === shift.id"
+                      [class.text-slate-900]="eventReservation().selectedShift?.id === shift.id"
+                      [class.border-slate-600]="eventReservation().selectedShift?.id !== shift.id"
+                      [class.text-slate-300]="eventReservation().selectedShift?.id !== shift.id"
+                      [class.hover:border-amber-400]="eventReservation().selectedShift?.id !== shift.id">
+                      <div class="flex justify-between items-center">
+                        <div>
+                          <div class="font-semibold">{{ shift.name }}</div>
+                          <div class="text-sm opacity-75">{{ shift.timeRange }}</div>
+                        </div>
+                        <div class="font-bold">S/ {{ shift.price }}</div>
+                      </div>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 flex justify-between">
+            <button 
+              (click)="prevStep()" 
+              class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">
+              🠬 Atrás
+            </button>
+            <button 
+              (click)="nextStep()" 
+              [disabled]="!canProceedFromStep2()"
+              class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
+              Continuar 🠮
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Step 3: Table Distribution, Linen, Menu -->
+      @case (3) {
+        <div class="animate-fade-in">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">🪑 Distribución y Decoración</h2>
+          
+          <div class="space-y-8">
+            <!-- Table Distribution -->
+            <div>
+              <h3 class="text-xl font-semibold text-amber-500 mb-4">Distribución de Mesas</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                @for(distribution of tableDistributions(); track distribution.id) {
+                  <button 
+                    (click)="selectTableDistribution(distribution)"
+                    [disabled]="distribution.maxCapacity < eventReservation().numberOfGuests"
+                    class="p-4 rounded-lg border-2 transition-all duration-300 text-left relative"
+                    [class.bg-amber-500]="eventReservation().tableDistribution?.id === distribution.id"
+                    [class.border-amber-500]="eventReservation().tableDistribution?.id === distribution.id"
+                    [class.text-slate-900]="eventReservation().tableDistribution?.id === distribution.id"
+                    [class.border-slate-600]="eventReservation().tableDistribution?.id !== distribution.id && distribution.maxCapacity >= eventReservation().numberOfGuests"
+                    [class.text-slate-300]="eventReservation().tableDistribution?.id !== distribution.id && distribution.maxCapacity >= eventReservation().numberOfGuests"
+                    [class.border-red-500]="distribution.maxCapacity < eventReservation().numberOfGuests"
+                    [class.bg-red-900]="distribution.maxCapacity < eventReservation().numberOfGuests"
+                    [class.text-red-300]="distribution.maxCapacity < eventReservation().numberOfGuests"
+                    [class.opacity-50]="distribution.maxCapacity < eventReservation().numberOfGuests"
+                    [class.cursor-not-allowed]="distribution.maxCapacity < eventReservation().numberOfGuests"
+                    [class.hover:border-amber-400]="eventReservation().tableDistribution?.id !== distribution.id && distribution.maxCapacity >= eventReservation().numberOfGuests">
+                    <div class="font-semibold">{{ distribution.name }}</div>
+                    <div class="text-sm opacity-75 mb-2">{{ distribution.description }}</div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-sm">Máx. {{ distribution.maxCapacity }} personas</span>
+                      <span class="font-bold">S/ {{ distribution.price }}</span>
+                    </div>
+                    @if(distribution.maxCapacity < eventReservation().numberOfGuests) {
+                      <div class="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                        Insuficiente
+                      </div>
+                    }
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Linen Color -->
+            <div>
+              <h3 class="text-xl font-semibold text-amber-500 mb-4">🎨 Color de Mantelería</h3>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                @for(color of linenColors(); track color.id) {
+                  <button 
+                    (click)="selectLinenColor(color)"
+                    class="p-4 rounded-lg border-2 transition-all duration-300"
+                    [class.border-amber-500]="eventReservation().linenColor?.id === color.id"
+                    [class.border-slate-600]="eventReservation().linenColor?.id !== color.id"
+                    [class.ring-4]="eventReservation().linenColor?.id === color.id"
+                    [class.ring-amber-400]="eventReservation().linenColor?.id === color.id">
+                    <div class="text-center">
+                      <div class="w-16 h-16 rounded-full mx-auto mb-2 border-2 border-slate-400" 
+                           [style.background-color]="color.hexColor"></div>
+                      <div class="font-semibold text-slate-100">{{ color.name }}</div>
+                      <div class="text-sm font-bold text-amber-400">S/ {{ color.price }}</div>
+                    </div>
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Menu Option -->
+            <div>
+              <h3 class="text-xl font-semibold text-amber-500 mb-4">🍽️ Menú del Evento</h3>
+              <div class="bg-slate-700 rounded-lg p-6">
+                <label class="flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    [checked]="eventReservation().includeMenu"
+                    (change)="toggleMenuIncluded()"
+                    class="h-4 w-4 rounded border-slate-500 bg-slate-600 text-amber-600 focus:ring-amber-500 mr-3">
+                  <div>
+                    <span class="text-lg font-semibold text-slate-100">¿Deseas reservar el menú para tu evento?</span>
+                    <p class="text-sm text-slate-400">Puedes pre-ordenar la comida para tus invitados</p>
+                  </div>
+                </label>
+
+                @if(eventReservation().includeMenu) {
+                  <div class="mt-6">
+                    <button 
+                      (click)="isMenuModalOpen.set(true)"
+                      class="bg-amber-500 text-slate-900 font-bold py-3 px-6 rounded-lg hover:bg-amber-400 transition-all">
+                      Seleccionar Platos del Menú
+                    </button>
+                    
+                    @if(eventReservation().menuItems.length > 0) {
+                      <div class="mt-4">
+                        <h4 class="font-semibold text-slate-100 mb-2">Platos Seleccionados:</h4>
+                        @for(orderItem of eventReservation().menuItems; track orderItem.item.id) {
+                          <div class="flex justify-between items-center bg-slate-800 p-3 rounded mb-2">
+                            <span>{{ orderItem.item.name }} x {{ orderItem.quantity }}</span>
+                            <span class="font-bold text-amber-400">S/ {{ (orderItem.item.price * orderItem.quantity) }}</span>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 flex justify-between">
+            <button 
+              (click)="prevStep()" 
+              class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">
+              🠬 Atrás
+            </button>
+            <button 
+              (click)="nextStep()" 
+              [disabled]="!canProceedFromStep3()"
+              class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
+              Continuar 🠮
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Step 4: Additional Services -->
+      @case (4) {
+        <div class="animate-fade-in">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">✨ Servicios Adicionales</h2>
+          <p class="text-slate-300 text-center mb-8">Complementa tu evento con servicios profesionales</p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @for(service of additionalServices(); track service.id) {
+              <button 
+                class="w-full p-6 rounded-lg border-2 transition-all duration-300 cursor-pointer"
+                [class.bg-amber-500]="isServiceSelected(service.id)"
+                [class.border-amber-500]="isServiceSelected(service.id)"
+                [class.text-slate-900]="isServiceSelected(service.id)"
+                [class.border-slate-600]="!isServiceSelected(service.id)"
+                [class.text-slate-300]="!isServiceSelected(service.id)"
+                [class.hover:border-amber-400]="!isServiceSelected(service.id)"
+                (click)="toggleAdditionalService(service)"
+                [attr.aria-pressed]="isServiceSelected(service.id)">
+                <div class="text-center">
+                  <div class="text-4xl mb-3">{{ service.icon }}</div>
+                  <h4 class="text-xl font-bold mb-2">{{ service.name }}</h4>
+                  <p class="text-sm opacity-75 mb-3">{{ service.description }}</p>
+                  <div class="text-lg font-bold">S/ {{ service.price }}</div>
+                  @if(isServiceSelected(service.id)) {
+                    <div class="mt-3 text-sm font-semibold">✓ Seleccionado</div>
+                  }
+                </div>
+              </button>
+            }
+          </div>
+
+          <div class="mt-8 flex justify-between">
+            <button 
+              (click)="prevStep()" 
+              class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">
+              🠬 Atrás
+            </button>
+            <button 
+              (click)="nextStep()" 
+              class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all">
+              Continuar 🠮
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Step 5: Summary -->
+      @case (5) {
+        <div class="animate-fade-in">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">📋 Resumen del Evento</h2>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Event Details -->
+            <div class="space-y-6">
+              <div class="bg-slate-700 p-6 rounded-lg">
+                <h3 class="text-xl font-semibold text-amber-500 mb-4">Detalles del Evento</h3>
+                <div class="space-y-3">
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Titular:</span>
+                    <span class="font-semibold">{{ eventReservation().customerName }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Email:</span>
+                    <span class="font-semibold">{{ eventReservation().customerEmail }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Teléfono:</span>
+                    <span class="font-semibold">{{ eventReservation().customerPhone }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Tipo de Evento:</span>
+                    <span class="font-semibold">{{ eventReservation().eventType?.icon }} {{ eventReservation().eventType?.name }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Fecha:</span>
+                    <span class="font-semibold">{{ eventReservation().selectedDate }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Turno:</span>
+                    <span class="font-semibold">{{ eventReservation().selectedShift?.name }} ({{ eventReservation().selectedShift?.timeRange }})</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Invitados:</span>
+                    <span class="font-semibold">{{ eventReservation().numberOfGuests }} personas</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Distribución:</span>
+                    <span class="font-semibold">{{ eventReservation().tableDistribution?.name }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Mantelería:</span>
+                    <span class="font-semibold">{{ eventReservation().linenColor?.name }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Método de Pago:</span>
+                    <span class="font-semibold capitalize">{{ eventReservation().paymentMethod }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Special Requests -->
+              <div class="bg-slate-700 p-6 rounded-lg">
+                <h3 class="text-xl font-semibold text-amber-500 mb-4">Peticiones Especiales</h3>
+                <textarea 
+                  [value]="eventReservation().specialRequests"
+                  (input)="updateSpecialRequests($event)"
+                  rows="4" 
+                  class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500" 
+                  placeholder="Ej: Decoración temática, alergias alimentarias, música específica, etc."></textarea>
+              </div>
+            </div>
+
+            <!-- Cost Breakdown -->
+            <div class="space-y-6">
+              <div class="bg-slate-700 p-6 rounded-lg">
+                <h3 class="text-xl font-semibold text-amber-500 mb-4">Desglose de Costos</h3>
+                <div class="space-y-3">
+                  @if(eventReservation().eventType) {
+                    <div class="flex justify-between">
+                      <span>{{ eventReservation().eventType.name }}</span>
+                      <span>S/ {{ eventReservation().eventType.basePrice }}</span>
+                    </div>
+                  }
+                  @if(eventReservation().selectedShift) {
+                    <div class="flex justify-between">
+                      <span>Turno {{ eventReservation().selectedShift.name }}</span>
+                      <span>S/ {{ eventReservation().selectedShift.price }}</span>
+                    </div>
+                  }
+                  @if(eventReservation().tableDistribution) {
+                    <div class="flex justify-between">
+                      <span>Distribución {{ eventReservation().tableDistribution.name }}</span>
+                      <span>S/ {{ eventReservation().tableDistribution.price }}</span>
+                    </div>
+                  }
+                  @if(eventReservation().linenColor) {
+                    <div class="flex justify-between">
+                      <span>Mantelería {{ eventReservation().linenColor.name }}</span>
+                      <span>S/ {{ eventReservation().linenColor.price }}</span>
+                    </div>
+                  }
+                  
+                  @if(eventReservation().menuItems.length > 0) {
+                    <hr class="border-slate-600">
+                    <div class="font-semibold text-amber-400">Menú:</div>
+                    @for(orderItem of eventReservation().menuItems; track orderItem.item.id) {
+                      <div class="flex justify-between text-sm">
+                        <span>{{ orderItem.item.name }} x{{ orderItem.quantity }}</span>
+                        <span>S/ {{ (orderItem.item.price * orderItem.quantity) }}</span>
+                      </div>
+                    }
+                  }
+
+                  @if(eventReservation().additionalServices.length > 0) {
+                    <hr class="border-slate-600">
+                    <div class="font-semibold text-amber-400">Servicios Adicionales:</div>
+                    @for(service of eventReservation().additionalServices; track service.id) {
+                      <div class="flex justify-between text-sm">
+                        <span>{{ service.icon }} {{ service.name }}</span>
+                        <span>S/ {{ service.price }}</span>
+                      </div>
+                    }
+                  }
+
+                  <hr class="border-slate-600">
+                  <div class="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>S/ {{ eventReservation().subtotal }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>IGV (18%):</span>
+                    <span>S/ {{ eventReservation().taxes }}</span>
+                  </div>
+                  <hr class="border-slate-600">
+                  <div class="flex justify-between text-xl font-bold text-amber-500">
+                    <span>Total:</span>
+                    <span>S/ {{ eventReservation().total }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Terms and Conditions -->
+              <div class="bg-slate-700 p-6 rounded-lg">
+                <label class="flex items-start cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    [checked]="eventReservation().termsAccepted"
+                    (change)="updateTermsAccepted($event)"
+                    class="h-4 w-4 rounded border-slate-500 bg-slate-600 text-amber-600 focus:ring-amber-500 mt-1 mr-3">
+                  <div>
+                    <span class="text-lg font-semibold text-slate-100">Acepto los términos y condiciones</span>
+                    <p class="text-sm text-slate-400 mt-1">
+                      Al marcar esta casilla, confirmo que he leído y acepto los 
+                      <button type="button" (click)="isTermsModalOpen.set(true)" class="text-amber-500 hover:underline">
+                        términos y condiciones
+                      </button> del servicio de eventos.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 flex justify-between">
+            <button 
+              (click)="prevStep()" 
+              class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">
+              🠬 Atrás
+            </button>
+            <button 
+              (click)="nextStep()" 
+              [disabled]="!canProceedFromStep5()"
+              class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
+              @if(eventReservation().paymentMethod === 'online') {
+                Proceder al Pago 💳
+              } @else {
+                Confirmar Evento ✨
+              }
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Step 6: Payment & Confirmation -->
+      @case (6) {
+        <div class="animate-fade-in">
+          @if(eventReservation().paymentMethod === 'online') {
+            <!-- Online Payment -->
+            <div class="text-center">
+              <h2 class="text-3xl font-bold text-slate-100 mb-6">💳 Pago Online</h2>
+              <p class="text-slate-300 mb-8">Procesando pago con Culqi...</p>
+              
+              <div class="max-w-md mx-auto bg-slate-700 p-8 rounded-lg">
+                <div class="text-2xl font-bold text-amber-500 mb-4">
+                  Total a Pagar: S/ {{ eventReservation().total }}
+                </div>
+                
+                <!-- Culqi Payment Simulation -->
+                <div class="bg-slate-800 p-6 rounded-lg mb-6">
+                  <div class="text-lg font-semibold mb-4">🔒 Pago Seguro</div>
+                  <div class="text-sm text-slate-400 mb-4">
+                    Integración con Culqi - Servicio por implementar
+                  </div>
+                  <div class="space-y-3">
+                    <input type="text" placeholder="Número de Tarjeta" class="w-full bg-slate-600 p-3 rounded-md text-center">
+                    <div class="flex gap-3">
+                      <input type="text" placeholder="MM/AA" class="w-1/2 bg-slate-600 p-3 rounded-md text-center">
+                      <input type="text" placeholder="CVC" class="w-1/2 bg-slate-600 p-3 rounded-md text-center">
+                    </div>
+                    <input type="text" placeholder="Nombre en la Tarjeta" class="w-full bg-slate-600 p-3 rounded-md text-center">
+                  </div>
+                </div>
+
+                <button 
+                  (click)="processEventPayment()"
+                  class="w-full bg-emerald-500 text-white font-bold py-4 px-6 rounded-lg hover:bg-emerald-600 transition-all">
+                  Confirmar Pago 💳
+                </button>
+              </div>
+            </div>
+          } @else {
+            <!-- Presencial Payment Confirmation -->
+            <div class="text-center">
+              <h2 class="text-3xl font-bold text-slate-100 mb-6">✅ Confirmación de Evento</h2>
+              <p class="text-slate-300 mb-8">Tu evento ha sido reservado exitosamente</p>
+              
+              <div class="max-w-md mx-auto bg-slate-700 p-8 rounded-lg mb-8">
+                <div class="text-6xl mb-4">🎉</div>
+                <h3 class="text-2xl font-bold text-amber-500 mb-4">¡Reserva Confirmada!</h3>
+                <p class="text-slate-300 mb-6">
+                  Tu evento {{ eventReservation().eventType?.name }} para {{ eventReservation().numberOfGuests }} personas 
+                  ha sido reservado para el {{ eventReservation().selectedDate }}.
+                </p>
+                
+                <!-- QR Code Simulation -->
+                <div class="bg-white p-4 rounded-lg inline-block mb-4">
+                  <div class="w-32 h-32 bg-gray-200 flex items-center justify-center text-gray-600 text-xs">
+                    QR Code<br/>por generar
+                  </div>
+                </div>
+                
+                <p class="text-sm text-slate-400 mb-6">
+                  📱 Se ha enviado una notificación por WhatsApp con los detalles de tu reserva
+                  <br/><em>(Servicio por implementar)</em>
+                </p>
+                
+                <div class="bg-amber-500 text-slate-900 p-4 rounded-lg mb-4">
+                  <div class="font-bold text-lg">Total: S/ {{ eventReservation().total }}</div>
+                  <div class="text-sm">Pago presencial en el restaurante</div>
+                </div>
+              </div>
+
+              <button 
+                (click)="finalizeEventReservation()"
+                class="bg-amber-500 text-slate-900 font-bold py-4 px-8 rounded-full hover:bg-amber-400 transition-all">
+                Finalizar ✨
+              </button>
+            </div>
+          }
+
+          <div class="mt-8 text-center">
+            @if(eventReservation().paymentMethod === 'online') {
+              <button 
+                (click)="prevStep()" 
+                class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all mr-4">
+                🠬 Atrás
+              </button>
+            }
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>
+
+<!-- Menu Selection Modal -->
+<app-modal [isOpen]="isMenuModalOpen()" title="🍽️ Seleccionar Menú" (closeModal)="isMenuModalOpen.set(false)">
+  <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
+    @for(item of menu(); track item.id) {
+      <div class="flex items-center justify-between bg-slate-700 p-4 rounded-lg gap-4">
+        <div class="flex items-center gap-4 flex-grow">
+          @if(item.imageUrl) {
+            <img [src]="item.imageUrl" [alt]="item.name" class="w-20 h-20 object-cover rounded-md flex-shrink-0">
+          } @else {
+            <div class="w-20 h-20 bg-slate-600 rounded-md flex-shrink-0 flex items-center justify-center text-xs text-slate-400">Sin foto</div>
+          }
+          <div>
+            <h4 class="font-bold text-lg text-slate-100">{{ item.name }}</h4>
+            <p class="text-sm text-slate-400">{{ item.description }}</p>
+            <p class="text-amber-500 font-semibold mt-1">S/ {{ item.price }}</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-3 flex-shrink-0">
+          @if (getMenuItemQuantity(item.id) > 0) {
+            <button (click)="removeMenuItemFromEvent(item.id)" class="w-8 h-8 rounded-full bg-slate-600 hover:bg-slate-500 text-slate-100">-</button>
+            <span class="w-8 text-center font-bold text-slate-100">{{ getMenuItemQuantity(item.id) }}</span>
+          }
+          <button (click)="addMenuItemToEvent(item)" class="w-8 h-8 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-900">+</button>
+        </div>
+      </div>
+    }
+  </div>
+</app-modal>
+
+<!-- Terms and Conditions Modal -->
+<app-modal [isOpen]="isTermsModalOpen()" title="📋 Términos y Condiciones - Eventos" (closeModal)="isTermsModalOpen.set(false)">
+  <div class="space-y-4 text-slate-300 max-h-[60vh] overflow-y-auto pr-4 text-sm">
+    <h4 class="font-bold text-slate-100 text-base">1. Reserva y Confirmación</h4>
+    <p>Al realizar una reserva de evento, usted acepta las condiciones especificadas y se compromete a cumplir con los términos de servicio. La reserva queda confirmada una vez completado el proceso de pago (online) o firmado el contrato (presencial).</p>
+    
+    <h4 class="font-bold text-slate-100 text-base">2. Política de Pagos</h4>
+    <p><strong>Pago Online:</strong> El pago completo se procesa inmediatamente a través de Culqi. <strong>Pago Presencial:</strong> Se requiere un adelanto del 50% para confirmar la reserva, el saldo se abona el día del evento.</p>
+    
+    <h4 class="font-bold text-slate-100 text-base">3. Cancelaciones y Modificaciones</h4>
+    <p>Las cancelaciones con más de 48 horas de anticipación tendrán un reembolso del 80%. Cancelaciones con menos de 48 horas no tienen reembolso. Modificaciones de fecha están sujetas a disponibilidad y pueden tener costos adicionales.</p>
+
+    <h4 class="font-bold text-slate-100 text-base">4. Capacidad y Distribución</h4>
+    <p>El número de invitados no puede exceder la capacidad máxima de la distribución de mesas seleccionada. Cambios en el número de invitados deben notificarse con al menos 24 horas de anticipación.</p>
+    
+    <h4 class="font-bold text-slate-100 text-base">5. Servicios Adicionales</h4>
+    <p>Los servicios adicionales (DJ, mozos, bartender) están sujetos a disponibilidad. La contratación de servicios externos debe ser coordinada previamente con la administración del restaurante.</p>
+
+    <h4 class="font-bold text-slate-100 text-base">6. Responsabilidades</h4>
+    <p>El cliente es responsable del comportamiento de sus invitados y cualquier daño causado durante el evento. Marakos Grill se reserva el derecho de terminar el evento si se violan las normas del establecimiento.</p>
+
+    <h4 class="font-bold text-slate-100 text-base">7. Menú y Alergias</h4>
+    <p>Los menús pre-ordenados no pueden modificarse el día del evento. Es responsabilidad del cliente informar sobre alergias alimentarias en las peticiones especiales durante la reserva.</p>
+  </div>
+</app-modal>

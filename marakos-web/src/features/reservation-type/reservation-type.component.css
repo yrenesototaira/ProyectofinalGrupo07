@@ -1,0 +1,243 @@
+/* Estilos específicos para el componente de selección de tipo de reserva */
+
+.reservation-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.reservation-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Animación de entrada para las tarjetas */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reservation-type-card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.reservation-type-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+/* Efectos hover personalizados */
+.reservation-card .icon-container {
+  transition: transform 0.3s ease;
+}
+
+.reservation-card:hover .icon-container {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Gradientes personalizados para botones */
+.btn-mesa {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.btn-evento {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.btn-mesa:hover,
+.btn-evento:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Efectos de partículas de fondo */
+.bg-particles {
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-particles::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(245, 158, 11, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Estilos específicos para el carrusel de proveedores */
+.carousel-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+.carousel-slide {
+  transition: transform 0.5s ease-in-out;
+}
+
+.provider-card {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(147, 51, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.provider-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(147, 51, 234, 0.3);
+  border-color: rgba(147, 51, 234, 0.5);
+}
+
+.provider-image {
+  transition: transform 0.3s ease;
+}
+
+.provider-card:hover .provider-image {
+  transform: scale(1.05);
+}
+
+/* Animaciones para botones de contacto */
+.contact-button {
+  transition: all 0.3s ease;
+}
+
+.contact-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Efectos para controles del carrusel */
+.carousel-control {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.carousel-control:hover {
+  background: rgba(0, 0, 0, 0.7);
+  transform: scale(1.1);
+}
+
+/* Indicadores del carrusel */
+.carousel-indicator {
+  transition: all 0.3s ease;
+}
+
+.carousel-indicator.active {
+  background: #f59e0b;
+  transform: scale(1.2);
+}
+
+.carousel-indicator:not(.active) {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.carousel-indicator:not(.active):hover {
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(1.1);
+}
+
+/* Badge patrocinado */
+.sponsored-badge {
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Efectos de rating */
+.rating-badge {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.provider-card:hover .rating-badge {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.05);
+}
+
+/* Servicios tags */
+.service-tag {
+  background: rgba(147, 51, 234, 0.2);
+  border: 1px solid rgba(147, 51, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.service-tag:hover {
+  background: rgba(147, 51, 234, 0.3);
+  border-color: rgba(147, 51, 234, 0.5);
+  transform: scale(1.05);
+}
+
+/* Disclaimer styling */
+.disclaimer {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .reservation-card {
+    margin-bottom: 2rem;
+  }
+  
+  .provider-card {
+    margin: 0 0.5rem;
+  }
+  
+  .carousel-control {
+    display: none; /* Ocultar controles en móvil, usar swipe */
+  }
+  
+  .contact-button {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .provider-card .grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .provider-image {
+    height: 200px;
+  }
+  
+  .contact-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
