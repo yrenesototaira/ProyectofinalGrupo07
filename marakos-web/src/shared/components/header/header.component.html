@@ -1,10 +1,16 @@
 <header class="bg-slate-900/80 backdrop-blur-sm fixed top-0 left-0 right-0 z-50 border-b border-slate-700">
   <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-    <a routerLink="/" class="text-2xl font-bold text-amber-500 hover:text-amber-400 transition-colors">
-      Marakos Grill
+    <a routerLink="/" class="flex items-center space-x-3 text-2xl font-bold text-amber-500 hover:text-amber-400 transition-colors">
+      <!-- Logo Oficial Marakos Grill -->
+      <img src="https://www.marakos.pe/imagenes/logo2.png" 
+           alt="Marakos Grill Logo" 
+           class="h-10 w-auto object-contain hover:scale-105 transition-transform duration-300">
+      <span>Marakos Grill</span>
     </a>
     <div class="hidden md:flex items-center space-x-4">
       <a routerLink="/" routerLinkActive="text-amber-400" [routerLinkActiveOptions]="{exact: true}" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Inicio</a>
+      <a routerLink="/nosotros" routerLinkActive="text-amber-400" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Nosotros</a>
+      <a routerLink="/carta" routerLinkActive="text-amber-400" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Carta</a>
       <a routerLink="/booking" routerLinkActive="text-amber-400" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Reservar</a>
       @if (currentUser()) {
         @if(authService.isAdmin()){

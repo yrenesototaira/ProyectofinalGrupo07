@@ -1,0 +1,169 @@
+<div class="min-h-screen bg-slate-900 pt-20">
+  <!-- Hero Section -->
+  <div class="relative bg-gradient-to-r from-slate-800 to-slate-900 py-20">
+    <div 
+      class="absolute inset-0 bg-cover bg-center opacity-10" 
+      style="background-image: url('https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1974&q=80')">
+    </div>
+    <div class="relative container mx-auto px-6 text-center">
+      <h1 class="text-5xl md:text-6xl font-bold text-white mb-6">
+        Conoce <span class="text-amber-500">Marakos Grill</span>
+      </h1>
+      <p class="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+        Somos más que un restaurante, somos una familia apasionada por el arte de la parrilla, 
+        comprometida con ofrecerte la mejor experiencia gastronómica de Chiclayo.
+      </p>
+    </div>
+  </div>
+
+  <!-- Historia Section -->
+  <div class="container mx-auto px-6 py-16">
+    <div class="grid lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <h2 class="text-4xl font-bold text-white mb-6">Nuestra Historia</h2>
+        <div class="space-y-4 text-slate-300 text-lg leading-relaxed">
+          <p>
+            <strong class="text-amber-500">Somos una empresa que supera los 27 años ininterrumpidos</strong> 
+            de atención y liderazgo en la ciudad de Chiclayo en el rubro de restaurantes y parrillas. 
+            Durante más de dos décadas, hemos sido pioneros en brindar la mejor experiencia gastronómica del norte peruano.
+          </p>
+          <p>
+            Atendemos todo tipo de eventos y reservas corporativas, ofreciendo alternativas de acuerdo 
+            a su necesidad y disponibilidad, todo diseñado para su mayor deleite y agrado. 
+            <strong class="text-amber-500">Nos caracterizamos por tener un ambiente rústico, moderno, 
+            cómodo y acogedor</strong>, para que puedas compartir con tu pareja, familia o amigos 
+            de gratos e inolvidables momentos.
+          </p>
+          <p>
+            Los invitamos a visitarnos y conocer personalmente nuestro moderno local y desde ya 
+            les damos una cordial bienvenida. Estamos seguros que nuestra propuesta cubrirá todas 
+            sus expectativas y vivirás una experiencia gastronómica única en 
+            <strong class="text-amber-500">Marakos Grill</strong>.
+          </p>
+        </div>
+      </div>
+      <div class="relative">
+        <img 
+          src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+          alt="Restaurante Marakos Grill" 
+          class="rounded-lg shadow-2xl hover:scale-105 transition-transform duration-300">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent rounded-lg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Valores Section -->
+  <div class="bg-slate-800/50 py-16">
+    <div class="container mx-auto px-6">
+      <h2 class="text-4xl font-bold text-white text-center mb-12">Nuestros Valores</h2>
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        @for (value of values; track $index) {
+          <div class="bg-slate-800 rounded-lg p-6 text-center hover:bg-slate-700 transition-colors hover:scale-105 transform duration-300">
+            <div class="text-4xl mb-4">{{ value.icon }}</div>
+            <h3 class="text-xl font-bold text-amber-500 mb-3">{{ value.title }}</h3>
+            <p class="text-slate-300 text-sm leading-relaxed">{{ value.description }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Misión y Visión Section -->
+  <div class="container mx-auto px-6 py-16">
+    <h2 class="text-4xl font-bold text-white text-center mb-12">Misión y Visión</h2>
+    <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12">
+      
+      <!-- Misión -->
+      <div class="bg-slate-800 rounded-lg p-8 hover:bg-slate-700 transition-colors group">
+        <div class="flex items-center mb-6">
+          <div class="bg-amber-500 rounded-full p-3 mr-4 group-hover:scale-110 transition-transform">
+            <svg class="w-8 h-8 text-slate-900" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <h3 class="text-3xl font-bold text-amber-500">Misión</h3>
+        </div>
+        <p class="text-slate-300 text-lg leading-relaxed">
+          Atender al mercado lambayecano con <strong class="text-amber-400">alimentos preparados de calidad</strong> 
+          mediante la utilización de materia prima fresca proveniente de agricultores y ganaderos regionales, 
+          ayudando al desarrollo de nuestra localidad.
+        </p>
+        <p class="text-slate-300 text-lg leading-relaxed mt-4">
+          Asimismo, buscamos brindar oportunidades de empleo a más familias de nuestra comunidad, 
+          brindándoles un lugar de trabajo seguro y amigable donde puedan desarrollarse con excelencia, 
+          orientados a la <strong class="text-amber-400">alta calidad y vocación del buen servicio</strong>.
+        </p>
+      </div>
+
+      <!-- Visión -->
+      <div class="bg-slate-800 rounded-lg p-8 hover:bg-slate-700 transition-colors group">
+        <div class="flex items-center mb-6">
+          <div class="bg-amber-500 rounded-full p-3 mr-4 group-hover:scale-110 transition-transform">
+            <svg class="w-8 h-8 text-slate-900" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+            </svg>
+          </div>
+          <h3 class="text-3xl font-bold text-amber-500">Visión</h3>
+        </div>
+        <p class="text-slate-300 text-lg leading-relaxed">
+          Ser la <strong class="text-amber-400">cadena de restaurantes con mayor prestigio</strong> 
+          de la región Lambayeque, destacado por la <strong class="text-amber-400">excelencia 
+          y alta calidad de cocina</strong>.
+        </p>
+        <div class="mt-6 p-4 bg-amber-500/10 rounded-lg border-l-4 border-amber-500">
+          <p class="text-amber-400 font-medium">
+            Comprometidos con ser el referente gastronómico del norte del Perú
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Equipo Section -->
+  <div class="bg-slate-800/50 py-16">
+    <div class="container mx-auto px-6">
+      <h2 class="text-4xl font-bold text-white text-center mb-12">Nuestro Equipo</h2>
+      <div class="grid md:grid-cols-3 gap-8">
+        @for (member of teamMembers; track $index) {
+          <div class="bg-slate-800 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 shadow-xl">
+            <div class="h-64 bg-cover bg-center" [style.background-image]="'url(' + member.image + ')'">
+              <div class="h-full bg-gradient-to-t from-slate-900/80 to-transparent flex items-end">
+                <div class="p-6 w-full">
+                  <h3 class="text-xl font-bold text-white mb-1">{{ member.name }}</h3>
+                  <p class="text-amber-500 font-medium text-sm">{{ member.position }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-slate-300 text-sm">{{ member.experience }}</p>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Call to Action -->
+  <div class="bg-gradient-to-r from-amber-600 to-amber-500 py-16">
+    <div class="container mx-auto px-6 text-center">
+      <h2 class="text-3xl font-bold text-slate-900 mb-4">
+        ¿Listo para Vivir la Experiencia Marakos?
+      </h2>
+      <p class="text-slate-800 mb-8 text-lg max-w-2xl mx-auto">
+        Te invitamos a ser parte de nuestra historia. Reserva tu mesa y descubre por qué 
+        somos el restaurante de parrilla líder de Chiclayo con más de 27 años de experiencia.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a routerLink="/booking" 
+           class="inline-block bg-slate-900 text-white font-bold py-4 px-8 rounded-full text-lg hover:bg-slate-800 transition-colors">
+          Reservar Mesa
+        </a>
+        <a routerLink="/carta" 
+           class="inline-block bg-transparent border-2 border-slate-900 text-slate-900 font-bold py-4 px-8 rounded-full text-lg hover:bg-slate-900 hover:text-white transition-colors">
+          Ver Nuestra Carta
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,120 @@
+<div class="min-h-screen bg-slate-900 pt-20">
+  <!-- Header Section -->
+  <div class="bg-gradient-to-r from-slate-800 to-slate-900 py-16">
+    <div class="container mx-auto px-6 text-center">
+      <h1 class="text-5xl md:text-6xl font-bold text-white mb-4">
+        Nuestra <span class="text-amber-500">Carta</span>
+      </h1>
+      <p class="text-xl text-slate-300 max-w-2xl mx-auto">
+        Descubre los auténticos sabores de la parrilla del norte del Perú con ingredientes frescos y recetas tradicionales
+      </p>
+    </div>
+  </div>
+
+  <!-- Popular Items Section -->
+  <div class="container mx-auto px-6 py-12">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold text-white mb-4">🔥 Platos Más Populares</h2>
+      <p class="text-slate-400">Los favoritos de nuestros clientes</p>
+    </div>
+    
+    <div class="grid md:grid-cols-3 gap-6 mb-16">
+      @for (item of popularItems; track item.id) {
+        <div class="bg-slate-800 rounded-lg overflow-hidden hover:bg-slate-700 transition-all duration-300 border border-slate-700 hover:border-amber-500/30 hover:scale-105">
+          <div class="h-48 bg-cover bg-center relative" [style.background-image]="'url(' + item.image + ')'">
+            <div class="absolute inset-0 bg-black/30"></div>
+            <span class="absolute top-4 right-4 bg-amber-500/90 text-slate-900 px-3 py-1 rounded-full text-xs font-bold">
+              Popular
+            </span>
+          </div>
+          <div class="p-6">
+            <div class="flex justify-between items-start mb-3">
+              <h3 class="text-xl font-semibold text-white">{{ item.name }}</h3>
+              <span class="text-amber-500 font-bold text-lg">S/{{ item.price }}</span>
+            </div>
+            <p class="text-slate-300 text-sm">{{ item.description }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Categories Filter -->
+  <div class="container mx-auto px-6 mb-8">
+    <div class="flex flex-wrap justify-center gap-4">
+      <button 
+        (click)="selectCategory('all')"
+        [class]="selectedCategory === 'all' ? 'bg-amber-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+        class="px-6 py-3 rounded-full font-medium transition-colors">
+        🍽️ Todo el Menú
+      </button>
+      @for (category of categories; track category.id) {
+        <button 
+          (click)="selectCategory(category.id)"
+          [class]="selectedCategory === category.id ? 'bg-amber-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+          class="px-6 py-3 rounded-full font-medium transition-colors">
+          {{ category.icon }} {{ category.name }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Menu Items Section -->
+  <div class="container mx-auto px-6 pb-16">
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      @for (item of filteredItems; track item.id) {
+        <div class="bg-slate-800 rounded-lg overflow-hidden hover:bg-slate-700 transition-all duration-300 border border-slate-700 hover:border-amber-500/30 hover:scale-105 menu-item">
+          @if (item.image) {
+            <div class="h-48 bg-cover bg-center relative" [style.background-image]="'url(' + item.image + ')'">
+              <div class="absolute inset-0 bg-black/30"></div>
+              @if (item.popular) {
+                <span class="absolute top-4 right-4 bg-amber-500/90 text-slate-900 px-3 py-1 rounded-full text-xs font-bold">
+                  Popular
+                </span>
+              }
+              <span class="absolute bottom-4 left-4 text-amber-500 font-bold text-2xl price">S/{{ item.price }}</span>
+            </div>
+          }
+          <div class="p-6">
+            <div class="flex justify-between items-start mb-3">
+              <h3 class="text-xl font-semibold text-white">{{ item.name }}</h3>
+              @if (!item.image) {
+                <span class="text-amber-500 font-bold text-lg">S/{{ item.price }}</span>
+              }
+            </div>
+            <p class="text-slate-300 text-sm mb-4">{{ item.description }}</p>
+            
+            @if (item.popular && !item.image) {
+              <span class="inline-block bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-xs font-medium mb-3">
+                Popular
+              </span>
+            }
+            
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400 text-xs capitalize">{{ item.category }}</span>
+              <button class="bg-amber-500 hover:bg-amber-600 text-slate-900 px-4 py-2 rounded-lg font-medium text-sm transition-colors">
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Call to Action -->
+  <div class="bg-gradient-to-r from-amber-600 to-amber-500 py-16">
+    <div class="container mx-auto px-6 text-center">
+      <h2 class="text-3xl font-bold text-slate-900 mb-4">
+        ¿Listo para Disfrutar?
+      </h2>
+      <p class="text-slate-800 mb-8 text-lg">
+        Reserva tu mesa ahora y vive la experiencia Marakos Grill
+      </p>
+      <a routerLink="/booking" 
+         class="inline-block bg-slate-900 text-white font-bold py-4 px-8 rounded-full text-lg hover:bg-slate-800 transition-colors">
+        Reservar Mesa
+      </a>
+    </div>
+  </div>
+</div>
