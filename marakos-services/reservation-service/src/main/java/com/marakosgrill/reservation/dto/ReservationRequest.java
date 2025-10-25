@@ -14,8 +14,6 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class ReservationRequest {
-    @NotBlank
-    private String code;
     @NotNull
     private Integer customerId;
     @NotNull
@@ -24,8 +22,6 @@ public class ReservationRequest {
     private LocalTime reservationTime;
     @NotNull
     private Integer peopleCount;
-    @NotBlank
-    private String status;
     @NotBlank
     private String paymentMethod;
     @NotBlank
@@ -40,7 +36,6 @@ public class ReservationRequest {
     private String holderEmail;
     private String observation;
     private Integer employeeId;
-    @NotNull
     private Integer createdBy;
     private List<ReservationProductRequest> products;
     private List<ReservationTableRequest> tables;
