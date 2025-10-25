@@ -16,8 +16,21 @@ export const APP_ROUTES: Routes = [
     loadComponent: () => import('./features/carta/carta.component').then(m => m.CartaComponent)
   },
   {
-    path: 'booking',
+    path: 'reservar',
+    loadComponent: () => import('./features/reservation-type/reservation-type.component').then(m => m.ReservationTypeComponent)
+  },
+  {
+    path: 'booking/mesa',
     loadComponent: () => import('./features/booking/booking.component').then(m => m.BookingComponent)
+  },
+  {
+    path: 'booking/evento',
+    loadComponent: () => import('./features/event-planning/event-planning.component').then(m => m.EventPlanningComponent)
+  },
+  {
+    path: 'booking',
+    redirectTo: 'reservar',
+    pathMatch: 'full'
   },
   {
     path: 'confirmation/:id',

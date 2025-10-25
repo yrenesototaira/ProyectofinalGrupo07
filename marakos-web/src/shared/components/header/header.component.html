@@ -1,17 +1,17 @@
 <header class="bg-slate-900/80 backdrop-blur-sm fixed top-0 left-0 right-0 z-50 border-b border-slate-700">
-  <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+  <nav class="container mx-auto px-6 py-4 flex justify-between items-center header-container">
     <a routerLink="/" class="flex items-center space-x-3 text-2xl font-bold text-amber-500 hover:text-amber-400 transition-colors">
       <!-- Logo Oficial Marakos Grill -->
       <img src="https://www.marakos.pe/imagenes/logo2.png" 
            alt="Marakos Grill Logo" 
-           class="h-10 w-auto object-contain hover:scale-105 transition-transform duration-300">
-      <span>Marakos Grill</span>
+           class="h-10 w-auto object-contain hover:scale-105 transition-transform duration-300 logo-image">
+      <span class="logo-text">Marakos Grill</span>
     </a>
     <div class="hidden md:flex items-center space-x-4">
       <a routerLink="/" routerLinkActive="text-amber-400" [routerLinkActiveOptions]="{exact: true}" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Inicio</a>
       <a routerLink="/nosotros" routerLinkActive="text-amber-400" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Nosotros</a>
       <a routerLink="/carta" routerLinkActive="text-amber-400" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Carta</a>
-      <a routerLink="/booking" routerLinkActive="text-amber-400" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Reservar</a>
+      <a routerLink="/reservar" routerLinkActive="text-amber-400" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Reservar</a>
       @if (currentUser()) {
         @if(authService.isAdmin()){
           <a routerLink="/admin" routerLinkActive="text-amber-400" class="text-slate-300 hover:text-amber-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">Panel de Admin</a>
@@ -25,11 +25,104 @@
     </div>
     <!-- Mobile menu button -->
     <div class="md:hidden">
-        <button class="text-slate-300 focus:outline-none">
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+        <button 
+          (click)="toggleMobileMenu()" 
+          class="text-slate-300 hover:text-amber-400 focus:outline-none focus:text-amber-400 transition-colors"
+          [attr.aria-expanded]="isMobileMenuOpen"
+          aria-label="Toggle mobile menu">
+            <!-- Hamburger icon -->
+            <svg 
+              *ngIf="!isMobileMenuOpen" 
+              class="h-6 w-6" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <!-- Close icon -->
+            <svg 
+              *ngIf="isMobileMenuOpen" 
+              class="h-6 w-6" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
         </button>
     </div>
   </nav>
+
+  <!-- Mobile menu -->
+  <div 
+    *ngIf="isMobileMenuOpen" 
+    class="md:hidden bg-slate-900/95 backdrop-blur-sm border-t border-slate-700 shadow-lg">
+    <div class="px-6 py-4 space-y-3">
+      <!-- Navigation Links -->
+      <a 
+        routerLink="/" 
+        routerLinkActive="text-amber-400 bg-slate-800" 
+        [routerLinkActiveOptions]="{exact: true}" 
+        (click)="closeMobileMenu()"
+        class="block text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 px-3 py-2 rounded-md text-base font-medium transition-colors">
+        🏠 Inicio
+      </a>
+      <a 
+        routerLink="/nosotros" 
+        routerLinkActive="text-amber-400 bg-slate-800" 
+        (click)="closeMobileMenu()"
+        class="block text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 px-3 py-2 rounded-md text-base font-medium transition-colors">
+        👥 Nosotros
+      </a>
+      <a 
+        routerLink="/carta" 
+        routerLinkActive="text-amber-400 bg-slate-800" 
+        (click)="closeMobileMenu()"
+        class="block text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 px-3 py-2 rounded-md text-base font-medium transition-colors">
+        🍽️ Carta
+      </a>
+      <a 
+        routerLink="/reservar" 
+        routerLinkActive="text-amber-400 bg-slate-800" 
+        (click)="closeMobileMenu()"
+        class="block text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 px-3 py-2 rounded-md text-base font-medium transition-colors">
+        📅 Reservar
+      </a>
+
+      <!-- Divider -->
+      <div class="border-t border-slate-700 my-4"></div>
+
+      <!-- User Section -->
+      @if (currentUser()) {
+        @if(authService.isAdmin()){
+          <a 
+            routerLink="/admin" 
+            routerLinkActive="text-amber-400 bg-slate-800" 
+            (click)="closeMobileMenu()"
+            class="block text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 px-3 py-2 rounded-md text-base font-medium transition-colors">
+            👑 Panel de Admin
+          </a>
+        } @else {
+          <a 
+            routerLink="/dashboard" 
+            routerLinkActive="text-amber-400 bg-slate-800" 
+            (click)="closeMobileMenu()"
+            class="block text-slate-300 hover:text-amber-400 hover:bg-slate-800/50 px-3 py-2 rounded-md text-base font-medium transition-colors">
+            📋 Mis Reservas
+          </a>
+        }
+        <button 
+          (click)="logout(); closeMobileMenu()" 
+          class="w-full text-left px-3 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 text-base font-medium transition-colors">
+          🚪 Cerrar Sesión
+        </button>
+      } @else {
+        <a 
+          routerLink="/login" 
+          (click)="closeMobileMenu()"
+          class="block px-3 py-2 bg-amber-500 text-slate-900 rounded-md hover:bg-amber-600 text-base font-medium transition-colors text-center">
+          🔑 Iniciar Sesión
+        </a>
+      }
+    </div>
+  </div>
 </header>
