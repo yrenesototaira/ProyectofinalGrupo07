@@ -43,12 +43,12 @@ public class ReservationServiceImpl implements ReservationService {
         }
         // Crear reserva principal
         Reservation reservation = Reservation.builder()
-                .code(request.getCode())
+                .code(generateReservationCode(request.getReservationDate()))
                 .customerId(request.getCustomerId())
                 .reservationDate(request.getReservationDate())
                 .reservationTime(request.getReservationTime())
                 .peopleCount(request.getPeopleCount())
-                .status(request.getStatus())
+                .status(RESERVATION_STATUS_PENDING)
                 .paymentMethod(request.getPaymentMethod())
                 .reservationType(request.getReservationType())
                 .eventType(request.getEventTypeId() != null ? EventType.builder().id(request.getEventTypeId()).build() : null)
@@ -341,12 +341,10 @@ public class ReservationServiceImpl implements ReservationService {
             }
         }
         // Actualizar datos principales
-        reservation.setCode(request.getCode());
         reservation.setCustomerId(request.getCustomerId());
         reservation.setReservationDate(request.getReservationDate());
         reservation.setReservationTime(request.getReservationTime());
         reservation.setPeopleCount(request.getPeopleCount());
-        reservation.setStatus(request.getStatus());
         reservation.setPaymentMethod(request.getPaymentMethod());
         reservation.setReservationType(request.getReservationType());
         reservation.setEventType(request.getEventTypeId() != null ? EventType.builder().id(request.getEventTypeId()).build() : null);
@@ -541,6 +539,29 @@ public class ReservationServiceImpl implements ReservationService {
                         .build()
         );
         return toResponse(reservation);
+    }
+
+    private String generateReservationCode(LocalDate reservationDate) {
+        String datePart = reservationDate.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String prefix = "RES-" + datePart + "-";
+        // Buscar el máximo correlativo para la fecha
+        int maxCorrelative = reservationRepository.findAll().stream()
+            .filter(r -> r.getCode() != null && r.getCode().startsWith(prefix))
+            .mapToInt(r -> {
+                String[] parts = r.getCode().split("-");
+                if (parts.length == 3) {
+                    try {
+                        return Integer.parseInt(parts[2]);
+                    } catch (NumberFormatException e) {
+                        return 0;
+                    }
+                }
+                return 0;
+            })
+            .max()
+            .orElse(0);
+        int newCorrelative = maxCorrelative + 1;
+        return prefix + String.format("%03d", newCorrelative);
     }
 
     private Integer parseShift(String shift) {
