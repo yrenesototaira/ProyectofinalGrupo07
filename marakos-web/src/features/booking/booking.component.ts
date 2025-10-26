@@ -23,21 +23,30 @@ export class BookingComponent {
 
   step = signal(1);
   
-  // Step 1 signals
+  // Step 1 signals - Customer Details
+  customerName = signal('');
+  customerEmail = signal('');
+  customerPhone = signal('');
+  
+  // Step 2 signals - Date & Time
   guests = signal(2);
   selectedDate = signal(this.getTodayDateString());
-  selectedTime = signal('19:00');
-  isCheckingAvailability = signal(false);
-  availabilityMessage = signal('');
+  selectedTime = signal('');
   
-  // Step 2 signals
+  // Calendar signals
+  currentCalendarMonth = signal(new Date().getMonth());
+  currentCalendarYear = signal(new Date().getFullYear());
+  availableDates = signal<string[]>([]);
+  availableTimes = signal<{ time: string; label: string; available: boolean }[]>([]);
+  
+  // Step 3 signals - Table Selection
   tables = this.restaurantDataService.getTables();
   selectedTable = signal<Table | null>(null);
   
-  // Step 3 signals
+  // Step 4 signals - Menu
   menu = this.restaurantDataService.getMenu();
 
-  // Step 4 signals
+  // Step 5 signals - Summary & Terms
   termsAccepted = signal(false);
   isTermsModalOpen = signal(false);
   
@@ -49,7 +58,39 @@ export class BookingComponent {
   currentUser = this.authService.currentUser;
 
   constructor() {
+    this.generateAvailableDates();
     this.bookingService.resetBooking();
+    
+    // Initialize customer data from current user session
+    // TODO: Replace with actual backend service call when ready
+    effect(() => {
+      const user = this.currentUser();
+      if (user) {
+        // Auto-fill customer data with current user info as default
+        this.customerName.set(user.name || '');
+        this.customerEmail.set(user.email || '');
+        this.customerPhone.set(user.phone || ''); // TODO: Add phone to user model
+      }
+    });
+    
+    // Update available times when date or guests change
+    effect(() => {
+      const date = this.selectedDate();
+      const guests = this.guests();
+      if (date) {
+        const times = this.restaurantDataService.getAvailableTimesForDate(date, guests);
+        this.availableTimes.set(times);
+        
+        // Auto-select first available time if no time is selected
+        if (!this.selectedTime() && times.some(t => t.available)) {
+          const firstAvailable = times.find(t => t.available);
+          if (firstAvailable) {
+            this.selectedTime.set(firstAvailable.time);
+          }
+        }
+      }
+    });
+    
     effect(() => {
       const user = this.currentUser();
       const currentRes = this.currentReservation();
@@ -82,18 +123,27 @@ export class BookingComponent {
     }
   }
 
+  // Step 1 - Customer Details Methods
+  canProceedFromStep1(): boolean {
+    return !!(this.customerName() && this.customerEmail() && this.customerPhone());
+  }
+
+  // Step 2 - Date & Time Methods
   async checkAvailability() {
-    this.isCheckingAvailability.set(true);
-    this.availabilityMessage.set('');
-    const available = await this.restaurantDataService.checkAvailability(this.selectedDate(), this.selectedTime(), this.guests());
-    if (available) {
-      this.availabilityMessage.set('¡Perfecto! Tenemos mesas disponibles en ese horario.');
-      this.bookingService.setBookingDetails({ date: this.selectedDate(), time: this.selectedTime(), guests: this.guests()});
-      setTimeout(() => this.nextStep(), 1500);
-    } else {
-      this.availabilityMessage.set('Lo sentimos, no hay mesas disponibles en el horario seleccionado. Por favor, intenta con otra hora.');
+    // This method is no longer needed - availability is checked automatically
+    // Just proceed to next step if date and time are selected
+    if (this.selectedDate() && this.selectedTime()) {
+      this.bookingService.setBookingDetails({ 
+        date: this.selectedDate(), 
+        time: this.selectedTime(), 
+        guests: this.guests()
+      });
+      this.nextStep();
     }
-    this.isCheckingAvailability.set(false);
+  }
+
+  canProceedFromStep2(): boolean {
+    return !!(this.selectedDate() && this.selectedTime() && this.availableTimes().some(t => t.time === this.selectedTime() && t.available));
   }
 
   selectTable(table: Table) {
@@ -120,11 +170,16 @@ export class BookingComponent {
     return this.currentReservation().menuItems.find(i => i.item.id === itemId)?.quantity ?? 0;
   }
 
-  updateCustomerDetails(field: 'name' | 'email', value: string) {
-    const current = this.currentReservation();
+  updateCustomerField(field: 'name' | 'email' | 'phone', value: string) {
+    // Update local signals
+    if (field === 'name') this.customerName.set(value);
+    if (field === 'email') this.customerEmail.set(value);
+    if (field === 'phone') this.customerPhone.set(value);
+    
+    // TODO: Add phone support to booking service when backend is ready
     this.bookingService.setCustomerDetails({
-      name: field === 'name' ? value : current.customerName,
-      email: field === 'email' ? value : current.customerEmail
+      name: this.customerName(),
+      email: this.customerEmail()
     });
   }
   
@@ -158,5 +213,90 @@ export class BookingComponent {
   finalizeReservation() {
     const reservationId = this.bookingService.confirmReservation();
     this.router.navigate(['/confirmation', reservationId]);
+  }
+
+  // Calendar methods
+  private generateAvailableDates() {
+    const dates = this.restaurantDataService.generateAvailableDatesForBooking();
+    this.availableDates.set(dates);
+  }
+
+  getCalendarDays(): (number | null)[] {
+    const year = this.currentCalendarYear();
+    const month = this.currentCalendarMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startingDayOfWeek = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+
+    const days: (number | null)[] = [];
+
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day);
+    }
+
+    return days;
+  }
+
+  isDateAvailable(day: number | null): boolean {
+    if (!day) return false;
+    
+    const year = this.currentCalendarYear();
+    const month = this.currentCalendarMonth();
+    const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    
+    return this.availableDates().includes(dateStr);
+  }
+
+  isDateSelected(day: number | null): boolean {
+    if (!day) return false;
+    
+    const year = this.currentCalendarYear();
+    const month = this.currentCalendarMonth();
+    const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    
+    return this.selectedDate() === dateStr;
+  }
+
+  selectCalendarDate(day: number | null) {
+    if (!day || !this.isDateAvailable(day)) return;
+    
+    const year = this.currentCalendarYear();
+    const month = this.currentCalendarMonth();
+    const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    
+    this.selectedDate.set(dateStr);
+  }
+
+  previousMonth() {
+    if (this.currentCalendarMonth() === 0) {
+      this.currentCalendarMonth.set(11);
+      this.currentCalendarYear.update(year => year - 1);
+    } else {
+      this.currentCalendarMonth.update(month => month - 1);
+    }
+  }
+
+  nextMonth() {
+    if (this.currentCalendarMonth() === 11) {
+      this.currentCalendarMonth.set(0);
+      this.currentCalendarYear.update(year => year + 1);
+    } else {
+      this.currentCalendarMonth.update(month => month + 1);
+    }
+  }
+
+  getMonthName(): string {
+    const months = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return months[this.currentCalendarMonth()];
   }
 }

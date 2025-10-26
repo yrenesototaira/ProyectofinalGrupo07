@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal, OnInit, AfterViewInit } from '@angular/core';
-import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 // Fix: Corrected import paths
 import { BookingService } from '../../core/services/booking.service';
@@ -7,7 +7,7 @@ import { Reservation } from '../../core/models/restaurant.model';
 
 @Component({
   selector: 'app-confirmation',
-  imports: [CommonModule, RouterLink, CurrencyPipe, DatePipe],
+  imports: [CommonModule, RouterLink, CurrencyPipe],
   templateUrl: './confirmation.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

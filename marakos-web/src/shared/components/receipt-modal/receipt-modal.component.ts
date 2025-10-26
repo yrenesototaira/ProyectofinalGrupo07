@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Reservation } from '../../../core/models/restaurant.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { inject } from '@angular/core';
 
 @Component({
   selector: 'app-receipt-modal',
-  imports: [CommonModule, CurrencyPipe, DatePipe],
+  imports: [CommonModule, CurrencyPipe],
   templateUrl: './receipt-modal.component.html',
   styleUrls: ['./receipt-modal.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

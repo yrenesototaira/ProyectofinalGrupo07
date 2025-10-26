@@ -2,20 +2,20 @@
   <!-- Progress Bar -->
   <div class="p-6 border-b border-slate-700">
     <div class="flex items-center justify-between">
-      @for(stepInfo of ['Datos', 'Fecha', 'Distribución', 'Servicios', 'Resumen', 'Pago']; track stepInfo; let i = $index) {
-        <div class="flex items-center" [class.opacity-50]="step() < i + 1">
+      @for(stepInfo of getStepLabels(); track stepInfo; let i = $index) {
+        <div class="flex items-center" [class.opacity-50]="!isStepCompleted(i)">
           <div class="flex items-center justify-center w-10 h-10 rounded-full" 
-               [class]="step() >= i + 1 ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-slate-400'">
+               [class]="isStepCompleted(i) ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-slate-400'">
             <span class="font-bold">{{ i + 1 }}</span>
           </div>
           <span class="ml-3 font-medium hidden md:block" 
-                [class]="step() >= i + 1 ? 'text-amber-500' : 'text-slate-400'">
+                [class]="isStepCompleted(i) ? 'text-amber-500' : 'text-slate-400'">
             {{ stepInfo }}
           </span>
         </div>
-        @if (i < 5) {
+        @if (i < getStepLabels().length - 1) {
           <div class="flex-auto border-t-2 mx-2 md:mx-4" 
-               [class]="step() > i + 1 ? 'border-amber-500' : 'border-slate-700'"></div>
+               [class]="isStepCompleted(i + 1) ? 'border-amber-500' : 'border-slate-700'"></div>
         }
       }
     </div>
@@ -45,7 +45,7 @@
                   id="customerName" 
                   required
                   [value]="eventReservation().customerName"
-                  (input)="updateCustomerField('customerName', $event.target.value)"
+                  (input)="updateCustomerField('customerName', $any($event.target).value)"
                   [readOnly]="!!currentUser()"
                   class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
                   [class.cursor-not-allowed]="!!currentUser()"
@@ -62,7 +62,7 @@
                   id="customerEmail" 
                   required
                   [value]="eventReservation().customerEmail"
-                  (input)="updateCustomerField('customerEmail', $event.target.value)"
+                  (input)="updateCustomerField('customerEmail', $any($event.target).value)"
                   [readOnly]="!!currentUser()"
                   class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
                   [class.cursor-not-allowed]="!!currentUser()"
@@ -79,8 +79,11 @@
                   id="customerPhone" 
                   required
                   [value]="eventReservation().customerPhone"
-                  (input)="updateCustomerField('customerPhone', $event.target.value)"
+                  (input)="updateCustomerField('customerPhone', $any($event.target).value)"
+                  [readOnly]="!!currentUser()"
                   class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
+                  [class.cursor-not-allowed]="!!currentUser()"
+                  [class.bg-slate-800]="!!currentUser()"
                   placeholder="+51 999 999 999">
               </div>
 
@@ -229,7 +232,7 @@
                       min="1" 
                       max="100"
                       [value]="eventReservation().numberOfGuests"
-                      (input)="updateGuestCount(Number($event.target.value))"
+                      (input)="updateGuestCount(Number($any($event.target).value))"
                       class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 text-center text-xl font-bold focus:ring-amber-500 focus:border-amber-500">
                     <div class="text-sm text-slate-400 mt-1">personas (máx. 100)</div>
                   </div>
@@ -368,23 +371,14 @@
                 </label>
 
                 @if(eventReservation().includeMenu) {
-                  <div class="mt-6">
-                    <button 
-                      (click)="isMenuModalOpen.set(true)"
-                      class="bg-amber-500 text-slate-900 font-bold py-3 px-6 rounded-lg hover:bg-amber-400 transition-all">
-                      Seleccionar Platos del Menú
-                    </button>
-                    
+                  <div class="mt-4 p-4 bg-slate-600 rounded-lg">
+                    <p class="text-slate-300 text-sm">
+                      ✅ El menú se seleccionará en el siguiente paso
+                    </p>
                     @if(eventReservation().menuItems.length > 0) {
-                      <div class="mt-4">
-                        <h4 class="font-semibold text-slate-100 mb-2">Platos Seleccionados:</h4>
-                        @for(orderItem of eventReservation().menuItems; track orderItem.item.id) {
-                          <div class="flex justify-between items-center bg-slate-800 p-3 rounded mb-2">
-                            <span>{{ orderItem.item.name }} x {{ orderItem.quantity }}</span>
-                            <span class="font-bold text-amber-400">S/ {{ (orderItem.item.price * orderItem.quantity) }}</span>
-                          </div>
-                        }
-                      </div>
+                      <p class="text-amber-400 text-sm mt-2">
+                        {{ eventReservation().menuItems.length }} platos seleccionados
+                      </p>
                     }
                   </div>
                 }
@@ -408,36 +402,152 @@
         </div>
       }
 
-      <!-- Step 4: Additional Services -->
+      <!-- Step 4: Menu Selection (Conditional) -->
       @case (4) {
+        <div class="animate-fade-in">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">🍽️ Selección de Menú</h2>
+          <p class="text-slate-300 text-center mb-8">Pre-ordena la comida para tu evento</p>
+          
+          <div class="space-y-4 max-h-96 overflow-y-auto pr-2">
+            @for(item of menuItems(); track item.id) {
+              <div class="flex items-center justify-between bg-slate-700 p-4 rounded-lg gap-4">
+                <div class="flex items-center gap-4 flex-grow">
+                  <div class="w-20 h-20 bg-slate-600 rounded-md flex-shrink-0 flex items-center justify-center text-xs text-slate-400">
+                    🍽️
+                  </div>
+                  <div>
+                    <h4 class="font-bold text-lg text-slate-100">{{ item.name }}</h4>
+                    <p class="text-sm text-slate-400">{{ item.description }}</p>
+                    <p class="text-amber-500 font-semibold mt-1">S/ {{ item.price }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-3 flex-shrink-0">
+                  @if (getMenuItemQuantity(item) > 0) {
+                    <button (click)="decreaseMenuItem(item)" class="w-8 h-8 rounded-full bg-slate-600 hover:bg-slate-500 text-slate-100">-</button>
+                    <span class="w-8 text-center font-bold text-slate-100">{{ getMenuItemQuantity(item) }}</span>
+                  }
+                  <button (click)="increaseMenuItem(item)" class="w-8 h-8 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-900">+</button>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="mt-8 flex justify-center gap-4">
+            <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">← Atrás</button>
+            <button 
+              (click)="nextStep()" 
+              [disabled]="!canProceedFromStep4()"
+              class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
+              Continuar →
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Step 5: Additional Services -->
+      @case (5) {
         <div class="animate-fade-in">
           <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">✨ Servicios Adicionales</h2>
           <p class="text-slate-300 text-center mb-8">Complementa tu evento con servicios profesionales</p>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            @for(service of additionalServices(); track service.id) {
-              <button 
-                class="w-full p-6 rounded-lg border-2 transition-all duration-300 cursor-pointer"
-                [class.bg-amber-500]="isServiceSelected(service.id)"
-                [class.border-amber-500]="isServiceSelected(service.id)"
-                [class.text-slate-900]="isServiceSelected(service.id)"
-                [class.border-slate-600]="!isServiceSelected(service.id)"
-                [class.text-slate-300]="!isServiceSelected(service.id)"
-                [class.hover:border-amber-400]="!isServiceSelected(service.id)"
-                (click)="toggleAdditionalService(service)"
-                [attr.aria-pressed]="isServiceSelected(service.id)">
-                <div class="text-center">
-                  <div class="text-4xl mb-3">{{ service.icon }}</div>
-                  <h4 class="text-xl font-bold mb-2">{{ service.name }}</h4>
-                  <p class="text-sm opacity-75 mb-3">{{ service.description }}</p>
-                  <div class="text-lg font-bold">S/ {{ service.price }}</div>
-                  @if(isServiceSelected(service.id)) {
-                    <div class="mt-3 text-sm font-semibold">✓ Seleccionado</div>
-                  }
-                </div>
-              </button>
-            }
-          </div>
+          <!-- Entertainment Services -->
+          @if(getServicesByCategory('entertainment').length > 0) {
+            <div class="mb-12">
+              <h3 class="text-2xl font-bold text-amber-400 mb-6 flex items-center">
+                🎭 <span class="ml-2">Entretenimiento</span>
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @for(service of getServicesByCategory('entertainment'); track service.id) {
+                  <button 
+                    class="w-full p-6 rounded-lg border-2 transition-all duration-300 cursor-pointer"
+                    [class.bg-amber-500]="isServiceSelected(service)"
+                    [class.border-amber-500]="isServiceSelected(service)"
+                    [class.text-slate-900]="isServiceSelected(service)"
+                    [class.border-slate-600]="!isServiceSelected(service)"
+                    [class.text-slate-300]="!isServiceSelected(service)"
+                    [class.hover:border-amber-400]="!isServiceSelected(service)"
+                    (click)="toggleAdditionalService(service)"
+                    [attr.aria-pressed]="isServiceSelected(service)">
+                    <div class="text-center">
+                      <div class="text-4xl mb-3">{{ service.icon }}</div>
+                      <h4 class="text-xl font-bold mb-2">{{ service.name }}</h4>
+                      <p class="text-sm opacity-75 mb-3">{{ service.description }}</p>
+                      <div class="text-lg font-bold">S/ {{ service.price }}</div>
+                      @if(isServiceSelected(service)) {
+                        <div class="mt-3 text-sm font-semibold">✓ Seleccionado</div>
+                      }
+                    </div>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Service Services -->
+          @if(getServicesByCategory('service').length > 0) {
+            <div class="mb-12">
+              <h3 class="text-2xl font-bold text-amber-400 mb-6 flex items-center">
+                🛎️ <span class="ml-2">Servicios</span>
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @for(service of getServicesByCategory('service'); track service.id) {
+                  <button 
+                    class="w-full p-6 rounded-lg border-2 transition-all duration-300 cursor-pointer"
+                    [class.bg-amber-500]="isServiceSelected(service)"
+                    [class.border-amber-500]="isServiceSelected(service)"
+                    [class.text-slate-900]="isServiceSelected(service)"
+                    [class.border-slate-600]="!isServiceSelected(service)"
+                    [class.text-slate-300]="!isServiceSelected(service)"
+                    [class.hover:border-amber-400]="!isServiceSelected(service)"
+                    (click)="toggleAdditionalService(service)"
+                    [attr.aria-pressed]="isServiceSelected(service)">
+                    <div class="text-center">
+                      <div class="text-4xl mb-3">{{ service.icon }}</div>
+                      <h4 class="text-xl font-bold mb-2">{{ service.name }}</h4>
+                      <p class="text-sm opacity-75 mb-3">{{ service.description }}</p>
+                      <div class="text-lg font-bold">S/ {{ service.price }}</div>
+                      @if(isServiceSelected(service)) {
+                        <div class="mt-3 text-sm font-semibold">✓ Seleccionado</div>
+                      }
+                    </div>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Catering Services -->
+          @if(getServicesByCategory('catering').length > 0) {
+            <div class="mb-8">
+              <h3 class="text-2xl font-bold text-amber-400 mb-6 flex items-center">
+                🍽️ <span class="ml-2">Catering</span>
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @for(service of getServicesByCategory('catering'); track service.id) {
+                  <button 
+                    class="w-full p-6 rounded-lg border-2 transition-all duration-300 cursor-pointer"
+                    [class.bg-amber-500]="isServiceSelected(service)"
+                    [class.border-amber-500]="isServiceSelected(service)"
+                    [class.text-slate-900]="isServiceSelected(service)"
+                    [class.border-slate-600]="!isServiceSelected(service)"
+                    [class.text-slate-300]="!isServiceSelected(service)"
+                    [class.hover:border-amber-400]="!isServiceSelected(service)"
+                    (click)="toggleAdditionalService(service)"
+                    [attr.aria-pressed]="isServiceSelected(service)">
+                    <div class="text-center">
+                      <div class="text-4xl mb-3">{{ service.icon }}</div>
+                      <h4 class="text-xl font-bold mb-2">{{ service.name }}</h4>
+                      <p class="text-sm opacity-75 mb-3">{{ service.description }}</p>
+                      <div class="text-lg font-bold">S/ {{ service.price }}</div>
+                      @if(isServiceSelected(service)) {
+                        <div class="mt-3 text-sm font-semibold">✓ Seleccionado</div>
+                      }
+                    </div>
+                  </button>
+                }
+              </div>
+            </div>
+          }
 
           <div class="mt-8 flex justify-between">
             <button 
@@ -454,8 +564,8 @@
         </div>
       }
 
-      <!-- Step 5: Summary -->
-      @case (5) {
+      <!-- Step 6: Summary -->
+      @case (6) {
         <div class="animate-fade-in">
           <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">📋 Resumen del Evento</h2>
           
@@ -513,7 +623,7 @@
                 <h3 class="text-xl font-semibold text-amber-500 mb-4">Peticiones Especiales</h3>
                 <textarea 
                   [value]="eventReservation().specialRequests"
-                  (input)="updateSpecialRequests($event)"
+                  (input)="updateSpecialRequests($any($event.target).value)"
                   rows="4" 
                   class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500" 
                   placeholder="Ej: Decoración temática, alergias alimentarias, música específica, etc."></textarea>
@@ -575,16 +685,16 @@
                   <hr class="border-slate-600">
                   <div class="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>S/ {{ eventReservation().subtotal }}</span>
+                    <span>S/ {{ calculateSubtotal() }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span>IGV (18%):</span>
-                    <span>S/ {{ eventReservation().taxes }}</span>
+                    <span>S/ {{ calculateTaxes() }}</span>
                   </div>
                   <hr class="border-slate-600">
                   <div class="flex justify-between text-xl font-bold text-amber-500">
                     <span>Total:</span>
-                    <span>S/ {{ eventReservation().total }}</span>
+                    <span>S/ {{ calculateTotal() }}</span>
                   </div>
                 </div>
               </div>
@@ -595,7 +705,7 @@
                   <input 
                     type="checkbox" 
                     [checked]="eventReservation().termsAccepted"
-                    (change)="updateTermsAccepted($event)"
+                    (change)="toggleTerms($any($event.target).checked)"
                     class="h-4 w-4 rounded border-slate-500 bg-slate-600 text-amber-600 focus:ring-amber-500 mt-1 mr-3">
                   <div>
                     <span class="text-lg font-semibold text-slate-100">Acepto los términos y condiciones</span>
@@ -619,7 +729,7 @@
             </button>
             <button 
               (click)="nextStep()" 
-              [disabled]="!canProceedFromStep5()"
+              [disabled]="!canProceedFromStep6()"
               class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
               @if(eventReservation().paymentMethod === 'online') {
                 Proceder al Pago 💳
@@ -631,8 +741,8 @@
         </div>
       }
 
-      <!-- Step 6: Payment & Confirmation -->
-      @case (6) {
+      <!-- Step 7: Payment & Confirmation -->
+      @case (7) {
         <div class="animate-fade-in">
           @if(eventReservation().paymentMethod === 'online') {
             <!-- Online Payment -->
@@ -642,7 +752,7 @@
               
               <div class="max-w-md mx-auto bg-slate-700 p-8 rounded-lg">
                 <div class="text-2xl font-bold text-amber-500 mb-4">
-                  Total a Pagar: S/ {{ eventReservation().total }}
+                  Total a Pagar: S/ {{ calculateTotal() }}
                 </div>
                 
                 <!-- Culqi Payment Simulation -->
@@ -662,7 +772,7 @@
                 </div>
 
                 <button 
-                  (click)="processEventPayment()"
+                  (click)="processPayment()"
                   class="w-full bg-emerald-500 text-white font-bold py-4 px-6 rounded-lg hover:bg-emerald-600 transition-all">
                   Confirmar Pago 💳
                 </button>
@@ -695,13 +805,13 @@
                 </p>
                 
                 <div class="bg-amber-500 text-slate-900 p-4 rounded-lg mb-4">
-                  <div class="font-bold text-lg">Total: S/ {{ eventReservation().total }}</div>
+                  <div class="font-bold text-lg">Total: S/ {{ calculateTotal() }}</div>
                   <div class="text-sm">Pago presencial en el restaurante</div>
                 </div>
               </div>
 
               <button 
-                (click)="finalizeEventReservation()"
+                (click)="confirmPresentialReservation()"
                 class="bg-amber-500 text-slate-900 font-bold py-4 px-8 rounded-full hover:bg-amber-400 transition-all">
                 Finalizar ✨
               </button>
@@ -723,57 +833,31 @@
   </div>
 </div>
 
-<!-- Menu Selection Modal -->
-<app-modal [isOpen]="isMenuModalOpen()" title="🍽️ Seleccionar Menú" (closeModal)="isMenuModalOpen.set(false)">
-  <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
-    @for(item of menu(); track item.id) {
-      <div class="flex items-center justify-between bg-slate-700 p-4 rounded-lg gap-4">
-        <div class="flex items-center gap-4 flex-grow">
-          @if(item.imageUrl) {
-            <img [src]="item.imageUrl" [alt]="item.name" class="w-20 h-20 object-cover rounded-md flex-shrink-0">
-          } @else {
-            <div class="w-20 h-20 bg-slate-600 rounded-md flex-shrink-0 flex items-center justify-center text-xs text-slate-400">Sin foto</div>
-          }
-          <div>
-            <h4 class="font-bold text-lg text-slate-100">{{ item.name }}</h4>
-            <p class="text-sm text-slate-400">{{ item.description }}</p>
-            <p class="text-amber-500 font-semibold mt-1">S/ {{ item.price }}</p>
-          </div>
-        </div>
-        <div class="flex items-center space-x-3 flex-shrink-0">
-          @if (getMenuItemQuantity(item.id) > 0) {
-            <button (click)="removeMenuItemFromEvent(item.id)" class="w-8 h-8 rounded-full bg-slate-600 hover:bg-slate-500 text-slate-100">-</button>
-            <span class="w-8 text-center font-bold text-slate-100">{{ getMenuItemQuantity(item.id) }}</span>
-          }
-          <button (click)="addMenuItemToEvent(item)" class="w-8 h-8 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-900">+</button>
-        </div>
-      </div>
-    }
-  </div>
-</app-modal>
-
 <!-- Terms and Conditions Modal -->
-<app-modal [isOpen]="isTermsModalOpen()" title="📋 Términos y Condiciones - Eventos" (closeModal)="isTermsModalOpen.set(false)">
+<app-modal [isOpen]="isTermsModalOpen()" title="Términos y Condiciones de Eventos" (closeModal)="isTermsModalOpen.set(false)">
   <div class="space-y-4 text-slate-300 max-h-[60vh] overflow-y-auto pr-4 text-sm">
-    <h4 class="font-bold text-slate-100 text-base">1. Reserva y Confirmación</h4>
-    <p>Al realizar una reserva de evento, usted acepta las condiciones especificadas y se compromete a cumplir con los términos de servicio. La reserva queda confirmada una vez completado el proceso de pago (online) o firmado el contrato (presencial).</p>
+    <h4 class="font-bold text-slate-100 text-base">1. Reserva y Pago</h4>
+    <p>Al realizar una reserva de evento, usted acepta los términos de uso de nuestras instalaciones y servicios. El pago del depósito del 50% es requerido para confirmar la reserva. El saldo restante debe liquidarse 48 horas antes del evento o al momento de la celebración según la modalidad de pago seleccionada.</p>
     
-    <h4 class="font-bold text-slate-100 text-base">2. Política de Pagos</h4>
-    <p><strong>Pago Online:</strong> El pago completo se procesa inmediatamente a través de Culqi. <strong>Pago Presencial:</strong> Se requiere un adelanto del 50% para confirmar la reserva, el saldo se abona el día del evento.</p>
+    <h4 class="font-bold text-slate-100 text-base">2. Política de Cancelación</h4>
+    <p>Las cancelaciones deben notificarse con al menos 72 horas de antelación para eventos de hasta 50 personas, y 7 días para eventos de más de 50 personas. Cancelaciones tardías estarán sujetas a penalizaciones del 30% del total. El día del evento no se aceptan cancelaciones y se cobrará el 100% del monto acordado.</p>
     
-    <h4 class="font-bold text-slate-100 text-base">3. Cancelaciones y Modificaciones</h4>
-    <p>Las cancelaciones con más de 48 horas de anticipación tendrán un reembolso del 80%. Cancelaciones con menos de 48 horas no tienen reembolso. Modificaciones de fecha están sujetas a disponibilidad y pueden tener costos adicionales.</p>
+    <h4 class="font-bold text-slate-100 text-base">3. Horarios y Puntualidad</h4>
+    <p>Los eventos tienen una duración máxima según el turno seleccionado. El tiempo de preparación y limpieza está incluido en estos horarios. Extensiones del evento están sujetas a disponibilidad y cargos adicionales de S/ 100 por hora. Le solicitamos puntualidad para optimizar el tiempo de su celebración.</p>
 
     <h4 class="font-bold text-slate-100 text-base">4. Capacidad y Distribución</h4>
-    <p>El número de invitados no puede exceder la capacidad máxima de la distribución de mesas seleccionada. Cambios en el número de invitados deben notificarse con al menos 24 horas de anticipación.</p>
+    <p>La capacidad máxima debe respetarse por motivos de seguridad y comodidad. Cambios en el número de invitados deben notificarse con al menos 48 horas de antelación. Incrementos pueden estar sujetos a cargos adicionales. La distribución de mesas seleccionada puede ajustarse según las necesidades del evento.</p>
     
     <h4 class="font-bold text-slate-100 text-base">5. Servicios Adicionales</h4>
-    <p>Los servicios adicionales (DJ, mozos, bartender) están sujetos a disponibilidad. La contratación de servicios externos debe ser coordinada previamente con la administración del restaurante.</p>
+    <p>Los servicios adicionales (DJ, fotografía, catering extra, etc.) son proporcionados por terceros especializados. Marakos Grill actúa como intermediario y no se responsabiliza por la calidad específica de estos servicios, aunque garantizamos que son proveedores de nuestra confianza.</p>
 
-    <h4 class="font-bold text-slate-100 text-base">6. Responsabilidades</h4>
-    <p>El cliente es responsable del comportamiento de sus invitados y cualquier daño causado durante el evento. Marakos Grill se reserva el derecho de terminar el evento si se violan las normas del establecimiento.</p>
+    <h4 class="font-bold text-slate-100 text-base">6. Menú y Alergias</h4>
+    <p>Si seleccionó pre-orden de menú, los cambios deben notificarse con 48 horas de antelación. Es responsabilidad del cliente informar sobre alergias alimentarias o restricciones dietéticas. Haremos todo lo posible por acomodar necesidades especiales, pero no nos hacemos responsables si la información no fue proporcionada con anticipación.</p>
 
-    <h4 class="font-bold text-slate-100 text-base">7. Menú y Alergias</h4>
-    <p>Los menús pre-ordenados no pueden modificarse el día del evento. Es responsabilidad del cliente informar sobre alergias alimentarias en las peticiones especiales durante la reserva.</p>
+    <h4 class="font-bold text-slate-100 text-base">7. Responsabilidad Civil</h4>
+    <p>El cliente es responsable de los daños que puedan ocasionar sus invitados a las instalaciones, mobiliario o equipo. Marakos Grill se reserva el derecho de interrumpir eventos que pongan en riesgo la seguridad de otros clientes o del personal, o que violen las normas del establecimiento.</p>
+
+    <h4 class="font-bold text-slate-100 text-base">8. Modificaciones</h4>
+    <p>Marakos Grill se reserva el derecho de modificar estos términos. Los clientes serán notificados de cambios importantes con al menos 30 días de antelación. Al aceptar estos términos, confirma haber leído y entendido todas las condiciones aquí establecidas.</p>
   </div>
 </app-modal>
