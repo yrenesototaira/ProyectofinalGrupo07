@@ -37,5 +37,10 @@ public class AuthController {
         authService.resetPassword(request);
         return ResponseEntity.ok().build();
     }
-}
 
+    @PostMapping("/update-password")
+    public ResponseEntity<Void> updateUserPassword(@RequestBody UserPasswordUpdateRequest request) {
+        authService.updateUserPassword(request);
+        return ResponseEntity.ok().build();
+    }
+}

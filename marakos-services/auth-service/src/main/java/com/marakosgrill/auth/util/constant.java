@@ -16,4 +16,11 @@ public class constant {
     public static final String USER_TYPE_NOT_FOUND = "Tipo de usuario no encontrado";
     public static final String DEFAULT_STATUS_ACTIVE = "ACTIVO";
     public static final Long DEFAULT_CREATED_BY_USER_ID = 1L; // ID del usuario de creación, por defecto 1 (admin)
+
+    //add more constants as needed. Tipo de usuario (0: Admin, 1: Empleado, 3: Cliente)
+    public static final Integer USER_TYPE_ADMIN = 0;
+    public static final Integer USER_TYPE_CLIENT = 1;
+    public static final Integer USER_TYPE_EMPLOYEE = 2;
+
+
 }
