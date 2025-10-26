@@ -29,6 +29,9 @@ public class ServiceEntity {
     @Column(name = "precio", nullable = false)
     private BigDecimal price;
 
+    @Column(name = "icono", length = 10)
+    private String icon;
+
     @Column(name = "estado", length = 20)
     private String status;
 

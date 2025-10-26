@@ -2,7 +2,7 @@
   <!-- Progress Bar -->
   <div class="p-6 border-b border-slate-700">
     <div class="flex items-center justify-between">
-      @for(stepInfo of ['Detalles', 'Mesa', 'Menú', 'Resumen', 'Pago']; track stepInfo; let i = $index) {
+      @for(stepInfo of ['Titular', 'Disponibilidad', 'Mesa', 'Menú', 'Resumen', 'Pago']; track stepInfo; let i = $index) {
         <div class="flex items-center" [class.opacity-50]="step() < i + 1">
           <div class="flex items-center justify-center w-10 h-10 rounded-full" [class]="step() >= i + 1 ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-slate-400'">
             <span class="font-bold">{{ i + 1 }}</span>
@@ -11,7 +11,7 @@
             {{ stepInfo }}
           </span>
         </div>
-        @if (i < 4) {
+        @if (i < 5) {
           <div class="flex-auto border-t-2 mx-4" [class]="step() > i + 1 ? 'border-amber-500' : 'border-slate-700'"></div>
         }
       }
@@ -20,49 +20,200 @@
 
   <div class="p-8">
     @switch (step()) {
-      <!-- Step 1: Date, Time, Guests -->
+      <!-- Step 1: Customer Details -->
       @case (1) {
         <div class="animate-fade-in">
-          <h2 class="text-3xl font-bold text-slate-100 mb-6">1. Encuentra tu Mesa</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">🍽️ Reserva tu Mesa</h2>
+          <p class="text-slate-300 text-center mb-8">Disfruta de un momento especial!</p>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Current User Info -->
             <div>
-              <label for="guests" class="block text-sm font-medium text-slate-300 mb-2">Comensales</label>
-              <select id="guests" [ngModel]="guests()" (ngModelChange)="guests.set($event)" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-                @for(i of [1,2,3,4,5,6,7,8]; track i) { <option [value]="i">{{ i }} Comensal{{ i > 1 ? 'es' : '' }}</option> }
-              </select>
+              <h3 class="text-xl font-semibold text-amber-500 mb-4">👥 Usuario</h3>
+              <div class="bg-slate-700 rounded-lg p-6">
+                <!-- TODO: Replace with actual user service data when backend is ready -->
+                <div class="space-y-4">
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Nombre:</span>
+                    <span class="font-semibold">{{ currentUser()?.name || 'Usuario Mockeado' }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Email:</span>
+                    <span class="font-semibold">{{ currentUser()?.email || 'usuario@marakos.com' }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Tipo:</span>
+                    <span class="font-semibold">{{ currentUser()?.role || 'Cliente' }}</span>
+                  </div>
+                </div>
+                <div class="mt-4 p-3 bg-blue-900 rounded-lg">
+                  <p class="text-blue-200 text-sm">
+                    💡 Puedes hacer la reserva para otra persona modificando los datos del titular
+                  </p>
+                </div>
+              </div>
             </div>
+
+            <!-- Reservation Holder Details -->
             <div>
-              <label for="date" class="block text-sm font-medium text-slate-300 mb-2">Fecha</label>
-              <input type="date" id="date" [ngModel]="selectedDate()" (ngModelChange)="selectedDate.set($event)" [min]="getTodayDateString()" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-            </div>
-            <div>
-              <label for="time" class="block text-sm font-medium text-slate-300 mb-2">Hora</label>
-              <select id="time" [ngModel]="selectedTime()" (ngModelChange)="selectedTime.set($event)" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-                <option value="18:00">06:00 PM</option>
-                <option value="19:00">07:00 PM</option>
-                <option value="20:00">08:00 PM</option>
-                <option value="21:00">09:00 PM</option>
-              </select>
+              <h3 class="text-xl font-semibold text-amber-500 mb-4">✏️ Datos del Titular</h3>
+              <div class="space-y-4">
+                <div>
+                  <label for="customerName" class="block text-sm font-medium text-slate-300 mb-2">Nombre Completo *</label>
+                  <input 
+                    type="text" 
+                    id="customerName" 
+                    [ngModel]="customerName()" 
+                    (ngModelChange)="updateCustomerField('name', $event)"
+                    placeholder="Ingresa el nombre completo"
+                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+                </div>
+                
+                <div>
+                  <label for="customerEmail" class="block text-sm font-medium text-slate-300 mb-2">Email *</label>
+                  <input 
+                    type="email" 
+                    id="customerEmail" 
+                    [ngModel]="customerEmail()" 
+                    (ngModelChange)="updateCustomerField('email', $event)"
+                    placeholder="ejemplo@correo.com"
+                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+                </div>
+                
+                <div>
+                  <label for="customerPhone" class="block text-sm font-medium text-slate-300 mb-2">Teléfono *</label>
+                  <input 
+                    type="tel" 
+                    id="customerPhone" 
+                    [ngModel]="customerPhone()" 
+                    (ngModelChange)="updateCustomerField('phone', $event)"
+                    placeholder="+51 999 888 777"
+                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+                </div>
+              </div>
             </div>
           </div>
+          
           <div class="mt-8 text-center">
-            <button (click)="checkAvailability()" [disabled]="isCheckingAvailability()" class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed">
-              @if (isCheckingAvailability()) {
-                <span>Verificando...</span>
-              } @else {
-                <span>Verificar Disponibilidad</span>
-              }
+            <button 
+              (click)="nextStep()" 
+              [disabled]="!canProceedFromStep1()"
+              class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
+              Continuar 🠮
             </button>
-            @if (availabilityMessage()) {
-              <p class="mt-4 text-sm" [class.text-emerald-400]="availabilityMessage().startsWith('¡Perfecto!')" [class.text-rose-400]="availabilityMessage().startsWith('Lo sentimos')">{{ availabilityMessage() }}</p>
-            }
           </div>
         </div>
       }
-      <!-- Step 2: Select Table -->
+      <!-- Step 2: Date, Time, Guests -->
       @case (2) {
         <div class="animate-fade-in">
-          <h2 class="text-3xl font-bold text-slate-100 mb-6">2. Selecciona tu Mesa</h2>
+          <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">📅 Elige la fecha y hora</h2>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Calendar -->
+            <div>
+              <h3 class="text-xl font-semibold text-amber-500 mb-4">Selecciona la Fecha</h3>
+              <div class="bg-slate-700 rounded-lg p-6">
+                <!-- Calendar Header -->
+                <div class="flex items-center justify-between mb-4">
+                  <button (click)="previousMonth()" class="p-2 rounded-full hover:bg-slate-600 transition-colors">
+                    <span class="text-xl">‹</span>
+                  </button>
+                  <h4 class="text-lg font-semibold">{{ getMonthName() }} {{ currentCalendarYear() }}</h4>
+                  <button (click)="nextMonth()" class="p-2 rounded-full hover:bg-slate-600 transition-colors">
+                    <span class="text-xl">›</span>
+                  </button>
+                </div>
+
+                <!-- Days of week -->
+                <div class="grid grid-cols-7 gap-1 mb-2">
+                  @for(day of ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']; track day) {
+                    <div class="text-center text-sm font-medium text-slate-400 p-2">{{ day }}</div>
+                  }
+                </div>
+
+                <!-- Calendar Days -->
+                <div class="grid grid-cols-7 gap-1">
+                  @for(day of getCalendarDays(); track day) {
+                    <button 
+                      (click)="selectCalendarDate(day)"
+                      [disabled]="!isDateAvailable(day)"
+                      class="p-3 text-sm rounded-lg transition-all duration-200"
+                      [class.bg-amber-500]="isDateSelected(day)"
+                      [class.text-slate-900]="isDateSelected(day)"
+                      [class.font-bold]="isDateSelected(day)"
+                      [class.bg-emerald-600]="isDateAvailable(day) && !isDateSelected(day)"
+                      [class.hover:bg-emerald-500]="isDateAvailable(day) && !isDateSelected(day)"
+                      [class.text-white]="isDateAvailable(day) && !isDateSelected(day)"
+                      [class.bg-slate-600]="!isDateAvailable(day)"
+                      [class.text-slate-500]="!isDateAvailable(day)"
+                      [class.cursor-not-allowed]="!isDateAvailable(day)">
+                      {{ day || '' }}
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Time and Guests Selection -->
+            <div class="space-y-6">
+              <!-- Guest Count -->
+              <div>
+                <label for="guests" class="block text-xl font-semibold text-amber-500 mb-4">👥 Número de Comensales</label>
+                <select id="guests" [ngModel]="guests()" (ngModelChange)="guests.set($event)" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+                  @for(i of [1,2,3,4,5,6,7,8]; track i) { <option [value]="i">{{ i }} Comensal{{ i > 1 ? 'es' : '' }}</option> }
+                </select>
+              </div>
+
+              <!-- Time Selection -->
+              <div>
+                <label for="time" class="block text-xl font-semibold text-amber-500 mb-4">🕐 Hora de la Reserva</label>
+                <div class="grid grid-cols-2 gap-3">
+                  @for(timeSlot of availableTimes(); track timeSlot.time) {
+                    <button 
+                      (click)="selectedTime.set(timeSlot.time)"
+                      [disabled]="!timeSlot.available"
+                      class="p-3 rounded-lg border-2 transition-all duration-300 text-sm"
+                      [class.bg-amber-500]="selectedTime() === timeSlot.time"
+                      [class.border-amber-500]="selectedTime() === timeSlot.time"
+                      [class.text-slate-900]="selectedTime() === timeSlot.time"
+                      [class.bg-emerald-600]="timeSlot.available && selectedTime() !== timeSlot.time"
+                      [class.border-emerald-600]="timeSlot.available && selectedTime() !== timeSlot.time"
+                      [class.text-white]="timeSlot.available && selectedTime() !== timeSlot.time"
+                      [class.hover:bg-emerald-500]="timeSlot.available && selectedTime() !== timeSlot.time"
+                      [class.bg-slate-600]="!timeSlot.available"
+                      [class.border-slate-600]="!timeSlot.available"
+                      [class.text-slate-500]="!timeSlot.available"
+                      [class.cursor-not-allowed]="!timeSlot.available">
+                      {{ timeSlot.label }}
+                      @if (!timeSlot.available) {
+                        <div class="text-xs opacity-75">No disponible</div>
+                      }
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-8 flex justify-center gap-4">
+            <button 
+              (click)="prevStep()" 
+              class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">
+              🠬 Atrás
+            </button>
+            <button 
+              (click)="checkAvailability()" 
+              [disabled]="!canProceedFromStep2()"
+              class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
+              Continuar 🠮
+            </button>
+          </div>
+        </div>
+      }
+      <!-- Step 3: Select Table -->
+      @case (3) {
+        <div class="animate-fade-in">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6">3. Selecciona tu Mesa</h2>
           <div class="p-6 bg-slate-900 rounded-lg">
             <div class="grid grid-cols-4 gap-4">
               @for(table of tables(); track table.id) {
@@ -83,15 +234,15 @@
               }
             </div>
           </div>
-          <div class="mt-8 flex justify-between">
+          <div class="mt-8 text-center">
             <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
           </div>
         </div>
       }
-      <!-- Step 3: Menu -->
-      @case (3) {
+      <!-- Step 4: Menu -->
+      @case (4) {
         <div class="animate-fade-in">
-          <h2 class="text-3xl font-bold text-slate-100 mb-6">3. Pre-ordena tu Comida (Opcional)</h2>
+          <h2 class="text-3xl font-bold text-slate-100 mb-6">4. Pre-ordena tu Comida (Opcional)</h2>
           <div class="space-y-4 max-h-96 overflow-y-auto pr-2">
             @for(item of menu(); track item.id) {
               <div class="flex items-center justify-between bg-slate-700 p-4 rounded-lg gap-4">
@@ -117,17 +268,23 @@
               </div>
             }
           </div>
-          <div class="mt-8 flex justify-between items-center">
+          <div class="mt-8 flex justify-center gap-4">
             <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
             <button (click)="nextStep()" class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all">Continuar al Resumen</button>
           </div>
         </div>
       }
-      <!-- Step 4: Summary -->
-      @case (4) {
+      <!-- Step 5: Summary -->
+      @case (5) {
         <div class="animate-fade-in">
-          <h2 class="text-3xl font-bold text-slate-100 mb-6">4. Resumen de la Reserva</h2>
+          <h2 class="text-3xl font-bold text-slate-100 mb-6">5. Resumen de la Reserva</h2>
           <div class="bg-slate-700 p-6 rounded-lg space-y-4">
+            <h4 class="text-lg font-semibold text-slate-100">Datos del Titular:</h4>
+            <div class="flex justify-between"><span class="text-slate-400">Nombre:</span> <span class="font-bold">{{ customerName() }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Email:</span> <span class="font-bold">{{ customerEmail() }}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Teléfono:</span> <span class="font-bold">{{ customerPhone() }}</span></div>
+            <hr class="border-slate-600">
+            <h4 class="text-lg font-semibold text-slate-100">Detalles de la Reserva:</h4>
             <div class="flex justify-between"><span class="text-slate-400">Fecha y Hora:</span> <span class="font-bold">{{ currentReservation().date }} a las {{ currentReservation().time }}</span></div>
             <div class="flex justify-between"><span class="text-slate-400">Comensales:</span> <span class="font-bold">{{ currentReservation().guests }}</span></div>
             <div class="flex justify-between"><span class="text-slate-400">Mesa:</span> <span class="font-bold">Mesa #{{ currentReservation().table?.id }}</span></div>
@@ -148,29 +305,8 @@
           </div>
 
           <div class="mt-6 bg-slate-700 p-6 rounded-lg space-y-4">
-            <h4 class="text-lg font-semibold text-slate-100">Tus Detalles</h4>
-            <div>
-              <label for="customerName" class="block text-sm font-medium text-slate-300 mb-2">Nombre Completo</label>
-              <input type="text" id="customerName" required
-                     [value]="currentReservation().customerName" 
-                     (input)="updateCustomerDetails('name', $event.target.value)"
-                     [readOnly]="!!currentUser()"
-                     class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
-                     [class.cursor-not-allowed]="!!currentUser()"
-                     [class.bg-slate-800]="!!currentUser()">
-            </div>
-            <div>
-              <label for="customerEmail" class="block text-sm font-medium text-slate-300 mb-2">Correo Electrónico</label>
-              <input type="email" id="customerEmail" required
-                     [value]="currentReservation().customerEmail" 
-                     (input)="updateCustomerDetails('email', $event.target.value)"
-                     [readOnly]="!!currentUser()"
-                     class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
-                     [class.cursor-not-allowed]="!!currentUser()"
-                     [class.bg-slate-800]="!!currentUser()">
-            </div>
-            <div>
-              <label for="specialRequests" class="block text-sm font-medium text-slate-300 mb-2">Peticiones Especiales (Opcional)</label>
+            <h4 class="text-lg font-semibold text-slate-100">Peticiones Especiales (Opcional)</h4>
+            <div>              
               <textarea id="specialRequests" [value]="currentReservation().specialRequests" (input)="updateSpecialRequests($event)" rows="3" class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500" placeholder="Ej: Alergias, celebración de cumpleaños, etc."></textarea>
             </div>
           </div>
@@ -184,7 +320,7 @@
             </div>
           }
 
-          <div class="mt-8 flex justify-between items-center">
+          <div class="mt-8 flex justify-center gap-4">
             <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
             <button (click)="completeBooking()"
                     [disabled]="(menuTotal() > 0 && !termsAccepted()) || !currentReservation().customerName || !currentReservation().customerEmail"
@@ -198,10 +334,10 @@
           </div>
         </div>
       }
-      <!-- Step 5: Payment -->
-      @case (5) {
+      <!-- Step 6: Payment -->
+      @case (6) {
         <div class="animate-fade-in">
-          <h2 class="text-3xl font-bold text-slate-100 mb-6">5. Detalles del Pago</h2>
+          <h2 class="text-3xl font-bold text-slate-100 mb-6">6. Detalles del Pago</h2>
           <div class="bg-slate-700 p-6 rounded-lg space-y-4">
             <div class="flex justify-between text-xl font-bold text-amber-500">
                 <span>Monto a Pagar:</span><span>{{ menuTotal() | currency }}</span>
@@ -223,9 +359,9 @@
               </div>
             }
           </div>
-          <div class="mt-8 flex justify-between">
+          <div class="mt-8 flex justify-center gap-4">
             <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
-            <button (click)="processPayment()" [disabled]="!paymentMethod()" class="bg-emerald-500 text-white font-bold py-3 px-8 rounded-full hover:bg-emerald-600 transition-all disabled:bg-slate-600">Finalizar Pago</button>
+            <button (click)="processPayment()" [disabled]="!paymentMethod()" class="bg-emerald-500 text-white font-bold py-3 px-8 rounded-full hover:bg-emerald-600 transition-all disabled:bg-slate-600">Finalizar</button>
           </div>
         </div>
       }
