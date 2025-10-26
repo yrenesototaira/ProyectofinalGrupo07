@@ -5,11 +5,79 @@
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
+  cursor: pointer;
+  user-select: none;
 }
 
 .reservation-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Efecto adicional para indicar que es clickeable */
+.reservation-card:active {
+  transform: translateY(-6px) scale(0.98);
+  transition: all 0.1s ease;
+}
+
+/* Efecto de ripple al hacer click */
+.reservation-card::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.reservation-card:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Efecto de pulsación sutil para indicar interactividad */
+.reservation-card {
+  animation: subtlePulse 3s ease-in-out infinite;
+}
+
+@keyframes subtlePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* Pausa la animación cuando el usuario hace hover */
+.reservation-card:hover {
+  animation-play-state: paused;
+}
+
+/* Indicador de hover más prominente */
+.reservation-card:hover {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Efecto de brillo en hover */
+.reservation-card:hover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  border-radius: 1rem;
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* Animación de entrada para las tarjetas */
