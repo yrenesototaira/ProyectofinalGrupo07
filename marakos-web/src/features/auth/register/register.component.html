@@ -8,10 +8,22 @@
     <form class="mt-8 space-y-6" (ngSubmit)="register()" #registerForm="ngForm">
       <div class="rounded-md shadow-sm">
         <div class="mb-4">
-          <label for="name" class="sr-only">Nombre</label>
-          <input id="name" name="name" type="text" required [(ngModel)]="name"
+          <label for="firstName" class="sr-only">Nombre</label>
+          <input id="firstName" name="firstName" type="text" required [(ngModel)]="firstName"
                  class="rounded relative block w-full px-3 py-2 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                 placeholder="Nombre completo">
+                 placeholder="Nombre">
+        </div>
+        <div class="mb-4">
+          <label for="lastName" class="sr-only">Apellido</label>
+          <input id="lastName" name="lastName" type="text" required [(ngModel)]="lastName"
+                 class="rounded relative block w-full px-3 py-2 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                 placeholder="Apellido">
+        </div>
+        <div class="mb-4">
+          <label for="phone" class="sr-only">Teléfono</label>
+          <input id="phone" name="phone" type="text" required [(ngModel)]="phone"
+                 class="rounded relative block w-full px-3 py-2 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                 placeholder="Teléfono">
         </div>
         <div class="mb-4">
           <label for="email-address" class="sr-only">Correo electrónico</label>
