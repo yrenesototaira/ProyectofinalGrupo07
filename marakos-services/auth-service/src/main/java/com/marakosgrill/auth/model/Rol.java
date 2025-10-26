@@ -3,38 +3,37 @@ package com.marakosgrill.auth.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "tipo_usuario")
+@Table(name = "rol")
 @Getter
 @Setter
-public class UserType {
+public class Rol {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_tipo_usuario")
-    private Integer id;
+    @Column(name = "id_rol")
+    private Long id;
 
     @Column(name = "nombre", nullable = false)
-    private String name;
+    private String nombre;
 
     @Column(name = "descripcion")
-    private String description;
+    private String descripcion;
 
     @Column(name = "id_usuario_creacion", nullable = false)
-    private Integer createdBy;
+    private Long idUsuarioCreacion;
 
     @Column(name = "fecha_creacion", nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime fechaCreacion;
 
     @Column(name = "id_usuario_modificacion")
-    private Integer updatedBy;
+    private Long idUsuarioModificacion;
 
     @Column(name = "fecha_modificacion")
-    private LocalDateTime updatedAt;
+    private LocalDateTime fechaModificacion;
 
     @Column(name = "registro_activo", nullable = false)
-    private Boolean active;
+    private Boolean registroActivo;
 }
 

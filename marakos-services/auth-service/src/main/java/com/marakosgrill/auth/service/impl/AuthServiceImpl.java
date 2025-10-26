@@ -2,9 +2,11 @@ package com.marakosgrill.auth.service.impl;
 
 import com.marakosgrill.auth.dto.*;
 import com.marakosgrill.auth.model.Client;
+import com.marakosgrill.auth.model.Employee;
 import com.marakosgrill.auth.model.User;
 import com.marakosgrill.auth.model.UserType;
 import com.marakosgrill.auth.repository.ClientRepository;
+import com.marakosgrill.auth.repository.EmployeeRepository;
 import com.marakosgrill.auth.repository.UserRepository;
 import com.marakosgrill.auth.repository.UserTypeRepository;
 import com.marakosgrill.auth.service.AuthService;
@@ -33,6 +35,8 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private ClientRepository clientRepository;
     @Autowired
+    private EmployeeRepository employeeRepository;
+    @Autowired
     private PasswordEncoder passwordEncoder;
     @Autowired
     private JwtService jwtService;
@@ -53,6 +57,41 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtService.generateToken(user);
         AuthLoginResponse response = new AuthLoginResponse();
         response.setToken(token);
+        response.setIdUsuario(user.getId().intValue());
+        response.setTipoUsuario(user.getUserType().getName());
+        response.setEmail(user.getEmail());
+
+        // Buscar datos de persona según tipo de usuario
+        Integer tipoUsuario = user.getUserType().getId();
+        if (USER_TYPE_CLIENT.equals(tipoUsuario)) {
+            Optional<Client> clientOpt = clientRepository.findByUser(user);
+            if (clientOpt.isPresent()) {
+                Client client = clientOpt.get();
+                response.setIdPersona(client.getId().intValue());
+                response.setNombre(client.getFirstName());
+                response.setApellido(client.getLastName());
+                response.setTelefono(client.getPhone());
+            } else {
+                response.setIdPersona(null);
+                response.setNombre(null);
+                response.setApellido(null);
+                response.setTelefono(null);
+            }
+        } else {
+            Optional<Employee> employeeOpt = employeeRepository.findByUser(user);
+            if (employeeOpt.isPresent()) {
+                Employee employee = employeeOpt.get();
+                response.setIdPersona(employee.getId().intValue());
+                response.setNombre(employee.getFirstName());
+                response.setApellido(employee.getLastName());
+                response.setTelefono(employee.getPhone());
+            } else {
+                response.setIdPersona(null);
+                response.setNombre(null);
+                response.setApellido(null);
+                response.setTelefono(null);
+            }
+        }
         return response;
     }
 
@@ -135,6 +174,14 @@ public class AuthServiceImpl implements AuthService {
         }
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setVerificationCode(null);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void updateUserPassword(UserPasswordUpdateRequest request) {
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
 
