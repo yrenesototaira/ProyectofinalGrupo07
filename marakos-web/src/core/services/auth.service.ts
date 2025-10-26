@@ -57,25 +57,7 @@ export class AuthService {
       })
     );
   }
-
-  register_old(name: string, email: string, password: string): boolean {
-    if (this.users().some(u => u.email === email)) {
-      return false; // User already exists
-    }
-    const newUser: User = {
-      id: `${Date.now()}`,
-      name,
-      email,
-      role: 'Cliente'
-    };
-    this.users.update(users => [...users, newUser]);
-    // Automatically log in the new user
-    this.currentUser.set(newUser);
-    localStorage.setItem(this.USER_KEY, JSON.stringify(newUser));
-    this.router.navigate(['/dashboard']);
-    return true;
-  }
-    
+   
   register(userData: any): Observable<any> {
     return this.http.post<any>(`${environment.apiUrl}/auth/register`, userData).pipe(
       tap(() => {
@@ -101,19 +83,15 @@ export class AuthService {
   }
 
   isAdmin(): boolean {
-    return this.currentUser()?.role === 'Administrador';
+    return this.currentUser()?.tipoUsuario === 'Empleado';
   }
 
-  updateUserProfile(data: Partial<User>): boolean {
-    const current = this.currentUser();
-    if (!current) return false;
-    
-    const updatedUser = { ...current, ...data };
-    this.currentUser.set(updatedUser);
-    this.users.update(users => users.map(u => u.id === current.id ? updatedUser : u));
-    localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
-    return true;
+  changePassword(data: { userId: string, newPassword: string }): Observable<any> {
+    console.log('changePassword', data);
+    return this.http.post(`${environment.apiUrl}/auth/update-password`, data);
   }
+
+
   
   // Admin methods
   getAllUsers() {

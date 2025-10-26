@@ -1,12 +1,29 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Reservation, Table, MenuItem } from '../models/restaurant.model';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
+import { Reservation, Table, MenuItem } from '../models/restaurant.model';
 
 @Injectable({ providedIn: 'root' })
 export class BookingService {
   private authService = inject(AuthService);
+  private http = inject(HttpClient);
 
-  private initialReservationState: Reservation = {
+  getReservationsForCurrentUser(): Observable<any[]> {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) {
+      return new Observable(observer => observer.next([]));
+    }
+    return this.http.get<any[]>(`${environment.apiUrlReservation}/reservation/customer/${currentUser.idPersona}`);
+  }
+
+  cancelReservation(id: string): Observable<any> {
+    return this.http.patch(`${environment.apiUrlReservation}/reservation/${id}/cancel`, {});
+  }
+
+  // Metodos antiguos:
+    private initialReservationState: Reservation = {
     id: null,
     userId: null,
     customerName: '',
@@ -24,9 +41,7 @@ export class BookingService {
     paymentStatus: undefined,
   };
 
-  private reservationState = signal<Reservation>(this.initialReservationState);
-  
-  private allReservationsState = signal<Reservation[]>([
+    private allReservationsState = signal<Reservation[]>([
     {
       id: 'R17000000000001',
       userId: '1',
@@ -46,43 +61,14 @@ export class BookingService {
       termsAccepted: true,
       status: 'Confirmada',
       paymentStatus: 'Pagado'
-    },
-    {
-      id: 'R17000000000002',
-      userId: '1',
-      customerName: 'Usuario de Prueba',
-      customerEmail: 'test@marakos.pe',
-      date: '2024-07-20',
-      time: '19:30',
-      guests: 4,
-      table: { id: 5, capacity: 6, isAvailable: true, shape: 'square' },
-      menuItems: [],
-      totalCost: 0,
-      paymentMethod: null,
-      specialRequests: '',
-      termsAccepted: false,
-      status: 'Completada'
-    },
-    {
-      id: 'R17000000000003',
-      userId: '3',
-      customerName: 'Ana García',
-      customerEmail: 'ana.garcia@example.com',
-      date: '2024-08-18',
-      time: '21:00',
-      guests: 3,
-      table: { id: 8, capacity: 4, isAvailable: true, shape: 'square' },
-      menuItems: [],
-      totalCost: 0,
-      paymentMethod: null,
-      specialRequests: '',
-      termsAccepted: false,
-      status: 'Cancelada'
     }
   ]);
 
-  // Public signals for current booking process
+  private reservationState = signal<Reservation>(this.initialReservationState);
+
+    // Public signals for current booking process
   currentReservation = this.reservationState.asReadonly();
+
   menuTotal = computed(() => 
     this.reservationState().menuItems.reduce((acc, curr) => acc + (curr.item.price * curr.quantity), 0)
   );
@@ -181,12 +167,6 @@ export class BookingService {
       reservations.map(r => r.id === id ? { ...r, ...updates } : r)
     );
   }
-  
-  cancelReservation(id: string) {
-    this.allReservationsState.update(reservations => 
-      reservations.map(r => r.id === id ? { ...r, status: 'Cancelada' } : r)
-    );
-  }
 
   processRefund(id: string) {
     this.allReservationsState.update(reservations => 
@@ -197,4 +177,6 @@ export class BookingService {
   resetBooking() {
     this.reservationState.set(this.initialReservationState);
   }
+
+
 }

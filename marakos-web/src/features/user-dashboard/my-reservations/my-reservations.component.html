@@ -5,22 +5,28 @@
       <div [class]="getReservationContainerClass(reservation.status)">
         <div class="flex-grow">
           <div class="flex items-center gap-4">
+            <p class="font-bold text-slate-100 text-lg">
+              Código: {{ reservation.code }}
+            </p>
+            <span [class]="getStatusBadgeClass(reservation.status)">
+              {{ reservation.reservationType }}
+            </span>            
              <span [class]="getStatusBadgeClass(reservation.status)">
                {{ reservation.status }}
              </span>
             <p class="font-bold text-slate-100 text-lg">
-              Reserva para el {{ reservation.date }}
+              Reserva para el {{ reservation.reservationDate | date: 'dd/MM/yyyy' }}
             </p>
           </div>
           <p class="text-slate-400 mt-2">
-            {{ reservation.guests }} comensales a las {{ reservation.time }} en la Mesa #{{ reservation.table?.id }}.
+            {{ reservation.peopleCount }} comensales a las {{ reservation.reservationTime }}.
           </p>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
           <a [routerLink]="['/dashboard/reservations', reservation.id]" class="px-4 py-2 bg-slate-600 text-slate-100 rounded-md hover:bg-slate-500 text-sm font-medium transition-colors">
             Ver Detalle
           </a>
-          @if (reservation.status === 'Confirmada') {
+          @if (reservation.status === 'CONFIRMADO') {
             <a [routerLink]="['/dashboard/reservations/edit', reservation.id]" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm font-medium transition-colors">
               Editar
             </a>
