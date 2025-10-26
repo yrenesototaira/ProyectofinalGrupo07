@@ -14,6 +14,19 @@ export interface MenuItem {
   imageUrl?: string;
 }
 
+export interface AdditionalService {
+  id: number;
+  name: string;
+  description: string;
+  unit: string;
+  price: number;
+  status: string;
+  active: boolean;
+  category?: 'entertainment' | 'service' | 'catering'; // Mapped from tipo_servicio
+  icon?: string;
+  tipo_servicio?: string; // Original field from database
+}
+
 export interface Reservation {
   id: string | null;
   userId: string | null;

@@ -29,6 +29,9 @@ public class ServiceDTO {
     @DecimalMin("0.00")
     private BigDecimal price;
 
+    @Size(max = 10)
+    private String icon;
+
     @Size(max = 20)
     private String status;
 

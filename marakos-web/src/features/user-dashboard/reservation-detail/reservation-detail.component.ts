@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal, OnInit, AfterViewInit, computed } from '@angular/core';
-import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { CommonModule, CurrencyPipe} from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BookingService } from '../../../core/services/booking.service';
 import { Reservation } from '../../../core/models/restaurant.model';
 
 @Component({
   selector: 'app-reservation-detail',
-  imports: [CommonModule, RouterLink, CurrencyPipe, DatePipe],
+  imports: [CommonModule, RouterLink, CurrencyPipe],
   templateUrl: './reservation-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

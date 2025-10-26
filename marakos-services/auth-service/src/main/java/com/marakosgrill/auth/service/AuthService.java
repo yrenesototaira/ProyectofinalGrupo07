@@ -7,5 +7,5 @@ public interface AuthService {
     AuthRegisterResponse register(AuthRegisterRequest request);
     void forgotPassword(ForgotPasswordRequest request);
     void resetPassword(ResetPasswordRequest request);
+    void updateUserPassword(UserPasswordUpdateRequest request);
 }
-

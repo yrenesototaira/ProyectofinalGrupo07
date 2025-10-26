@@ -146,3 +146,12 @@ temp/
 *.njsproj
 *.sln
 *.sw?
+
+# Documentation files (project-specific)
+AGRUPACION_SERVICIOS.md
+BUGFIX_EVENT_PLANNING.md
+IMPLEMENTACION_ICONOS.md
+MODAL_TERMINOS_EVENTOS.md
+
+# Database scripts and resources (development)
+Resources/Add_Icono_Field_To_Servicio.sql

@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { MenuItem } from '../../core/models/restaurant.model';
+import { RestaurantDataService } from '../../core/services/restaurant-data.service';
+import { AdditionalServicesService } from '../../core/services/additional-services.service';
+import { MenuItem, AdditionalService } from '../../core/models/restaurant.model';
+import { ModalComponent } from '../../shared/components/modal/modal.component';
 
 export interface EventType {
   id: string;
@@ -35,15 +38,6 @@ export interface LinenColor {
   name: string;
   hexColor: string;
   price: number;
-}
-
-export interface AdditionalService {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  icon: string;
-  category: 'entertainment' | 'service' | 'catering';
 }
 
 export interface EventPlanningReservation {
@@ -81,1060 +75,27 @@ export interface EventPlanningReservation {
 @Component({
   selector: 'app-event-planning',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
-    <div class="max-w-6xl mx-auto bg-slate-800 rounded-lg shadow-2xl shadow-black/30 overflow-hidden">
-      <!-- Progress Bar -->
-      <div class="p-6 border-b border-slate-700">
-        <div class="flex items-center justify-between">
-          @for(stepInfo of ['Datos', 'Fecha', 'Distribución', 'Servicios', 'Resumen', 'Pago']; track stepInfo; let i = $index) {
-            <div class="flex items-center" [class.opacity-50]="step() < i + 1">
-              <div class="flex items-center justify-center w-10 h-10 rounded-full" 
-                   [class]="step() >= i + 1 ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-slate-400'">
-                <span class="font-bold">{{ i + 1 }}</span>
-              </div>
-              <span class="ml-3 font-medium hidden md:block" 
-                    [class]="step() >= i + 1 ? 'text-amber-500' : 'text-slate-400'">
-                {{ stepInfo }}
-              </span>
-            </div>
-            @if (i < 5) {
-              <div class="flex-auto border-t-2 mx-2 md:mx-4" 
-                   [class]="step() > i + 1 ? 'border-amber-500' : 'border-slate-700'"></div>
-            }
-          }
-        </div>
-      </div>
-
-      <div class="p-8">
-        @switch (step()) {
-          <!-- Step 1: Customer Details, Event Type, Payment Method -->
-          @case (1) {
-            <div class="animate-fade-in">
-              <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">
-                🎉 Reservar Evento Marakos Grill
-              </h2>
-              <p class="text-slate-300 text-center mb-8">Planifica tu evento perfecto con nosotros</p>
-
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Customer Details -->
-                <div class="space-y-6">
-                  <h3 class="text-xl font-semibold text-amber-500 mb-4">📋 Datos del Titular</h3>
-                  
-                  <div>
-                    <label for="customerName" class="block text-sm font-medium text-slate-300 mb-2">
-                      Nombre y Apellido *
-                    </label>
-                    <input 
-                      type="text" 
-                      id="customerName" 
-                      required
-                      [value]="eventReservation().customerName"
-                      (input)="updateCustomerField('customerName', $any($event.target).value)"
-                      class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
-                      placeholder="Ingresa tu nombre completo">
-                  </div>
-
-                  <div>
-                    <label for="customerEmail" class="block text-sm font-medium text-slate-300 mb-2">
-                      Correo Electrónico *
-                    </label>
-                    <input 
-                      type="email" 
-                      id="customerEmail" 
-                      required
-                      [value]="eventReservation().customerEmail"
-                      (input)="updateCustomerField('customerEmail', $any($event.target).value)"
-                      class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
-                      placeholder="tu@email.com">
-                  </div>
-
-                  <div>
-                    <label for="customerPhone" class="block text-sm font-medium text-slate-300 mb-2">
-                      Teléfono *
-                    </label>
-                    <input 
-                      type="tel" 
-                      id="customerPhone" 
-                      required
-                      [value]="eventReservation().customerPhone"
-                      (input)="updateCustomerField('customerPhone', $any($event.target).value)"
-                      class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
-                      placeholder="+51 999 999 999">
-                  </div>
-
-                  <!-- Payment Method -->
-                  <div>
-                    <h4 class="text-lg font-semibold text-amber-500 mb-3">💳 Método de Pago</h4>
-                    <div class="grid grid-cols-2 gap-4">
-                      <button 
-                        (click)="selectPaymentMethod('online')"
-                        class="p-4 rounded-lg border-2 transition-all duration-300"
-                        [class.bg-amber-500]="eventReservation().paymentMethod === 'online'"
-                        [class.border-amber-500]="eventReservation().paymentMethod === 'online'"
-                        [class.text-slate-900]="eventReservation().paymentMethod === 'online'"
-                        [class.border-slate-600]="eventReservation().paymentMethod !== 'online'"
-                        [class.text-slate-300]="eventReservation().paymentMethod !== 'online'">
-                        <div class="text-center">
-                          <div class="text-2xl mb-2">💳</div>
-                          <div class="font-semibold">Online</div>
-                          <div class="text-xs opacity-75">Pago con tarjeta</div>
-                        </div>
-                      </button>
-                      
-                      <button 
-                        (click)="selectPaymentMethod('presencial')"
-                        class="p-4 rounded-lg border-2 transition-all duration-300"
-                        [class.bg-amber-500]="eventReservation().paymentMethod === 'presencial'"
-                        [class.border-amber-500]="eventReservation().paymentMethod === 'presencial'"
-                        [class.text-slate-900]="eventReservation().paymentMethod === 'presencial'"
-                        [class.border-slate-600]="eventReservation().paymentMethod !== 'presencial'"
-                        [class.text-slate-300]="eventReservation().paymentMethod !== 'presencial'">
-                        <div class="text-center">
-                          <div class="text-2xl mb-2">🏪</div>
-                          <div class="font-semibold">Presencial</div>
-                          <div class="text-xs opacity-75">Pago en local</div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Event Type Selection -->
-                <div>
-                  <h3 class="text-xl font-semibold text-amber-500 mb-4">🎊 Tipo de Evento</h3>
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    @for(eventType of eventTypes(); track eventType.id) {
-                      <button 
-                        (click)="selectEventType(eventType)"
-                        class="p-4 rounded-lg border-2 transition-all duration-300 text-left"
-                        [class.bg-amber-500]="eventReservation().eventType?.id === eventType.id"
-                        [class.border-amber-500]="eventReservation().eventType?.id === eventType.id"
-                        [class.text-slate-900]="eventReservation().eventType?.id === eventType.id"
-                        [class.border-slate-600]="eventReservation().eventType?.id !== eventType.id"
-                        [class.text-slate-300]="eventReservation().eventType?.id !== eventType.id"
-                        [class.hover:border-amber-400]="eventReservation().eventType?.id !== eventType.id">
-                        <div class="flex items-center">
-                          <span class="text-2xl mr-3">{{ eventType.icon }}</span>
-                          <div>
-                            <div class="font-semibold">{{ eventType.name }}</div>
-                            <div class="text-xs opacity-75">{{ eventType.description }}</div>
-                            <div class="text-sm font-bold mt-1">S/ {{ eventType.basePrice }}</div>
-                          </div>
-                        </div>
-                      </button>
-                    }
-                  </div>
-                </div>
-              </div>
-
-              <div class="mt-8 text-center">
-                <button 
-                  (click)="nextStep()" 
-                  [disabled]="!canProceedFromStep1()"
-                  class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
-                  Continuar 🠮
-                </button>
-              </div>
-            </div>
-          }
-
-          <!-- Step 2: Date, Time, and Guest Count -->
-          @case (2) {
-            <div class="animate-fade-in">
-              <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">
-                📅 Fecha y Horario del Evento
-              </h2>
-              <p class="text-slate-300 text-center mb-8">Selecciona cuándo quieres celebrar tu evento</p>
-
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Date Selection -->
-                <div>
-                  <h3 class="text-xl font-semibold text-amber-500 mb-4">📅 Fecha del Evento</h3>
-                  <div class="bg-slate-700 rounded-lg p-4 max-h-64 overflow-y-auto">
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      @for(date of availableDates().slice(0, 30); track date) {
-                        <button 
-                          (click)="selectDate(date)"
-                          class="p-3 rounded-lg border-2 transition-all duration-300 text-sm"
-                          [class.bg-amber-500]="eventReservation().selectedDate === date"
-                          [class.border-amber-500]="eventReservation().selectedDate === date"
-                          [class.text-slate-900]="eventReservation().selectedDate === date"
-                          [class.border-slate-600]="eventReservation().selectedDate !== date"
-                          [class.text-slate-300]="eventReservation().selectedDate !== date"
-                          [class.hover:border-amber-400]="eventReservation().selectedDate !== date">
-                          {{ formatDate(date) }}
-                        </button>
-                      }
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Time Shift and Guest Count -->
-                <div class="space-y-6">
-                  <!-- Time Shift Selection -->
-                  <div>
-                    <h3 class="text-xl font-semibold text-amber-500 mb-4">⏰ Horario</h3>
-                    <div class="space-y-3">
-                      @for(shift of eventShifts(); track shift.id) {
-                        <button 
-                          (click)="selectShift(shift)"
-                          class="w-full p-4 rounded-lg border-2 transition-all duration-300 text-left"
-                          [class.bg-amber-500]="eventReservation().selectedShift?.id === shift.id"
-                          [class.border-amber-500]="eventReservation().selectedShift?.id === shift.id"
-                          [class.text-slate-900]="eventReservation().selectedShift?.id === shift.id"
-                          [class.border-slate-600]="eventReservation().selectedShift?.id !== shift.id"
-                          [class.text-slate-300]="eventReservation().selectedShift?.id !== shift.id"
-                          [class.hover:border-amber-400]="eventReservation().selectedShift?.id !== shift.id">
-                          <div class="flex justify-between items-center">
-                            <div>
-                              <div class="font-semibold">{{ shift.name }}</div>
-                              <div class="text-sm opacity-75">{{ shift.timeRange }}</div>
-                            </div>
-                            @if (shift.price > 0) {
-                              <div class="font-bold">+S/ {{ shift.price }}</div>
-                            }
-                          </div>
-                        </button>
-                      }
-                    </div>
-                  </div>
-
-                  <!-- Guest Count -->
-                  <div>
-                    <h3 class="text-xl font-semibold text-amber-500 mb-4">👥 Número de Invitados</h3>
-                    <div class="bg-slate-700 rounded-lg p-4">
-                      <label for="guestCount" class="block text-sm font-medium text-slate-300 mb-2">
-                        Invitados (mínimo 10, máximo 150)
-                      </label>
-                      <div class="flex items-center gap-4">
-                        <button 
-                          (click)="decreaseGuests()"
-                          [disabled]="eventReservation().numberOfGuests <= 10"
-                          class="bg-slate-600 text-slate-100 w-10 h-10 rounded-full hover:bg-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                          −
-                        </button>
-                        
-                        <input 
-                          type="number" 
-                          id="guestCount"
-                          min="10" 
-                          max="150"
-                          [value]="eventReservation().numberOfGuests"
-                          (input)="updateGuestCount(+$any($event.target).value)"
-                          class="flex-1 bg-slate-600 border-slate-500 text-slate-100 text-center rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-                        
-                        <button 
-                          (click)="increaseGuests()"
-                          [disabled]="eventReservation().numberOfGuests >= 150"
-                          class="bg-slate-600 text-slate-100 w-10 h-10 rounded-full hover:bg-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                          +
-                        </button>
-                      </div>
-                      
-                      <div class="mt-2 text-xs text-slate-400 text-center">
-                        Costo por persona adicional: S/ 15 (después de 50 invitados)
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="mt-8 flex justify-center gap-4">
-                <button 
-                  (click)="prevStep()"
-                  class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">
-                  ← Atrás
-                </button>
-                
-                <button 
-                  (click)="nextStep()" 
-                  [disabled]="!canProceedFromStep2()"
-                  class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
-                  Continuar 🠮
-                </button>
-              </div>
-            </div>
-          }
-
-          <!-- Step 3: Table Distribution, Linen Color, Menu Selection -->
-          @case (3) {
-            <div class="animate-fade-in">
-              <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">
-                🍽️ Distribución y Menú
-              </h2>
-              <p class="text-slate-300 text-center mb-8">Personaliza la distribución de mesas y selecciona el menú</p>
-
-              <div class="space-y-8">
-                <!-- Table Distribution -->
-                <div>
-                  <h3 class="text-xl font-semibold text-amber-500 mb-4">🪑 Distribución de Mesas</h3>
-                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    @for(distribution of tableDistributions(); track distribution.id) {
-                      <button 
-                        (click)="selectTableDistribution(distribution)"
-                        class="p-4 rounded-lg border-2 transition-all duration-300 text-left"
-                        [class.bg-amber-500]="eventReservation().tableDistribution?.id === distribution.id"
-                        [class.border-amber-500]="eventReservation().tableDistribution?.id === distribution.id"
-                        [class.text-slate-900]="eventReservation().tableDistribution?.id === distribution.id"
-                        [class.border-slate-600]="eventReservation().tableDistribution?.id !== distribution.id"
-                        [class.text-slate-300]="eventReservation().tableDistribution?.id !== distribution.id"
-                        [class.hover:border-amber-400]="eventReservation().tableDistribution?.id !== distribution.id">
-                        <div class="text-center">
-                          <div class="font-semibold">{{ distribution.name }}</div>
-                          <div class="text-sm opacity-75 mt-1">{{ distribution.description }}</div>
-                          <div class="text-xs opacity-60 mt-1">Máx. {{ distribution.maxCapacity }} por mesa</div>
-                          @if (distribution.price > 0) {
-                            <div class="font-bold text-sm mt-2">+S/ {{ distribution.price }}</div>
-                          }
-                        </div>
-                      </button>
-                    }
-                  </div>
-                </div>
-
-                <!-- Linen Color -->
-                <div>
-                  <h3 class="text-xl font-semibold text-amber-500 mb-4">🎨 Color de Mantelería</h3>
-                  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    @for(color of linenColors(); track color.id) {
-                      <button 
-                        (click)="selectLinenColor(color)"
-                        class="p-4 rounded-lg border-2 transition-all duration-300"
-                        [class.border-amber-500]="eventReservation().linenColor?.id === color.id"
-                        [class.border-slate-600]="eventReservation().linenColor?.id !== color.id"
-                        [class.hover:border-amber-400]="eventReservation().linenColor?.id !== color.id">
-                        <div class="text-center">
-                          <div class="w-12 h-12 rounded-full mx-auto mb-2 border-2 border-slate-400" 
-                               [style.backgroundColor]="color.hexColor"></div>
-                          <div class="text-sm font-medium text-slate-200">{{ color.name }}</div>
-                          @if (color.price > 0) {
-                            <div class="text-xs font-bold text-amber-400 mt-1">+S/ {{ color.price }}</div>
-                          }
-                        </div>
-                      </button>
-                    }
-                  </div>
-                </div>
-
-                <!-- Menu Selection -->
-                <div>
-                  <h3 class="text-xl font-semibold text-amber-500 mb-4">🍴 Menú del Evento</h3>
-                  
-                  <div class="bg-slate-700 rounded-lg p-4 mb-4">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        [checked]="eventReservation().includeMenu"
-                        (change)="toggleMenu($any($event.target).checked)"
-                        class="w-5 h-5 text-amber-500 bg-slate-600 border-slate-500 rounded focus:ring-amber-500">
-                      <span class="text-slate-200 font-medium">Incluir menú completo en el evento</span>
-                    </label>
-                    <p class="text-slate-400 text-sm mt-2">Selecciona platos para ofrecer a tus invitados</p>
-                  </div>
-
-                  @if (eventReservation().includeMenu) {
-                    <div class="space-y-4">
-                      @for(item of menuItems(); track item.id) {
-                        <div class="bg-slate-700 rounded-lg p-4">
-                          <div class="flex justify-between items-start">
-                            <div class="flex-1">
-                              <h4 class="font-semibold text-slate-200">{{ item.name }}</h4>
-                              <p class="text-slate-400 text-sm">{{ item.description }}</p>
-                              <div class="flex items-center gap-4 mt-2">
-                                <span class="text-amber-400 font-bold">S/ {{ item.price }}</span>
-                                <span class="text-slate-500 text-xs bg-slate-600 px-2 py-1 rounded">{{ item.category }}</span>
-                              </div>
-                            </div>
-                            
-                            <div class="flex items-center gap-3 ml-4">
-                              <button 
-                                (click)="decreaseMenuItem(item)"
-                                [disabled]="getMenuItemQuantity(item) <= 0"
-                                class="bg-slate-600 text-slate-100 w-8 h-8 rounded-full hover:bg-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm">
-                                −
-                              </button>
-                              
-                              <span class="w-8 text-center font-bold text-slate-200">
-                                {{ getMenuItemQuantity(item) }}
-                              </span>
-                              
-                              <button 
-                                (click)="increaseMenuItem(item)"
-                                class="bg-slate-600 text-slate-100 w-8 h-8 rounded-full hover:bg-slate-500 transition-all text-sm">
-                                +
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  }
-                </div>
-              </div>
-
-              <div class="mt-8 flex justify-center gap-4">
-                <button 
-                  (click)="prevStep()"
-                  class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">
-                  ← Atrás
-                </button>
-                
-                <button 
-                  (click)="nextStep()" 
-                  [disabled]="!canProceedFromStep3()"
-                  class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
-                  Continuar 🠮
-                </button>
-              </div>
-            </div>
-          }
-
-          <!-- Step 4: Additional Services -->
-          @case (4) {
-            <div class="animate-fade-in">
-              <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">
-                ✨ Servicios Adicionales
-              </h2>
-              <p class="text-slate-300 text-center mb-8">Mejora tu evento con servicios premium opcionales</p>
-
-              <div class="space-y-8">
-                <!-- Entertainment Services -->
-                <div>
-                  <h3 class="text-xl font-semibold text-amber-500 mb-4 flex items-center gap-2">
-                    🎉 Entretenimiento
-                  </h3>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    @for(service of getServicesByCategory('entertainment'); track service.id) {
-                      <div class="bg-slate-700 rounded-lg p-4">
-                        <div class="flex items-start justify-between">
-                          <div class="flex items-start gap-3">
-                            <span class="text-2xl">{{ service.icon }}</span>
-                            <div class="flex-1">
-                              <h4 class="font-semibold text-slate-200">{{ service.name }}</h4>
-                              <p class="text-slate-400 text-sm mt-1">{{ service.description }}</p>
-                              <div class="text-amber-400 font-bold mt-2">S/ {{ service.price }}</div>
-                            </div>
-                          </div>
-                          <button 
-                            (click)="toggleAdditionalService(service)"
-                            class="ml-4 p-2 rounded-lg border-2 transition-all duration-300"
-                            [class.bg-amber-500]="isServiceSelected(service)"
-                            [class.border-amber-500]="isServiceSelected(service)"
-                            [class.text-slate-900]="isServiceSelected(service)"
-                            [class.border-slate-600]="!isServiceSelected(service)"
-                            [class.text-slate-300]="!isServiceSelected(service)"
-                            [class.hover:border-amber-400]="!isServiceSelected(service)">
-                            @if (isServiceSelected(service)) {
-                              ✓
-                            } @else {
-                              +
-                            }
-                          </button>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                </div>
-
-                <!-- Service Services -->
-                <div>
-                  <h3 class="text-xl font-semibold text-amber-500 mb-4 flex items-center gap-2">
-                    🛎️ Servicios Profesionales
-                  </h3>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    @for(service of getServicesByCategory('service'); track service.id) {
-                      <div class="bg-slate-700 rounded-lg p-4">
-                        <div class="flex items-start justify-between">
-                          <div class="flex items-start gap-3">
-                            <span class="text-2xl">{{ service.icon }}</span>
-                            <div class="flex-1">
-                              <h4 class="font-semibold text-slate-200">{{ service.name }}</h4>
-                              <p class="text-slate-400 text-sm mt-1">{{ service.description }}</p>
-                              <div class="text-amber-400 font-bold mt-2">S/ {{ service.price }}</div>
-                            </div>
-                          </div>
-                          <button 
-                            (click)="toggleAdditionalService(service)"
-                            class="ml-4 p-2 rounded-lg border-2 transition-all duration-300"
-                            [class.bg-amber-500]="isServiceSelected(service)"
-                            [class.border-amber-500]="isServiceSelected(service)"
-                            [class.text-slate-900]="isServiceSelected(service)"
-                            [class.border-slate-600]="!isServiceSelected(service)"
-                            [class.text-slate-300]="!isServiceSelected(service)"
-                            [class.hover:border-amber-400]="!isServiceSelected(service)">
-                            @if (isServiceSelected(service)) {
-                              ✓
-                            } @else {
-                              +
-                            }
-                          </button>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                </div>
-
-                <!-- Catering Services -->
-                <div>
-                  <h3 class="text-xl font-semibold text-amber-500 mb-4 flex items-center gap-2">
-                    🍽️ Servicios Gastronómicos
-                  </h3>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    @for(service of getServicesByCategory('catering'); track service.id) {
-                      <div class="bg-slate-700 rounded-lg p-4">
-                        <div class="flex items-start justify-between">
-                          <div class="flex items-start gap-3">
-                            <span class="text-2xl">{{ service.icon }}</span>
-                            <div class="flex-1">
-                              <h4 class="font-semibold text-slate-200">{{ service.name }}</h4>
-                              <p class="text-slate-400 text-sm mt-1">{{ service.description }}</p>
-                              <div class="text-amber-400 font-bold mt-2">S/ {{ service.price }}</div>
-                            </div>
-                          </div>
-                          <button 
-                            (click)="toggleAdditionalService(service)"
-                            class="ml-4 p-2 rounded-lg border-2 transition-all duration-300"
-                            [class.bg-amber-500]="isServiceSelected(service)"
-                            [class.border-amber-500]="isServiceSelected(service)"
-                            [class.text-slate-900]="isServiceSelected(service)"
-                            [class.border-slate-600]="!isServiceSelected(service)"
-                            [class.text-slate-300]="!isServiceSelected(service)"
-                            [class.hover:border-amber-400]="!isServiceSelected(service)">
-                            @if (isServiceSelected(service)) {
-                              ✓
-                            } @else {
-                              +
-                            }
-                          </button>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                </div>
-
-                <!-- Selected Services Summary -->
-                @if (eventReservation().additionalServices.length > 0) {
-                  <div class="bg-slate-700 rounded-lg p-4">
-                    <h4 class="font-semibold text-amber-500 mb-3">📝 Servicios Seleccionados:</h4>
-                    <div class="space-y-2">
-                      @for(service of eventReservation().additionalServices; track service.id) {
-                        <div class="flex justify-between items-center text-sm">
-                          <span class="text-slate-200">{{ service.icon }} {{ service.name }}</span>
-                          <span class="text-amber-400 font-bold">S/ {{ service.price }}</span>
-                        </div>
-                      }
-                    </div>
-                    <div class="border-t border-slate-600 mt-3 pt-3">
-                      <div class="flex justify-between items-center font-bold">
-                        <span class="text-slate-200">Total Servicios:</span>
-                        <span class="text-amber-400">S/ {{ getAdditionalServicesTotal() }}</span>
-                      </div>
-                    </div>
-                  </div>
-                }
-              </div>
-
-              <div class="mt-8 flex justify-center gap-4">
-                <button 
-                  (click)="prevStep()"
-                  class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">
-                  ← Atrás
-                </button>
-                
-                <button 
-                  (click)="nextStep()" 
-                  class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all">
-                  Continuar 🠮
-                </button>
-              </div>
-            </div>
-          }
-
-          <!-- Step 5: Summary and Special Requirements -->
-          @case (5) {
-            <div class="animate-fade-in">
-              <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">
-                📋 Resumen del Evento
-              </h2>
-              <p class="text-slate-300 text-center mb-8">Revisa todos los detalles antes de proceder al pago</p>
-
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Event Summary -->
-                <div class="space-y-6">
-                  <!-- Customer Info -->
-                  <div class="bg-slate-700 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-amber-500 mb-4 flex items-center gap-2">
-                      👤 Información del Cliente
-                    </h3>
-                    <div class="space-y-2 text-sm">
-                      <div class="flex justify-between">
-                        <span class="text-slate-400">Nombre:</span>
-                        <span class="text-slate-200">{{ eventReservation().customerName }}</span>
-                      </div>
-                      <div class="flex justify-between">
-                        <span class="text-slate-400">Email:</span>
-                        <span class="text-slate-200">{{ eventReservation().customerEmail }}</span>
-                      </div>
-                      <div class="flex justify-between">
-                        <span class="text-slate-400">Teléfono:</span>
-                        <span class="text-slate-200">{{ eventReservation().customerPhone }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Event Details -->
-                  <div class="bg-slate-700 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-amber-500 mb-4 flex items-center gap-2">
-                      🎊 Detalles del Evento
-                    </h3>
-                    <div class="space-y-2 text-sm">
-                      <div class="flex justify-between">
-                        <span class="text-slate-400">Tipo:</span>
-                        <span class="text-slate-200">{{ eventReservation().eventType?.icon }} {{ eventReservation().eventType?.name }}</span>
-                      </div>
-                      <div class="flex justify-between">
-                        <span class="text-slate-400">Fecha:</span>
-                        <span class="text-slate-200">{{ formatDate(eventReservation().selectedDate) }}</span>
-                      </div>
-                      <div class="flex justify-between">
-                        <span class="text-slate-400">Horario:</span>
-                        <span class="text-slate-200">{{ eventReservation().selectedShift?.name }} ({{ eventReservation().selectedShift?.timeRange }})</span>
-                      </div>
-                      <div class="flex justify-between">
-                        <span class="text-slate-400">Invitados:</span>
-                        <span class="text-slate-200">{{ eventReservation().numberOfGuests }} personas</span>
-                      </div>
-                      <div class="flex justify-between">
-                        <span class="text-slate-400">Mesas:</span>
-                        <span class="text-slate-200">{{ eventReservation().tableDistribution?.name }}</span>
-                      </div>
-                      <div class="flex justify-between">
-                        <span class="text-slate-400">Mantelería:</span>
-                        <span class="text-slate-200 flex items-center gap-2">
-                          <div class="w-4 h-4 rounded-full border border-slate-400" [style.backgroundColor]="eventReservation().linenColor?.hexColor"></div>
-                          {{ eventReservation().linenColor?.name }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Menu Items -->
-                  @if (eventReservation().includeMenu && eventReservation().menuItems.length > 0) {
-                    <div class="bg-slate-700 rounded-lg p-6">
-                      <h3 class="text-lg font-semibold text-amber-500 mb-4 flex items-center gap-2">
-                        🍽️ Menú Seleccionado
-                      </h3>
-                      <div class="space-y-3">
-                        @for(menuItem of eventReservation().menuItems; track menuItem.item.id) {
-                          <div class="flex justify-between items-center text-sm">
-                            <div>
-                              <span class="text-slate-200">{{ menuItem.item.name }}</span>
-                              <span class="text-slate-400"> x{{ menuItem.quantity }}</span>
-                            </div>
-                            <span class="text-amber-400 font-bold">S/ {{ menuItem.item.price * menuItem.quantity }}</span>
-                          </div>
-                        }
-                      </div>
-                    </div>
-                  }
-
-                  <!-- Additional Services -->
-                  @if (eventReservation().additionalServices.length > 0) {
-                    <div class="bg-slate-700 rounded-lg p-6">
-                      <h3 class="text-lg font-semibold text-amber-500 mb-4 flex items-center gap-2">
-                        ✨ Servicios Adicionales
-                      </h3>
-                      <div class="space-y-2">
-                        @for(service of eventReservation().additionalServices; track service.id) {
-                          <div class="flex justify-between items-center text-sm">
-                            <span class="text-slate-200">{{ service.icon }} {{ service.name }}</span>
-                            <span class="text-amber-400 font-bold">S/ {{ service.price }}</span>
-                          </div>
-                        }
-                      </div>
-                    </div>
-                  }
-
-                  <!-- Special Requirements -->
-                  <div class="bg-slate-700 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-amber-500 mb-4 flex items-center gap-2">
-                      📝 Requerimientos Especiales
-                    </h3>
-                    <textarea 
-                      [value]="eventReservation().specialRequests"
-                      (input)="updateSpecialRequests($any($event.target).value)"
-                      placeholder="Describe cualquier requerimiento especial, alergias, preferencias de decoración, etc."
-                      rows="4"
-                      class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500 text-sm">
-                    </textarea>
-                  </div>
-                </div>
-
-                <!-- Price Breakdown -->
-                <div class="space-y-6">
-                  <div class="bg-slate-700 rounded-lg p-6 sticky top-4">
-                    <h3 class="text-lg font-semibold text-amber-500 mb-4 flex items-center gap-2">
-                      💰 Desglose de Precios
-                    </h3>
-                    
-                    <div class="space-y-3 text-sm">
-                      <!-- Base Event Price -->
-                      <div class="flex justify-between">
-                        <span class="text-slate-400">Evento Base ({{ eventReservation().eventType?.name }}):</span>
-                        <span class="text-slate-200">S/ {{ eventReservation().eventType?.basePrice || 0 }}</span>
-                      </div>
-
-                      <!-- Shift Price -->
-                      @if (eventReservation().selectedShift?.price && eventReservation().selectedShift.price > 0) {
-                        <div class="flex justify-between">
-                          <span class="text-slate-400">Horario ({{ eventReservation().selectedShift.name }}):</span>
-                          <span class="text-slate-200">S/ {{ eventReservation().selectedShift.price }}</span>
-                        </div>
-                      }
-
-                      <!-- Guest Count -->
-                      @if (eventReservation().numberOfGuests > 50) {
-                        <div class="flex justify-between">
-                          <span class="text-slate-400">Invitados extra ({{ eventReservation().numberOfGuests - 50 }} x S/ 15):</span>
-                          <span class="text-slate-200">S/ {{ (eventReservation().numberOfGuests - 50) * 15 }}</span>
-                        </div>
-                      }
-
-                      <!-- Table Distribution -->
-                      @if (eventReservation().tableDistribution?.price && eventReservation().tableDistribution.price > 0) {
-                        <div class="flex justify-between">
-                          <span class="text-slate-400">Distribución ({{ eventReservation().tableDistribution.name }}):</span>
-                          <span class="text-slate-200">S/ {{ eventReservation().tableDistribution.price }}</span>
-                        </div>
-                      }
-
-                      <!-- Linen Color -->
-                      @if (eventReservation().linenColor?.price && eventReservation().linenColor.price > 0) {
-                        <div class="flex justify-between">
-                          <span class="text-slate-400">Mantelería ({{ eventReservation().linenColor.name }}):</span>
-                          <span class="text-slate-200">S/ {{ eventReservation().linenColor.price }}</span>
-                        </div>
-                      }
-
-                      <!-- Menu Items -->
-                      @if (getMenuTotal() > 0) {
-                        <div class="flex justify-between">
-                          <span class="text-slate-400">Menú:</span>
-                          <span class="text-slate-200">S/ {{ getMenuTotal() }}</span>
-                        </div>
-                      }
-
-                      <!-- Additional Services -->
-                      @if (getAdditionalServicesTotal() > 0) {
-                        <div class="flex justify-between">
-                          <span class="text-slate-400">Servicios Adicionales:</span>
-                          <span class="text-slate-200">S/ {{ getAdditionalServicesTotal() }}</span>
-                        </div>
-                      }
-
-                      <div class="border-t border-slate-600 pt-3">
-                        <div class="flex justify-between text-base font-semibold">
-                          <span class="text-slate-300">Subtotal:</span>
-                          <span class="text-slate-200">S/ {{ calculateSubtotal() }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                          <span class="text-slate-400">IGV (18%):</span>
-                          <span class="text-slate-200">S/ {{ calculateTaxes() }}</span>
-                        </div>
-                      </div>
-
-                      <div class="border-t border-slate-600 pt-3">
-                        <div class="flex justify-between text-xl font-bold">
-                          <span class="text-amber-500">Total:</span>
-                          <span class="text-amber-500">S/ {{ calculateTotal() }}</span>
-                        </div>
-                      </div>
-
-                      <div class="mt-4 p-3 bg-slate-600 rounded-lg">
-                        <p class="text-slate-300 text-xs">
-                          💳 Método de pago: {{ eventReservation().paymentMethod === 'online' ? 'Pago en línea' : 'Pago presencial' }}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Terms and Conditions -->
-                  <div class="bg-slate-700 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-amber-500 mb-4">📜 Términos y Condiciones</h3>
-                    <div class="space-y-3 text-sm text-slate-300">
-                      <div class="flex items-start gap-3">
-                        <input 
-                          type="checkbox" 
-                          id="terms"
-                          [checked]="eventReservation().termsAccepted"
-                          (change)="toggleTerms($any($event.target).checked)"
-                          class="w-5 h-5 text-amber-500 bg-slate-600 border-slate-500 rounded focus:ring-amber-500 mt-0.5">
-                        <label for="terms" class="cursor-pointer leading-relaxed">
-                          Acepto los términos y condiciones del servicio. Entiendo que se requiere un depósito del 50% para confirmar la reserva y el saldo restante se debe pagar el día del evento.
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="mt-8 flex justify-center gap-4">
-                <button 
-                  (click)="prevStep()"
-                  class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">
-                  ← Atrás
-                </button>
-                
-                <button 
-                  (click)="nextStep()" 
-                  [disabled]="!canProceedFromStep5()"
-                  class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
-                  Proceder al Pago 💳
-                </button>
-              </div>
-            </div>
-          }
-
-          <!-- Step 6: Payment Process -->
-          @case (6) {
-            <div class="animate-fade-in">
-              <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">
-                💳 Proceso de Pago
-              </h2>
-              <p class="text-slate-300 text-center mb-8">Finaliza tu reserva de evento</p>
-
-              <div class="max-w-4xl mx-auto">
-                @if (eventReservation().paymentMethod === 'online') {
-                  <!-- Online Payment -->
-                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- Payment Form -->
-                    <div class="bg-slate-700 rounded-lg p-6">
-                      <h3 class="text-xl font-semibold text-amber-500 mb-6 flex items-center gap-2">
-                        💳 Pago con Tarjeta
-                      </h3>
-
-                      <div class="space-y-4">
-                        <div>
-                          <label class="block text-sm font-medium text-slate-300 mb-2">
-                            Número de Tarjeta *
-                          </label>
-                          <input 
-                            type="text" 
-                            placeholder="1234 5678 9012 3456"
-                            maxlength="19"
-                            class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                          <div>
-                            <label class="block text-sm font-medium text-slate-300 mb-2">
-                              Fecha de Vencimiento *
-                            </label>
-                            <input 
-                              type="text" 
-                              placeholder="MM/YY"
-                              maxlength="5"
-                              class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-                          </div>
-                          
-                          <div>
-                            <label class="block text-sm font-medium text-slate-300 mb-2">
-                              CVV *
-                            </label>
-                            <input 
-                              type="text" 
-                              placeholder="123"
-                              maxlength="4"
-                              class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-                          </div>
-                        </div>
-
-                        <div>
-                          <label class="block text-sm font-medium text-slate-300 mb-2">
-                            Nombre del Titular *
-                          </label>
-                          <input 
-                            type="text" 
-                            [value]="eventReservation().customerName"
-                            class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-                        </div>
-
-                        <!-- Payment Type Selection -->
-                        <div class="border-t border-slate-600 pt-4">
-                          <h4 class="text-lg font-semibold text-slate-300 mb-3">💰 Tipo de Pago</h4>
-                          <div class="space-y-3">
-                            <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-slate-600 hover:border-amber-500 transition-all">
-                              <input 
-                                type="radio" 
-                                name="paymentType" 
-                                value="deposit"
-                                checked
-                                class="text-amber-500 bg-slate-600 border-slate-500 focus:ring-amber-500">
-                              <div class="flex-1">
-                                <div class="font-semibold text-slate-200">Depósito del 50%</div>
-                                <div class="text-sm text-slate-400">Paga S/ {{ getDepositAmount() }} ahora, el resto el día del evento</div>
-                              </div>
-                              <div class="text-amber-400 font-bold">S/ {{ getDepositAmount() }}</div>
-                            </label>
-                            
-                            <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-slate-600 hover:border-amber-500 transition-all">
-                              <input 
-                                type="radio" 
-                                name="paymentType" 
-                                value="full"
-                                class="text-amber-500 bg-slate-600 border-slate-500 focus:ring-amber-500">
-                              <div class="flex-1">
-                                <div class="font-semibold text-slate-200">Pago Completo</div>
-                                <div class="text-sm text-slate-400">Paga el total completo ahora (5% descuento)</div>
-                              </div>
-                              <div class="text-amber-400 font-bold">S/ {{ getFullPaymentAmount() }}</div>
-                            </label>
-                          </div>
-                        </div>
-
-                        <!-- Security Notice -->
-                        <div class="bg-slate-800 rounded-lg p-4 border border-slate-600">
-                          <div class="flex items-center gap-2 text-green-400 mb-2">
-                            🔒 <span class="font-semibold">Pago Seguro</span>
-                          </div>
-                          <p class="text-slate-400 text-sm">
-                            Tu información está protegida con encriptación SSL de 256 bits. 
-                            Procesamos pagos a través de Culqi, plataforma segura certificada.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Payment Summary -->
-                    <div class="bg-slate-700 rounded-lg p-6 h-fit sticky top-4">
-                      <h3 class="text-xl font-semibold text-amber-500 mb-6">📋 Resumen de Pago</h3>
-                      
-                      <div class="space-y-3 text-sm mb-6">
-                        <div class="flex justify-between">
-                          <span class="text-slate-400">Evento:</span>
-                          <span class="text-slate-200">{{ eventReservation().eventType?.name }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                          <span class="text-slate-400">Fecha:</span>
-                          <span class="text-slate-200">{{ formatDate(eventReservation().selectedDate) }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                          <span class="text-slate-400">Invitados:</span>
-                          <span class="text-slate-200">{{ eventReservation().numberOfGuests }}</span>
-                        </div>
-                      </div>
-
-                      <div class="border-t border-slate-600 pt-4 mb-6">
-                        <div class="flex justify-between text-base font-semibold mb-2">
-                          <span class="text-slate-300">Total del Evento:</span>
-                          <span class="text-slate-200">S/ {{ calculateTotal() }}</span>
-                        </div>
-                        <div class="flex justify-between text-lg font-bold">
-                          <span class="text-amber-500">Total a Pagar Hoy:</span>
-                          <span class="text-amber-500">S/ {{ getDepositAmount() }}</span>
-                        </div>
-                      </div>
-
-                      <button 
-                        (click)="processPayment()"
-                        class="w-full bg-amber-500 text-slate-900 font-bold py-4 px-6 rounded-lg hover:bg-amber-400 transition-all text-lg">
-                        🔒 Procesar Pago Seguro
-                      </button>
-
-                      <p class="text-slate-400 text-xs text-center mt-3">
-                        Al hacer clic, aceptas nuestros términos de servicio y política de privacidad
-                      </p>
-                    </div>
-                  </div>
-                } @else {
-                  <!-- Presential Payment -->
-                  <div class="max-w-2xl mx-auto">
-                    <div class="bg-slate-700 rounded-lg p-8 text-center">
-                      <div class="text-6xl mb-6">🏪</div>
-                      <h3 class="text-2xl font-semibold text-amber-500 mb-4">Pago Presencial</h3>
-                      <p class="text-slate-300 mb-6">
-                        Has seleccionado pago presencial. Tu reserva se confirmará cuando realices el pago en nuestro local.
-                      </p>
-
-                      <div class="bg-slate-800 rounded-lg p-6 mb-6">
-                        <h4 class="text-lg font-semibold text-slate-200 mb-4">📍 Información del Local</h4>
-                        <div class="space-y-2 text-sm text-slate-300">
-                          <p><strong>Dirección:</strong> Av. Javier Prado Este 1234, San Isidro, Lima</p>
-                          <p><strong>Horarios:</strong> Lun-Dom 10:00 AM - 10:00 PM</p>
-                          <p><strong>Teléfono:</strong> (01) 234-5678</p>
-                          <p><strong>Email:</strong> reservas@marakosgrill.com</p>
-                        </div>
-                      </div>
-
-                      <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-6">
-                        <p class="text-amber-400 font-semibold mb-2">⚠️ Importante</p>
-                        <p class="text-slate-300 text-sm">
-                          Debes realizar el pago del depósito (50%) dentro de las próximas 48 horas para confirmar tu reserva. 
-                          Te enviaremos un email con todos los detalles.
-                        </p>
-                      </div>
-
-                      <div class="text-left bg-slate-800 rounded-lg p-4 mb-6">
-                        <h4 class="text-amber-500 font-semibold mb-3">💰 Resumen de Pago</h4>
-                        <div class="space-y-2 text-sm">
-                          <div class="flex justify-between">
-                            <span class="text-slate-400">Total del Evento:</span>
-                            <span class="text-slate-200">S/ {{ calculateTotal() }}</span>
-                          </div>
-                          <div class="flex justify-between font-semibold">
-                            <span class="text-amber-400">Depósito a Pagar (50%):</span>
-                            <span class="text-amber-400">S/ {{ getDepositAmount() }}</span>
-                          </div>
-                          <div class="flex justify-between">
-                            <span class="text-slate-400">Saldo Restante (día del evento):</span>
-                            <span class="text-slate-200">S/ {{ getRemainingAmount() }}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button 
-                        (click)="confirmPresentialReservation()"
-                        class="w-full bg-amber-500 text-slate-900 font-bold py-4 px-6 rounded-lg hover:bg-amber-400 transition-all text-lg mb-4">
-                        📝 Confirmar Reserva Presencial
-                      </button>
-                    </div>
-                  </div>
-                }
-              </div>
-
-              <div class="mt-8 flex justify-center">
-                <button 
-                  (click)="prevStep()"
-                  class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">
-                  ← Volver al Resumen
-                </button>
-              </div>
-            </div>
-          }
-        }
-      </div>
-    </div>
-  `,
-  styles: [`
-    .animate-fade-in {
-      animation: fadeIn 0.5s ease-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  `],
+  imports: [CommonModule, FormsModule, ModalComponent],
+  templateUrl: './event-planning.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
+
+  
 export class EventPlanningComponent {
-  private router = inject(Router);
+  // Services
   private authService = inject(AuthService);
+  private router = inject(Router);
+  private restaurantDataService = inject(RestaurantDataService);
+  private additionalServicesService = inject(AdditionalServicesService);
 
+  // Component state
   step = signal(1);
+  availableDates = signal<string[]>([]);
+  currentCalendarMonth = signal(new Date().getMonth());
+  currentCalendarYear = signal(new Date().getFullYear());
+  isTermsModalOpen = signal(false);
 
-  // Mock data simplificado
+  // Mock data for events - TODO: Replace with backend service calls
   eventTypes = signal<EventType[]>([
     { id: 'cumpleanos', name: 'Cumpleaños', description: 'Celebración especial', basePrice: 150, icon: '🎂' },
     { id: 'networking', name: 'Evento de Networking', description: 'Reunión profesional', basePrice: 200, icon: '🤝' },
@@ -1147,8 +108,6 @@ export class EventPlanningComponent {
     { id: 'tarde', name: 'Tarde', timeRange: '16:00 - 20:00', startTime: '16:00', endTime: '20:00', price: 50 },
     { id: 'noche', name: 'Noche', timeRange: '20:00 - 00:00', startTime: '20:00', endTime: '00:00', price: 100 }
   ]);
-
-  availableDates = signal<string[]>([]);
 
   tableDistributions = signal<TableDistribution[]>([
     { id: 'redondas', name: 'Mesas Redondas', description: 'Perfectas para conversación', maxCapacity: 8, price: 0 },
@@ -1166,31 +125,11 @@ export class EventPlanningComponent {
     { id: 'negro', name: 'Negro Elegante', hexColor: '#000000', price: 25 }
   ]);
 
-  menuItems = signal<MenuItem[]>([
-    { id: 1, name: 'Anticuchos Premium', description: 'Corazón de res con ají amarillo', price: 25, category: 'Appetizer' },
-    { id: 2, name: 'Lomo Saltado', description: 'Clásico peruano con papas fritas', price: 32, category: 'Main Course' },
-    { id: 3, name: 'Ají de Gallina', description: 'Cremoso y tradicional', price: 28, category: 'Main Course' },
-    { id: 4, name: 'Suspiro Limeño', description: 'Postre tradicional peruano', price: 15, category: 'Dessert' },
-    { id: 5, name: 'Chicha Morada', description: 'Bebida tradicional', price: 8, category: 'Beverage' }
-  ]);
+  // Use the same menu as booking/mesa
+  menu = this.restaurantDataService.getMenu();
 
-  additionalServices = signal<AdditionalService[]>([
-    // Entertainment Services
-    { id: 'dj', name: 'DJ Profesional', description: 'Música y animación para toda la noche', price: 300, icon: '🎧', category: 'entertainment' },
-    { id: 'mariachi', name: 'Mariachi', description: 'Grupo tradicional mexicano', price: 450, icon: '🎺', category: 'entertainment' },
-    { id: 'karaoke', name: 'Karaoke', description: 'Diversión garantizada para todos', price: 150, icon: '🎤', category: 'entertainment' },
-    { id: 'fotografia', name: 'Fotografía Profesional', description: 'Captura todos los momentos especiales', price: 400, icon: '📸', category: 'entertainment' },
-    
-    // Service Services
-    { id: 'mesero-extra', name: 'Mesero Adicional', description: 'Servicio personalizado extra', price: 80, icon: '👨‍💼', category: 'service' },
-    { id: 'valet-parking', name: 'Valet Parking', description: 'Servicio de estacionamiento', price: 120, icon: '🚗', category: 'service' },
-    { id: 'seguridad', name: 'Seguridad Privada', description: 'Vigilancia profesional del evento', price: 200, icon: '👮‍♂️', category: 'service' },
-    
-    // Catering Services
-    { id: 'barra-libre', name: 'Barra Libre Premium', description: 'Bebidas alcohólicas ilimitadas 4hrs', price: 500, icon: '🍹', category: 'catering' },
-    { id: 'chef-vivo', name: 'Chef en Vivo', description: 'Preparación de platos en vivo', price: 350, icon: '👨‍🍳', category: 'catering' },
-    { id: 'torta-evento', name: 'Torta Personalizada', description: 'Torta diseñada para tu evento', price: 180, icon: '🎂', category: 'catering' }
-  ]);
+  // Get services from the service instead of hardcoded data
+  additionalServices = this.additionalServicesService.getServices();
 
   // Event planning reservation state simplificado
   eventReservation = signal<EventPlanningReservation>({
@@ -1215,44 +154,48 @@ export class EventPlanningComponent {
   });
 
   constructor() {
-    // Efecto simplificado para pre-llenar datos del usuario
+    // Efecto para pre-llenar datos del usuario
     effect(() => {
       const user = this.authService.currentUser();
       if (user && !this.eventReservation().customerName) {
         this.eventReservation.update(reservation => ({
           ...reservation,
           customerName: user.name,
-          customerEmail: user.email
+          customerEmail: user.email,
+          customerPhone: user.phone || ''
         }));
       }
     }, { allowSignalWrites: true });
 
-    // Generar fechas disponibles (próximos 60 días, excluyendo pasadas)
-    this.generateAvailableDates();
-  }
-
-  private generateAvailableDates() {
-    const dates: string[] = [];
-    const today = new Date();
-    
-    for (let i = 1; i <= 60; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      dates.push(date.toISOString().split('T')[0]);
-    }
-    
-    this.availableDates.set(dates);
+    // Generar fechas disponibles para eventos usando la misma lógica que booking/mesa
+    const availableDates = this.generateAvailableEventDates();
+    this.availableDates.set(availableDates);
   }
 
   nextStep() {
-    if (this.step() < 6) {
-      this.step.update(s => s + 1);
+    // Maximum step is always 7 (payment/confirmation step)
+    const maxStep = 7;
+    
+    if (this.step() < maxStep) {
+      // Special logic for step 3 -> 4
+      if (this.step() === 3 && !this.eventReservation().includeMenu) {
+        // Skip menu step, go directly to services (step 5)
+        this.step.set(5);
+      } else {
+        this.step.update(s => s + 1);
+      }
     }
   }
 
   prevStep() {
     if (this.step() > 1) {
-      this.step.update(s => s - 1);
+      // Special logic for step 5 -> 3 when menu is not included
+      if (this.step() === 5 && !this.eventReservation().includeMenu) {
+        // Go back to distribution step (step 3)
+        this.step.set(3);
+      } else {
+        this.step.update(s => s - 1);
+      }
     }
   }
 
@@ -1326,6 +269,128 @@ export class EventPlanningComponent {
     return date.toLocaleDateString('es-ES', options);
   }
 
+  // Calendar methods - homologated with booking/mesa
+  getCalendarDays(): (number | null)[] {
+    const year = this.currentCalendarYear();
+    const month = this.currentCalendarMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startingDayOfWeek = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+
+    const days: (number | null)[] = [];
+
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day);
+    }
+
+    return days;
+  }
+
+  isDateAvailable(day: number | null): boolean {
+    if (!day) return false;
+    
+    const year = this.currentCalendarYear();
+    const month = this.currentCalendarMonth();
+    const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    
+    return this.availableDates().includes(dateStr);
+  }
+
+  isDateSelected(day: number | null): boolean {
+    if (!day) return false;
+    
+    const year = this.currentCalendarYear();
+    const month = this.currentCalendarMonth();
+    const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    
+    return this.eventReservation().selectedDate === dateStr;
+  }
+
+  selectCalendarDate(day: number | null) {
+    if (!day || !this.isDateAvailable(day)) return;
+    
+    const year = this.currentCalendarYear();
+    const month = this.currentCalendarMonth();
+    const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    
+    this.eventReservation.update(res => ({
+      ...res,
+      selectedDate: dateStr
+    }));
+  }
+
+  previousMonth() {
+    if (this.currentCalendarMonth() === 0) {
+      this.currentCalendarMonth.set(11);
+      this.currentCalendarYear.update(year => year - 1);
+    } else {
+      this.currentCalendarMonth.update(month => month - 1);
+    }
+  }
+
+  nextMonth() {
+    if (this.currentCalendarMonth() === 11) {
+      this.currentCalendarMonth.set(0);
+      this.currentCalendarYear.update(year => year + 1);
+    } else {
+      this.currentCalendarMonth.update(month => month + 1);
+    }
+  }
+
+  getMonthName(): string {
+    const months = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return months[this.currentCalendarMonth()];
+  }
+
+  // Helper method for template
+  currentUser() {
+    return this.authService.currentUser();
+  }
+
+  getStepLabels(): string[] {
+    const baseSteps = ['Datos', 'Fecha', 'Distribución'];
+    if (this.eventReservation().includeMenu) {
+      return [...baseSteps, 'Menú', 'Servicios', 'Resumen', 'Pago'];
+    } else {
+      return [...baseSteps, 'Servicios', 'Resumen', 'Pago'];
+    }
+  }
+
+  /**
+   * Maps the current step number to the corresponding label index
+   */
+  getStepLabelIndex(currentStep: number): number {
+    if (this.eventReservation().includeMenu) {
+      // With menu: steps 1,2,3,4,5,6,7 map directly to indices 0,1,2,3,4,5,6
+      return currentStep - 1;
+    } else {
+      // Without menu: steps 1,2,3,5,6,7 map to indices 0,1,2,3,4,5
+      if (currentStep <= 3) {
+        return currentStep - 1; // Steps 1,2,3 -> indices 0,1,2
+      } else {
+        return currentStep - 2; // Steps 5,6,7 -> indices 3,4,5
+      }
+    }
+  }
+
+  /**
+   * Checks if a step label should be highlighted based on current progress
+   */
+  isStepCompleted(labelIndex: number): boolean {
+    const currentLabelIndex = this.getStepLabelIndex(this.step());
+    return currentLabelIndex >= labelIndex;
+  }
+
   // Validation methods
   canProceedFromStep1(): boolean {
     const res = this.eventReservation();
@@ -1360,12 +425,18 @@ export class EventPlanningComponent {
     }));
   }
 
+  toggleMenuIncluded() {
+    const currentValue = this.eventReservation().includeMenu;
+    this.toggleMenu(!currentValue);
+  }
+
   getMenuItemQuantity(item: MenuItem): number {
     const found = this.eventReservation().menuItems.find(mi => mi.item.id === item.id);
     return found ? found.quantity : 0;
   }
 
-  increaseMenuItem(item: MenuItem) {
+  // Use same method names as booking/mesa for consistency
+  addMenuItemToBooking(item: MenuItem) {
     this.eventReservation.update(res => {
       const existingIndex = res.menuItems.findIndex(mi => mi.item.id === item.id);
       
@@ -1385,9 +456,9 @@ export class EventPlanningComponent {
     });
   }
 
-  decreaseMenuItem(item: MenuItem) {
+  removeMenuItemFromBooking(itemId: number) {
     this.eventReservation.update(res => {
-      const existingIndex = res.menuItems.findIndex(mi => mi.item.id === item.id);
+      const existingIndex = res.menuItems.findIndex(mi => mi.item.id === itemId);
       
       if (existingIndex >= 0) {
         const currentQuantity = res.menuItems[existingIndex].quantity;
@@ -1396,7 +467,7 @@ export class EventPlanningComponent {
           // Remove item if quantity becomes 0
           return {
             ...res,
-            menuItems: res.menuItems.filter(mi => mi.item.id !== item.id)
+            menuItems: res.menuItems.filter(mi => mi.item.id !== itemId)
           };
         } else {
           // Decrease quantity
@@ -1413,21 +484,30 @@ export class EventPlanningComponent {
     });
   }
 
+  // Add compatibility method for booking/mesa pattern
+  getItemQuantity(itemId: number): number {
+    return this.eventReservation().menuItems.find(i => i.item.id === itemId)?.quantity ?? 0;
+  }
+
   canProceedFromStep3(): boolean {
     const res = this.eventReservation();
-    const hasBasicSelection = !!(res.tableDistribution && res.linenColor);
-    
-    if (!res.includeMenu) {
-      return hasBasicSelection;
+    // Only require table distribution and linen color selection
+    return !!(res.tableDistribution && res.linenColor);
+  }
+
+  canProceedFromStep4(): boolean {
+    const res = this.eventReservation();
+    // If menu is included, must have at least one menu item selected
+    if (res.includeMenu) {
+      return res.menuItems.length > 0;
     }
-    
-    // If menu is included, must have at least one menu item
-    return hasBasicSelection && res.menuItems.length > 0;
+    // If menu not included, can always proceed
+    return true;
   }
 
   // Step 4 methods
   getServicesByCategory(category: 'entertainment' | 'service' | 'catering'): AdditionalService[] {
-    return this.additionalServices().filter(service => service.category === category);
+    return this.additionalServicesService.getServicesByCategory(category);
   }
 
   isServiceSelected(service: AdditionalService): boolean {
@@ -1521,6 +601,10 @@ export class EventPlanningComponent {
     return this.eventReservation().termsAccepted;
   }
 
+  canProceedFromStep6(): boolean {
+    return this.eventReservation().termsAccepted;
+  }
+
   // Step 6 methods
   getDepositAmount(): number {
     return Math.round(this.calculateTotal() * 0.5);
@@ -1532,6 +616,29 @@ export class EventPlanningComponent {
 
   getRemainingAmount(): number {
     return this.calculateTotal() - this.getDepositAmount();
+  }
+
+  generateAvailableEventDates(): string[] {
+    const dates: string[] = [];
+    const today = new Date();
+    
+    // Generate next 60 days, with deterministic availability
+    for (let i = 0; i < 60; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i + 1); // Start from tomorrow
+      
+      // Use same logic as booking/mesa - deterministic availability
+      const isAvailable = (i + date.getDate()) % 3 !== 0; // Every 3rd date is unavailable
+      
+      if (isAvailable) {
+        const dateStr = date.getFullYear() + '-' + 
+                       String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                       String(date.getDate()).padStart(2, '0');
+        dates.push(dateStr);
+      }
+    }
+    
+    return dates;
   }
 
   processPayment() {

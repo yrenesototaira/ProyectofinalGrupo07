@@ -47,6 +47,7 @@ public class ServiceServiceImpl implements ServiceService {
         service.setDescription(dto.getDescription());
         service.setUnit(dto.getUnit());
         service.setPrice(dto.getPrice());
+        service.setIcon(dto.getIcon());
         service.setStatus(dto.getStatus());
         service.setUpdatedBy(dto.getUpdatedBy());
         service.setUpdatedAt(java.time.LocalDateTime.now());
@@ -69,6 +70,7 @@ public class ServiceServiceImpl implements ServiceService {
                 .description(service.getDescription())
                 .unit(service.getUnit())
                 .price(service.getPrice())
+                .icon(service.getIcon())
                 .status(service.getStatus())
                 .createdBy(service.getCreatedBy())
                 .updatedBy(service.getUpdatedBy())
@@ -83,6 +85,7 @@ public class ServiceServiceImpl implements ServiceService {
                 .description(dto.getDescription())
                 .unit(dto.getUnit())
                 .price(dto.getPrice())
+                .icon(dto.getIcon())
                 .status(dto.getStatus())
                 .createdBy(dto.getCreatedBy())
                 .updatedBy(dto.getUpdatedBy())
