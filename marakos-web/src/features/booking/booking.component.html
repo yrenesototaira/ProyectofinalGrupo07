@@ -2,7 +2,7 @@
   <!-- Progress Bar -->
   <div class="p-6 border-b border-slate-700">
     <div class="flex items-center justify-between">
-      @for(stepInfo of ['Titular', 'Disponibilidad', 'Mesa', 'Menú', 'Resumen', 'Pago']; track stepInfo; let i = $index) {
+      @for(stepInfo of ['Datos', 'Disponibilidad', 'Mesa', 'Menú', 'Resumen', 'Pago']; track stepInfo; let i = $index) {
         <div class="flex items-center" [class.opacity-50]="step() < i + 1">
           <div class="flex items-center justify-center w-10 h-10 rounded-full" [class]="step() >= i + 1 ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-slate-400'">
             <span class="font-bold">{{ i + 1 }}</span>

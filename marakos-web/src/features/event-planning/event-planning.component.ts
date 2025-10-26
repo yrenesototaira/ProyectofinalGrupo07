@@ -125,13 +125,8 @@ export class EventPlanningComponent {
     { id: 'negro', name: 'Negro Elegante', hexColor: '#000000', price: 25 }
   ]);
 
-  menuItems = signal<MenuItem[]>([
-    { id: 1, name: 'Anticuchos Premium', description: 'Corazón de res con ají amarillo', price: 25, category: 'Appetizer' },
-    { id: 2, name: 'Lomo Saltado', description: 'Clásico peruano con papas fritas', price: 32, category: 'Main Course' },
-    { id: 3, name: 'Ají de Gallina', description: 'Cremoso y tradicional', price: 28, category: 'Main Course' },
-    { id: 4, name: 'Suspiro Limeño', description: 'Postre tradicional peruano', price: 15, category: 'Dessert' },
-    { id: 5, name: 'Chicha Morada', description: 'Bebida tradicional', price: 8, category: 'Beverage' }
-  ]);
+  // Use the same menu as booking/mesa
+  menu = this.restaurantDataService.getMenu();
 
   // Get services from the service instead of hardcoded data
   additionalServices = this.additionalServicesService.getServices();
@@ -440,7 +435,8 @@ export class EventPlanningComponent {
     return found ? found.quantity : 0;
   }
 
-  increaseMenuItem(item: MenuItem) {
+  // Use same method names as booking/mesa for consistency
+  addMenuItemToBooking(item: MenuItem) {
     this.eventReservation.update(res => {
       const existingIndex = res.menuItems.findIndex(mi => mi.item.id === item.id);
       
@@ -460,9 +456,9 @@ export class EventPlanningComponent {
     });
   }
 
-  decreaseMenuItem(item: MenuItem) {
+  removeMenuItemFromBooking(itemId: number) {
     this.eventReservation.update(res => {
-      const existingIndex = res.menuItems.findIndex(mi => mi.item.id === item.id);
+      const existingIndex = res.menuItems.findIndex(mi => mi.item.id === itemId);
       
       if (existingIndex >= 0) {
         const currentQuantity = res.menuItems[existingIndex].quantity;
@@ -471,7 +467,7 @@ export class EventPlanningComponent {
           // Remove item if quantity becomes 0
           return {
             ...res,
-            menuItems: res.menuItems.filter(mi => mi.item.id !== item.id)
+            menuItems: res.menuItems.filter(mi => mi.item.id !== itemId)
           };
         } else {
           // Decrease quantity
@@ -486,6 +482,11 @@ export class EventPlanningComponent {
       
       return res;
     });
+  }
+
+  // Add compatibility method for booking/mesa pattern
+  getItemQuantity(itemId: number): number {
+    return this.eventReservation().menuItems.find(i => i.item.id === itemId)?.quantity ?? 0;
   }
 
   canProceedFromStep3(): boolean {
