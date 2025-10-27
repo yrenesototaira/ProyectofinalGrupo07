@@ -49,22 +49,22 @@ export class EditReservationComponent implements OnInit {
     }
 
     const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      const existingReservation = this.bookingService.getReservationById(id);
-      if (existingReservation && existingReservation.status === 'Confirmada') {
-        this.reservationId.set(id);
-        this.reservation.set(existingReservation);
-        // Initialize editable fields
-        this.guests.set(existingReservation.guests);
-        this.selectedDate.set(existingReservation.date ?? '');
-        this.selectedTime.set(existingReservation.time ?? '');
-        this.menuItems.set(JSON.parse(JSON.stringify(existingReservation.menuItems))); // Deep copy
-        this.specialRequests.set(existingReservation.specialRequests ?? '');
-      } else {
-        // If not found or not editable, go back to the list
-        this.router.navigate([this.returnPath()]);
-      }
-    }
+    // if (id) {
+    //   const existingReservation = this.bookingService.getReservationById(id);
+    //   if (existingReservation && existingReservation.status === 'Confirmada') {
+    //     this.reservationId.set(id);
+    //     this.reservation.set(existingReservation);
+    //     // Initialize editable fields
+    //     this.guests.set(existingReservation.guests);
+    //     this.selectedDate.set(existingReservation.date ?? '');
+    //     this.selectedTime.set(existingReservation.time ?? '');
+    //     this.menuItems.set(JSON.parse(JSON.stringify(existingReservation.menuItems))); // Deep copy
+    //     this.specialRequests.set(existingReservation.specialRequests ?? '');
+    //   } else {
+    //     // If not found or not editable, go back to the list
+    //     this.router.navigate([this.returnPath()]);
+    //   }
+    // }
   }
   
   getTodayDateString(): string {

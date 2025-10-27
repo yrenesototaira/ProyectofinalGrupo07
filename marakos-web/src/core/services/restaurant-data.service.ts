@@ -15,14 +15,14 @@ export class RestaurantDataService {
   ];
 
   private readonly initialMenu: MenuItem[] = [
-    { id: 101, name: 'Bruschetta', description: 'Grilled bread with tomatoes, garlic, basil.', price: 12, category: 'Appetizer', imageUrl: 'https://picsum.photos/id/10/400/300' },
-    { id: 102, name: 'Caprese Salad', description: 'Fresh mozzarella, tomatoes, and basil.', price: 15, category: 'Appetizer', imageUrl: 'https://picsum.photos/id/20/400/300' },
-    { id: 201, name: 'Filet Mignon', description: '8oz center-cut tenderloin, with mashed potatoes.', price: 45, category: 'Main Course', imageUrl: 'https://picsum.photos/id/30/400/300' },
-    { id: 202, name: 'Lobster Ravioli', description: 'Handmade ravioli with a creamy lobster sauce.', price: 38, category: 'Main Course', imageUrl: 'https://picsum.photos/id/40/400/300' },
-    { id: 203, name: 'Mushroom Risotto', description: 'Creamy Arborio rice with wild mushrooms.', price: 28, category: 'Main Course', imageUrl: 'https://picsum.photos/id/50/400/300' },
-    { id: 301, name: 'Tiramisu', description: 'Classic Italian coffee-flavored dessert.', price: 14, category: 'Dessert', imageUrl: 'https://picsum.photos/id/60/400/300' },
-    { id: 302, name: 'Chocolate Lava Cake', description: 'Warm chocolate cake with a molten center.', price: 14, category: 'Dessert', imageUrl: 'https://picsum.photos/id/70/400/300' },
-    { id: 401, name: 'Red Wine', description: 'Glass of house Cabernet Sauvignon.', price: 16, category: 'Beverage', imageUrl: 'https://picsum.photos/id/80/400/300' },
+    { id: 1, name: 'Bruschetta', description: 'Grilled bread with tomatoes, garlic, basil.', price: 12, category: 'Appetizer', imageUrl: 'https://picsum.photos/id/10/400/300' },
+    { id: 2, name: 'Caprese Salad', description: 'Fresh mozzarella, tomatoes, and basil.', price: 15, category: 'Appetizer', imageUrl: 'https://picsum.photos/id/20/400/300' },
+    { id: 3, name: 'Filet Mignon', description: '8oz center-cut tenderloin, with mashed potatoes.', price: 45, category: 'Main Course', imageUrl: 'https://picsum.photos/id/30/400/300' },
+    { id: 4, name: 'Lobster Ravioli', description: 'Handmade ravioli with a creamy lobster sauce.', price: 38, category: 'Main Course', imageUrl: 'https://picsum.photos/id/40/400/300' },
+    { id: 5, name: 'Mushroom Risotto', description: 'Creamy Arborio rice with wild mushrooms.', price: 28, category: 'Main Course', imageUrl: 'https://picsum.photos/id/50/400/300' },
+    { id: 6, name: 'Tiramisu', description: 'Classic Italian coffee-flavored dessert.', price: 14, category: 'Dessert', imageUrl: 'https://picsum.photos/id/60/400/300' },
+    { id: 7, name: 'Chocolate Lava Cake', description: 'Warm chocolate cake with a molten center.', price: 14, category: 'Dessert', imageUrl: 'https://picsum.photos/id/70/400/300' },
+    { id: 8, name: 'Red Wine', description: 'Glass of house Cabernet Sauvignon.', price: 16, category: 'Beverage', imageUrl: 'https://picsum.photos/id/80/400/300' },
   ];
   
   private menuSignal = signal<MenuItem[]>(this.initialMenu);
@@ -64,14 +64,14 @@ export class RestaurantDataService {
   getAvailableTimesForDate(date: string, guests: number): { time: string; label: string; available: boolean }[] {
     // Mock data - simulate available time slots based on date and guests
     const allTimes = [
+      { time: '16:00', label: '04:00 PM' },      
+      { time: '17:00', label: '05:00 PM' },
       { time: '18:00', label: '06:00 PM' },
-      { time: '18:30', label: '06:30 PM' },
       { time: '19:00', label: '07:00 PM' },
-      { time: '19:30', label: '07:30 PM' },
       { time: '20:00', label: '08:00 PM' },
-      { time: '20:30', label: '08:30 PM' },
       { time: '21:00', label: '09:00 PM' },
-      { time: '21:30', label: '09:30 PM' }
+      { time: '22:00', label: '10:00 PM' },
+      { time: '23:00', label: '11:00 PM' }
     ];
 
     // Simulate availability based on date and number of guests

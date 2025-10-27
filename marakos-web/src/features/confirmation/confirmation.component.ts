@@ -15,17 +15,15 @@ export class ConfirmationComponent implements OnInit, AfterViewInit {
   private route = inject(ActivatedRoute);
   private bookingService = inject(BookingService);
 
-  reservation = signal<Reservation | undefined>(undefined);
+  reservation = signal<any | undefined>(undefined);
   qrCodeUrl = signal<string | null>(null);
-
-  // Fix: Removed menuTotal which incorrectly referenced the active booking state.
-  // The total should be retrieved from the reservation object itself.
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
-      // Fix: Call getReservationById to fetch the confirmed reservation from the service's list.
-      this.reservation.set(this.bookingService.getReservationById(id));
+      this.bookingService.getReservationById(id).subscribe(data => {
+        this.reservation.set(data);
+      });
     }
   }
 

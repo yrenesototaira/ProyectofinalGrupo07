@@ -24,6 +24,7 @@ export class BookingComponent {
   step = signal(1);
   
   // Step 1 signals - Customer Details
+  customerDocument = signal('');
   customerName = signal('');
   customerEmail = signal('');
   customerPhone = signal('');
@@ -64,12 +65,13 @@ export class BookingComponent {
     // Initialize customer data from current user session
     // TODO: Replace with actual backend service call when ready
     effect(() => {
+      console.log("Effect called Ingreso a la pantalla de reserva de mesa")
       const user = this.currentUser();
       if (user) {
         // Auto-fill customer data with current user info as default
-        this.customerName.set(user.name || '');
+        this.customerName.set(user.nombre +' '+ user.apellido || '');
         this.customerEmail.set(user.email || '');
-        this.customerPhone.set(user.phone || ''); // TODO: Add phone to user model
+        this.customerPhone.set(user.telefono || ''); // TODO: Add phone to user model
       }
     });
     
@@ -96,7 +98,7 @@ export class BookingComponent {
       const currentRes = this.currentReservation();
       // Only set if the user is logged in and the fields are empty (e.g., on initial load)
       if (user && (!currentRes.customerName || !currentRes.customerEmail)) {
-        this.bookingService.setCustomerDetails({ name: user.name, email: user.email });
+        this.bookingService.setCustomerDetails({ name: user.nombre, email: user.email });
       }
     });
   }
@@ -125,7 +127,7 @@ export class BookingComponent {
 
   // Step 1 - Customer Details Methods
   canProceedFromStep1(): boolean {
-    return !!(this.customerName() && this.customerEmail() && this.customerPhone());
+    return !!(this.customerDocument() && this.customerName() && this.customerEmail() && this.customerPhone());
   }
 
   // Step 2 - Date & Time Methods
@@ -170,8 +172,9 @@ export class BookingComponent {
     return this.currentReservation().menuItems.find(i => i.item.id === itemId)?.quantity ?? 0;
   }
 
-  updateCustomerField(field: 'name' | 'email' | 'phone', value: string) {
+  updateCustomerField(field: 'document' | 'name' | 'email' | 'phone', value: string) {
     // Update local signals
+    if (field === 'document') this.customerDocument.set(value);
     if (field === 'name') this.customerName.set(value);
     if (field === 'email') this.customerEmail.set(value);
     if (field === 'phone') this.customerPhone.set(value);
@@ -211,8 +214,62 @@ export class BookingComponent {
   }
 
   finalizeReservation() {
-    const reservationId = this.bookingService.confirmReservation();
-    this.router.navigate(['/confirmation', reservationId]);
+    const products = this.currentReservation().menuItems.map(item => ({
+      productId: item.item.id,
+      quantity: item.quantity,
+      subtotal: item.item.price * item.quantity,
+      observation: null
+    }));
+    console.log('productos', products);
+    
+    const paymentDate = this.selectedDate()+'T'+this.selectedTime();
+
+    const resevationData = {
+      customerId: this.currentUser()?.idPersona ?? null,
+      reservationDate: this.selectedDate(),
+      reservationTime: this.selectedTime(),
+      peopleCount: this.guests(),
+      status: 'PENDIENTE',
+      paymentMethod: 'Digital',
+      reservationType: 'MESA',
+      eventTypeId: null,
+      eventShift: null,
+      tableDistributionType: null,
+      tableClothColor: null,
+      holderDocument: this.customerDocument(),
+      holderPhone: this.customerPhone(),
+      holderName: this.customerName(),
+      holderEmail: this.customerEmail(),
+      observation: this.currentReservation().specialRequests,
+      employeeId: null,
+      createdBy: this.currentUser()?.idUsuario ?? null,
+      tables: [
+        { tableId: this.currentReservation().table?.id }
+      ],
+      products: products,
+      // events: [
+      //   { serviceId: 2, quantity: 1, subtotal: 150.00, observation: null },
+      //   { serviceId: 3, quantity: 1, subtotal: 200.00, observation: null }
+      // ],
+      events: null,
+      payments: [ 
+        { paymentDate: paymentDate, paymentMethod: this.paymentMethod(), amount: this.menuTotal(), status: 'PAGADO', externalTransactionId: null, createdBy: this.currentUser()?.idUsuario ?? null }
+      ]
+    };
+    console.log('resevationData', resevationData);
+
+    this.bookingService.confirmReservation(resevationData).subscribe({
+        next: (response) => {
+          console.log('Reservation confirmed successfully:', response);
+          this.router.navigate(['/confirmation', response.id]);
+        },
+        error: (error) => {
+          console.error('Error confirming reservation:', error);
+          // Handle error, maybe show a message to the user
+        }
+      }
+    );
+    // this.router.navigate(['/confirmation', reservationId]);
   }
 
   // Calendar methods

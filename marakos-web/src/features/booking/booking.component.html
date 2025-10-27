@@ -35,7 +35,7 @@
                 <div class="space-y-4">
                   <div class="flex justify-between">
                     <span class="text-slate-400">Nombre:</span>
-                    <span class="font-semibold">{{ currentUser()?.name || 'Usuario Mockeado' }}</span>
+                    <span class="font-semibold">{{ currentUser()?.nombre + ' ' + currentUser()?.apellido || 'Usuario Mockeado' }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-slate-400">Email:</span>
@@ -43,7 +43,7 @@
                   </div>
                   <div class="flex justify-between">
                     <span class="text-slate-400">Tipo:</span>
-                    <span class="font-semibold">{{ currentUser()?.role || 'Cliente' }}</span>
+                    <span class="font-semibold">{{ currentUser()?.tipoUsuario || 'Cliente' }}</span>
                   </div>
                 </div>
                 <div class="mt-4 p-3 bg-blue-900 rounded-lg">
@@ -58,6 +58,17 @@
             <div>
               <h3 class="text-xl font-semibold text-amber-500 mb-4">✏️ Datos del Titular</h3>
               <div class="space-y-4">
+                <div>
+                  <label for="customerDocument" class="block text-sm font-medium text-slate-300 mb-2">Documento de Identidad *</label>
+                  <input 
+                    type="text" 
+                    id="customerDocument" 
+                    [ngModel]="customerDocument()" 
+                    (ngModelChange)="updateCustomerField('document', $event)"
+                    placeholder="Ingresa el documento de identidad"
+                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+                </div>
+
                 <div>
                   <label for="customerName" class="block text-sm font-medium text-slate-300 mb-2">Nombre Completo *</label>
                   <input 

@@ -77,7 +77,7 @@ export class BookingService {
   reservationsForCurrentUser = computed(() => {
     const currentUser = this.authService.currentUser();
     if (!currentUser) return [];
-    return this.allReservationsState().filter(r => r.userId === currentUser.id);
+    return this.allReservationsState().filter(r => r.userId === currentUser.idUsuario);
   });
 
   setBookingDetails(details: { date: string; time: string; guests: number }) {
@@ -138,12 +138,12 @@ export class BookingService {
     this.reservationState.update(state => ({ ...state, paymentMethod: method }));
   }
 
-  confirmReservation(): string {
+  confirmReservation_Old(): string {
     const reservationId = `R${Date.now()}${Math.floor(Math.random() * 1000)}`;
     this.reservationState.update(state => ({ 
         ...state, 
         id: reservationId,
-        userId: this.authService.currentUser()?.id ?? null,
+        userId: this.authService.currentUser()?.idUsuario ?? null,
         status: 'Confirmada',
         paymentStatus: state.totalCost > 0 ? 'Pagado' : undefined
     }));
@@ -152,14 +152,23 @@ export class BookingService {
     console.log('Reservation Confirmed:', newReservation);
     return reservationId;
   }
+
+  confirmReservation(resevationData: any): Observable<any> {
+    console.log('confirmReservation', resevationData);
+    return this.http.post<any>(`${environment.apiUrlReservation}/reservation`, resevationData);
+  }
   
-  getReservationById(id: string): Reservation | undefined {
+  getReservationById_Old(id: string): Reservation | undefined {
     // This is a temporary fix for when confirming a reservation.
     // The "confirmed" reservation is still in the booking service's transient state.
     if (this.currentReservation().id === id) {
       return this.currentReservation();
     }
     return this.allReservationsState().find(r => r.id === id);
+  }
+
+  getReservationById(id: string): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrlReservation}/reservation/${id}`);
   }
   
   updateReservation(id: string, updates: Partial<Reservation>) {
