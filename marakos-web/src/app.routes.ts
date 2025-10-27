@@ -34,8 +34,7 @@ export const APP_ROUTES: Routes = [
   },
   {
     path: 'confirmation/:id',
-    loadComponent: () => import('./features/confirmation/confirmation.component').then(m => m.ConfirmationComponent),
-    canActivate: [authGuard]
+    loadComponent: () => import('./features/confirmation/confirmation.component').then(m => m.ConfirmationComponent)
   },
   {
     path: 'login',

@@ -14,7 +14,7 @@ export class ReservationDetailComponent implements OnInit, AfterViewInit {
   private route = inject(ActivatedRoute);
   private bookingService = inject(BookingService);
 
-  reservation = signal<Reservation | undefined>(undefined);
+  reservation = signal<any | undefined>(undefined);
   qrCodeUrl = signal<string | null>(null);
 
   totalCost = computed(() => {
