@@ -6,7 +6,10 @@ export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const token = authService.getToken();
 
-  if (token) {
+  // Temporalmente excluir rutas de admin para desarrollo
+  const isAdminRoute = req.url.includes('/api/admin/');
+  
+  if (token && !isAdminRoute) {
     req = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`

@@ -10,5 +10,6 @@ import java.util.Optional;
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     Optional<Employee> findByUser(User user);
+    Optional<Employee> findByUserId(Long userId);
 }
 

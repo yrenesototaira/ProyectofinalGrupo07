@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
-import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BookingService } from '../../../core/services/booking.service';
 import { Reservation } from '../../../core/models/restaurant.model';
@@ -9,7 +9,7 @@ import { ConfirmationModalComponent } from '../../../shared/components/confirmat
 
 @Component({
   selector: 'app-admin-payments',
-  imports: [CommonModule, FormsModule, CurrencyPipe, DatePipe, ReceiptModalComponent, ConfirmationModalComponent],
+  imports: [CommonModule, FormsModule, CurrencyPipe, ReceiptModalComponent, ConfirmationModalComponent],
   templateUrl: './admin-payments.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

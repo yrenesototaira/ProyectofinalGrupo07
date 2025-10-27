@@ -12,45 +12,170 @@
     }
   </h1>
 
-  <form (ngSubmit)="saveUser()" #userForm="ngForm" class="space-y-6 max-w-lg">
+  <form (ngSubmit)="saveUser()" #userForm="ngForm" class="space-y-6 max-w-2xl">
+    <!-- Tipo de Usuario -->
     <div>
-      <label for="name" class="block text-sm font-medium text-slate-300 mb-2">Nombre Completo</label>
-      <input type="text" id="name" name="name" [(ngModel)]="name" required
-             class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+      <label for="userType" class="block text-sm font-medium text-slate-300 mb-2">Tipo de Usuario *</label>
+      <select id="userType" name="userType" [(ngModel)]="userTypeId" (ngModelChange)="onUserTypeChange()" required
+              class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+        <option [value]="null">Seleccione el tipo de usuario</option>
+        @for (userType of userTypes(); track userType.id) {
+          <option [value]="userType.id">{{ userType.name }} - {{ userType.description }}</option>
+        }
+      </select>
     </div>
+
+    <!-- Campos Básicos -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <label for="firstName" class="block text-sm font-medium text-slate-300 mb-2">Nombre *</label>
+        <input type="text" id="firstName" name="firstName" [(ngModel)]="firstName" required
+               class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+      </div>
+      <div>
+        <label for="lastName" class="block text-sm font-medium text-slate-300 mb-2">Apellido *</label>
+        <input type="text" id="lastName" name="lastName" [(ngModel)]="lastName" required
+               class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+      </div>
+    </div>
+
     <div>
-      <label for="email" class="block text-sm font-medium text-slate-300 mb-2">Correo Electrónico</label>
+      <label for="email" class="block text-sm font-medium text-slate-300 mb-2">Correo Electrónico *</label>
       <input type="email" id="email" name="email" [(ngModel)]="email" required
              class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
     </div>
+
+    <!-- Información importante sobre la contraseña -->
+    <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+      <div class="flex items-start">
+        <svg class="h-5 w-5 text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+        </svg>
+        <div>
+          <p class="text-sm text-blue-300 font-medium">Contraseña</p>
+          <p class="text-sm text-blue-200 mt-1">
+            El usuario deberá establecer su contraseña usando la opción 
+            <strong>"Olvidé mi contraseña"</strong> en la página de inicio de sesión.
+          </p>
+        </div>
+      </div>
+    </div>
+
     <div>
       <label for="phone" class="block text-sm font-medium text-slate-300 mb-2">Teléfono</label>
       <input type="tel" id="phone" name="phone" [(ngModel)]="phone"
              class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
     </div>
-    <div>
-      <label for="role" class="block text-sm font-medium text-slate-300 mb-2">Rol</label>
-      <select id="role" name="role" [(ngModel)]="role"
-              class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-        <option value="Cliente">Cliente</option>
-        <option value="Administrador">Administrador</option>
-      </select>
-    </div>
-    
-    @if (feedbackMessage()) {
-      <p class="text-sm animate-fade-in" [class.text-emerald-400]="feedbackMessage()?.type === 'success'" [class.text-rose-400]="feedbackMessage()?.type === 'error'">
-        {{ feedbackMessage()?.text }}
-      </p>
+
+    <!-- Campos específicos para Cliente -->
+    @if (isClientType()) {
+      <div class="border-t border-slate-600 pt-6">
+        <h3 class="text-lg font-semibold text-slate-100 mb-4">Información del Cliente</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="birthDate" class="block text-sm font-medium text-slate-300 mb-2">Fecha de Nacimiento</label>
+            <input type="date" id="birthDate" name="birthDate" [(ngModel)]="birthDate"
+                   class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+          </div>
+          <div>
+            <label for="documentId" class="block text-sm font-medium text-slate-300 mb-2">Número de Documento</label>
+            <input type="text" id="documentId" name="documentId" [(ngModel)]="documentId"
+                   class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <div>
+            <label for="photo" class="block text-sm font-medium text-slate-300 mb-2">URL de Foto (opcional)</label>
+            <input type="url" id="photo" name="photo" [(ngModel)]="photo"
+                   class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+          </div>
+          <div>
+            <label for="refundAccount" class="block text-sm font-medium text-slate-300 mb-2">Cuenta de Reembolso</label>
+            <input type="text" id="refundAccount" name="refundAccount" [(ngModel)]="refundAccount"
+                   class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+          </div>
+        </div>
+      </div>
     }
 
-    <div class="flex justify-end gap-4 pt-4">
-      <a routerLink="/admin/users" class="px-6 py-2 bg-slate-600 text-slate-100 rounded-md hover:bg-slate-500 font-medium transition-colors">Cancelar</a>
-      <button type="submit" [disabled]="!userForm.form.valid"
+    <!-- Campos específicos para Empleado -->
+    @if (isEmployeeType()) {
+      <div class="border-t border-slate-600 pt-6">
+        <h3 class="text-lg font-semibold text-slate-100 mb-4">Información del Empleado</h3>
+        
+        <div>
+          <label for="role" class="block text-sm font-medium text-slate-300 mb-2">Rol *</label>
+          <select id="role" name="role" [(ngModel)]="roleId" required
+                  class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+            <option [value]="null">Seleccione un rol</option>
+            @for (role of roles(); track role.id) {
+              <option [value]="role.id">{{ role.nombre }} - {{ role.descripcion }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <div>
+            <label for="workShift" class="block text-sm font-medium text-slate-300 mb-2">Turno de Trabajo</label>
+            <select id="workShift" name="workShift" [(ngModel)]="workShift"
+                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+              <option value="">Seleccione un turno</option>
+              <option value="1">Mañana</option>
+              <option value="2">Tarde</option>
+              <option value="3">Noche</option>
+              <option value="4">Rotativo</option>
+            </select>
+          </div>
+          <div>
+            <label for="hireDate" class="block text-sm font-medium text-slate-300 mb-2">Fecha de Contratación</label>
+            <input type="date" id="hireDate" name="hireDate" [(ngModel)]="hireDate"
+                   class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <label for="employmentStatus" class="block text-sm font-medium text-slate-300 mb-2">Estado de Empleo</label>
+          <select id="employmentStatus" name="employmentStatus" [(ngModel)]="employmentStatus"
+                  class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+            <option value="ACTIVO">Activo</option>
+            <option value="INACTIVO">Inactivo</option>
+            <option value="SUSPENSION">Suspensión</option>
+            <option value="VACACIONES">Vacaciones</option>
+          </select>
+        </div>
+      </div>
+    }
+    
+    @if (feedbackMessage()) {
+      <div class="p-4 rounded-md" [class.bg-green-900/50]="feedbackMessage()?.type === 'success'" [class.bg-red-900/50]="feedbackMessage()?.type === 'error'">
+        <p class="text-sm animate-fade-in" [class.text-emerald-400]="feedbackMessage()?.type === 'success'" [class.text-rose-400]="feedbackMessage()?.type === 'error'">
+          {{ feedbackMessage()?.text }}
+        </p>
+      </div>
+    }
+
+    <div class="flex justify-end gap-4 pt-6 border-t border-slate-600">
+      <a routerLink="/admin/users" class="px-6 py-2 bg-slate-600 text-slate-100 rounded-md hover:bg-slate-500 font-medium transition-colors">
+        Cancelar
+      </a>
+      <button type="submit" [disabled]="!userForm.form.valid || isLoading()"
               class="px-6 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 font-medium transition-colors disabled:bg-slate-500 disabled:cursor-not-allowed">
-        @if(isEditMode()) {
-          <span>Guardar Cambios</span>
+        @if (isLoading()) {
+          <div class="flex items-center gap-2">
+            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Creando...</span>
+          </div>
         } @else {
-          <span>Crear Usuario</span>
+          @if(isEditMode()) {
+            <span>Guardar Cambios</span>
+          } @else {
+            <span>Crear Usuario</span>
+          }
         }
       </button>
     </div>

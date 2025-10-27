@@ -1,4 +1,7 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:8080/api'
+  apiUrl: 'http://localhost:8080/api',
+  apiUrlCustomer: 'http://localhost:8081/api',
+  apiUrlReservation: 'http://localhost:8083/api',
+  apiUrlAdmin: 'http://localhost:8080/api/admin'
 };

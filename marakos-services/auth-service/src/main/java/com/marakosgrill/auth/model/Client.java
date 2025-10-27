@@ -42,8 +42,8 @@ public class Client {
     @Column(name = "cuenta_rembolso")
     private String refundAccount;
 
-    @Column(name = "fecha_registro")
-    private LocalDateTime registrationDate;
+    // @Column(name = "fecha_registro")
+    // private LocalDateTime registrationDate;
 
     @Column(name = "estado")
     private String status;
