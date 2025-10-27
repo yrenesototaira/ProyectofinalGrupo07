@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface ReservationService {
     ReservationResponse createReservation(ReservationRequest request);
+    ReservationResponse getReservationById(Integer id);
     List<ReservationResponse> findReservationsByCustomer(Integer customerId);
     List<ReservationResponse> findReservationsByDate(LocalDate date);
     boolean isTableAvailable(Integer tableId, LocalDate date, LocalTime time);

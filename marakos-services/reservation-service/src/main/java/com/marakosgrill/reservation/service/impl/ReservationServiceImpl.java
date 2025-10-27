@@ -213,6 +213,13 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
+    public ReservationResponse getReservationById(Integer id) {
+        Reservation reservation = reservationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + id));
+        return toResponse(reservation);
+    }
+
+    @Override
     public List<ReservationResponse> findReservationsByCustomer(Integer customerId) {
         return reservationRepository.findAll().stream()
                 .filter(r -> r.getCustomerId().equals(customerId))
