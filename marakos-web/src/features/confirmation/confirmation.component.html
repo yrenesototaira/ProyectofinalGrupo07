@@ -1,9 +1,47 @@
 <div class="max-w-2xl mx-auto text-center py-12 animate-fade-in">
-  @if (reservation()?.id) {
+  <!-- Loading State -->
+  @if (isLoading()) {
     <div class="bg-slate-800 p-8 rounded-lg shadow-2xl">
-      <h1 class="text-4xl font-extrabold text-emerald-400 mb-4">¡Reserva Confirmada!</h1>
-      <p class="text-slate-300 mb-8">Gracias por reservar con nosotros, {{ reservation()?.holderName }}. Por favor, presenta este código QR al llegar para un check-in rápido.</p>
+      <div class="animate-spin mx-auto mb-4 w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full"></div>
+      <h2 class="text-xl font-semibold text-slate-300">Cargando detalles de tu reserva...</h2>
+    </div>
+  }
+  
+  <!-- Reservation Found -->
+  @else if (reservation()?.id) {
+    <div class="bg-slate-800 p-8 rounded-lg shadow-2xl">
+      
+      <!-- Payment Failed but Reservation Created -->
+      @if (paymentFailed() && reservationCreated()) {
+        <div class="mb-6 p-6 bg-amber-900 border-2 border-amber-600 rounded-lg">
+          <h1 class="text-3xl font-extrabold text-amber-400 mb-4">⚠️ Reserva Creada - Pago Pendiente</h1>
+          <p class="text-amber-200 mb-4">
+            ¡Buenas noticias! Tu reserva ha sido <strong>creada exitosamente</strong> y está confirmada.
+          </p>
+          <p class="text-amber-200 mb-4">
+            Sin embargo, hubo un problema procesando el pago: <strong>{{ paymentError() }}</strong>
+          </p>
+          <div class="bg-amber-800 p-4 rounded-lg mb-4">
+            <p class="text-amber-100 text-sm">
+              💡 <strong>No te preocupes:</strong> Tu mesa está reservada. Puedes pagar directamente en el restaurante o intentar pagar en línea más tarde desde tu perfil.
+            </p>
+          </div>
+        </div>
+      } 
 
+      <!-- Payment Successful -->
+      @else if (paymentSuccess()) {
+        <h1 class="text-4xl font-extrabold text-emerald-400 mb-4">✅ ¡Reserva y Pago Confirmados!</h1>
+        <p class="text-slate-300 mb-8">Gracias por reservar y pagar con nosotros, {{ reservation()?.holderName }}. Todo está listo para tu visita.</p>
+      }
+
+      <!-- Default success message (no payment required) -->
+      @else {
+        <h1 class="text-4xl font-extrabold text-emerald-400 mb-4">✅ ¡Reserva Confirmada!</h1>
+        <p class="text-slate-300 mb-8">Gracias por reservar con nosotros, {{ reservation()?.holderName }}. Presenta este código QR al llegar.</p>
+      }
+
+      <!-- QR Code -->
       <div class="flex justify-center mb-8">
         @if (qrCodeUrl()) {
           <img [src]="qrCodeUrl()" alt="Código QR de la Reserva" class="bg-white p-2 rounded-lg" width="200" height="200">
@@ -14,8 +52,9 @@
         }
       </div>
       
+      <!-- Reservation Details -->
       <div class="text-left bg-slate-700 p-6 rounded-lg space-y-3">
-        <h3 class="text-xl font-bold border-b border-slate-600 pb-2 mb-3">Los Detalles de tu Reserva</h3>
+        <h3 class="text-xl font-bold border-b border-slate-600 pb-2 mb-3">Detalles de tu Reserva</h3>
         <p><strong>ID de Reserva:</strong> <span class="font-mono text-amber-500"> {{ reservation()?.code }}</span></p>
         <p><strong>Nombre:</strong> {{ reservation()?.holderName }}</p>
         <p><strong>Fecha y Hora:</strong> {{ reservation()?.reservationDate }} a las {{ reservation()?.reservationTime }}</p>
@@ -25,19 +64,63 @@
         @if (reservation()?.observation) {
           <p><strong>Peticiones Especiales:</strong> {{ reservation()?.observation }}</p>
         }
-        @if (reservation()?.payments[0]?.paymentMethod) {
-            <p><strong>Pago:</strong> {{ reservation()?.payments[0]?.paymentMethod }} (Total: {{ reservation()?.payments[0]?.amount | currency }})</p>
+
+        <!-- Payment Status -->
+        @if (paymentFailed() && reservationCreated()) {
+          <div class="mt-4 p-4 bg-red-900 rounded-lg">
+            <p class="text-red-200"><strong>Estado del Pago:</strong> Pendiente</p>
+            <p class="text-red-200 text-sm mt-2">Puedes pagar en el restaurante o intentar pagar en línea más tarde.</p>
+          </div>
+        } @else if (paymentSuccess()) {
+          <div class="mt-4 p-4 bg-green-900 rounded-lg">
+            <p class="text-green-200"><strong>Estado del Pago:</strong> Pagado ✅</p>
+            @if (reservation()?.payments[0]) {
+              <p class="text-green-200"><strong>Total Pagado:</strong> {{ reservation()?.payments[0]?.amount | currency:'PEN':'symbol':'1.2-2' }}</p>
+            }
+          </div>
+        } @else if (reservation()?.payments[0]?.paymentMethod) {
+          <p><strong>Pago:</strong> {{ reservation()?.payments[0]?.paymentMethod }} (Total: {{ reservation()?.payments[0]?.amount | currency:'PEN':'symbol':'1.2-2' }})</p>
         }
       </div>
 
-      <a routerLink="/" class="inline-block mt-8 bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all">
-        Volver al Inicio
-      </a>
+      <!-- Action Buttons -->
+      <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+        @if (paymentFailed() && reservationCreated()) {
+          <button 
+            (click)="retryPayment()"
+            class="bg-amber-500 text-slate-900 font-bold py-3 px-6 rounded-full hover:bg-amber-400 transition-all">
+            💳 Intentar Pagar Nuevamente
+          </button>
+          <a routerLink="/profile/reservations" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-full hover:bg-blue-500 transition-all">
+            📋 Ver Mis Reservas
+          </a>
+        }
+        
+        <a routerLink="/" class="bg-slate-600 text-slate-100 font-bold py-3 px-6 rounded-full hover:bg-slate-500 transition-all">
+          🏠 Volver al Inicio
+        </a>
+      </div>
+
+      <!-- Additional Info for Payment Failed Cases -->
+      @if (paymentFailed() && reservationCreated()) {
+        <div class="mt-6 p-4 bg-slate-700 border border-slate-600 rounded-lg text-left">
+          <h4 class="font-semibold text-slate-200 mb-2">ℹ️ Información Importante:</h4>
+          <ul class="text-slate-300 text-sm space-y-1">
+            <li>• Tu mesa está <strong>garantizada</strong> para la fecha y hora seleccionadas</li>
+            <li>• Puedes pagar la pre-orden directamente en el restaurante</li>
+            <li>• También puedes acceder a tus reservas desde tu perfil para intentar pagar nuevamente</li>
+            <li>• Si tienes dudas, contacta al restaurante con tu código de reserva</li>
+          </ul>
+        </div>
+      }
     </div>
-  } @else {
+  } 
+  
+  <!-- Reservation Not Found -->
+  @else {
     <div class="bg-slate-800 p-8 rounded-lg shadow-2xl">
-      <h1 class="text-4xl font-extrabold text-rose-400 mb-4">Reserva Inválida</h1>
-      <p class="text-slate-300 mb-8">No pudimos encontrar los detalles de esta reserva. Puede que haya expirado o sea inválida.</p>
+      <h1 class="text-4xl font-extrabold text-rose-400 mb-4">❌ Reserva No Encontrada</h1>
+      <p class="text-slate-300 mb-8">No pudimos encontrar los detalles de esta reserva. Puede que el ID sea incorrecto o la reserva no exista.</p>
        <a routerLink="/booking" class="inline-block mt-8 bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all">
         Hacer una Nueva Reserva
       </a>

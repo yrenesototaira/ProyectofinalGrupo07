@@ -20,9 +20,22 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentResponse processPayment(PaymentRequest request) {
-        Transaction transaction = transactionRepository.findById(request.getTransactionId())
+        // Validate that transactionId is provided
+        if (request.getTransactionId() == null) {
+            throw new RuntimeException("Transaction ID is required");
+        }
+        
+        // Convert Long to Integer for compatibility with existing Transaction entity
+        Integer transactionIdInt = Math.toIntExact(request.getTransactionId());
+        
+        Transaction transaction = transactionRepository.findById(transactionIdInt)
                 .orElseThrow(() -> new RuntimeException("Transaction not found"));
-        if (!transaction.getReservationId().equals(request.getReservationId())) {
+        
+        // Convert Long to Integer for comparison
+        Integer reservationIdInt = request.getReservationId() != null ? 
+            Math.toIntExact(request.getReservationId()) : null;
+            
+        if (!transaction.getReservationId().equals(reservationIdInt)) {
             throw new RuntimeException("Reservation ID does not match transaction");
         }
         // Simulate payment gateway response
@@ -35,8 +48,8 @@ public class PaymentServiceImpl implements PaymentService {
         transactionRepository.save(transaction);
 
         return PaymentResponse.builder()
-                .transactionId(transaction.getId())
-                .reservationId(transaction.getReservationId())
+                .transactionId((long) transaction.getId()) // Convert Integer to Long
+                .reservationId((long) transaction.getReservationId()) // Convert Integer to Long
                 .paymentDate(transaction.getPaymentDate())
                 .paymentMethod(transaction.getPaymentMethod())
                 .amount(transaction.getAmount())

@@ -348,32 +348,185 @@
       <!-- Step 6: Payment -->
       @case (6) {
         <div class="animate-fade-in">
-          <h2 class="text-3xl font-bold text-slate-100 mb-6">6. Detalles del Pago</h2>
-          <div class="bg-slate-700 p-6 rounded-lg space-y-4">
-            <div class="flex justify-between text-xl font-bold text-amber-500">
-                <span>Monto a Pagar:</span><span>{{ menuTotal() | currency }}</span>
-            </div>
-            <div class="mt-6">
-              <label class="block text-sm font-medium text-slate-300 mb-2">Método de Pago</label>
-              <div class="flex space-x-4">
-                <button (click)="paymentMethod.set('Tarjeta')" class="flex-1 p-4 rounded-lg border-2 transition" [class.bg-amber-500]="paymentMethod() === 'Tarjeta'" [class.border-amber-500]="paymentMethod() === 'Tarjeta'" [class.border-slate-600]="paymentMethod() !== 'Tarjeta'">Tarjeta</button>
-                <button (click)="paymentMethod.set('Efectivo')" class="flex-1 p-4 rounded-lg border-2 transition" [class.bg-amber-500]="paymentMethod() === 'Efectivo'" [class.border-amber-500]="paymentMethod() === 'Efectivo'" [class.border-slate-600]="paymentMethod() !== 'Efectivo'">Efectivo (Pagar en el restaurante)</button>
+          <h2 class="text-3xl font-bold text-slate-100 mb-6">💳 Detalles del Pago</h2>
+          
+          <!-- Payment Summary -->
+          <div class="bg-slate-700 p-6 rounded-lg mb-6">
+            <h3 class="text-xl font-semibold text-amber-500 mb-4">Resumen del Pago</h3>
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <span class="text-slate-300">Reserva para:</span>
+                <span class="font-semibold">{{ customerName() }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-300">Fecha y hora:</span>
+                <span class="font-semibold">{{ selectedDate() }} a las {{ selectedTime() }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-300">Mesa:</span>
+                <span class="font-semibold">Mesa #{{ currentReservation().table?.id }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-300">Comensales:</span>
+                <span class="font-semibold">{{ guests() }} persona{{ guests() > 1 ? 's' : '' }}</span>
+              </div>
+              <hr class="border-slate-600 my-3">
+              <div class="flex justify-between text-xl font-bold text-amber-500">
+                <span>Total a Pagar:</span>
+                <span>{{ menuTotal() | currency:'PEN':'symbol':'1.2-2' }}</span>
               </div>
             </div>
-            @if(paymentMethod() === 'Tarjeta') {
-              <div class="mt-4 space-y-4 animate-fade-in">
-                <input type="text" placeholder="Número de Tarjeta" class="w-full bg-slate-600 p-3 rounded-md">
-                <div class="flex space-x-4">
-                  <input type="text" placeholder="MM/AA" class="w-1/2 bg-slate-600 p-3 rounded-md">
-                  <input type="text" placeholder="CVC" class="w-1/2 bg-slate-600 p-3 rounded-md">
+          </div>
+
+          @if (paymentProcessing()) {
+            <!-- Processing Payment -->
+            <div class="bg-blue-900 p-6 rounded-lg text-center">
+              <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <h3 class="text-xl font-semibold text-blue-200 mb-2">Procesando Pago...</h3>
+              <p class="text-blue-300">Por favor espere mientras procesamos su pago de forma segura.</p>
+            </div>
+          } @else if (paymentError()) {
+            <!-- Payment Error -->
+            <div class="bg-red-900 p-6 rounded-lg mb-6">
+              <h3 class="text-xl font-semibold text-red-200 mb-2">❌ Error en el Pago</h3>
+              <p class="text-red-300">{{ paymentError() }}</p>
+              <button 
+                (click)="clearPaymentError()" 
+                class="mt-4 bg-red-700 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors">
+                Intentar Nuevamente
+              </button>
+            </div>
+          }
+
+          <!-- Payment Form -->
+          @if (!paymentProcessing()) {
+            <div class="bg-slate-700 p-6 rounded-lg">
+              <h3 class="text-xl font-semibold text-amber-500 mb-6">Información de la Tarjeta</h3>
+              
+              <div class="space-y-4">
+                <!-- Card Number -->
+                <div>
+                  <label for="cardNumber" class="block text-sm font-medium text-slate-300 mb-2">
+                    Número de Tarjeta *
+                  </label>
+                  <div class="relative">
+                    <input 
+                      type="text" 
+                      id="cardNumber" 
+                      [ngModel]="cardNumber()" 
+                      (ngModelChange)="updateCardNumber($event)"
+                      placeholder="1234 5678 9012 3456"
+                      maxlength="19"
+                      class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
+                      [class.border-red-500]="cardNumber() && !isCardNumberValid()"
+                      [class.border-green-500]="cardNumber() && isCardNumberValid()">
+                    <div class="absolute right-3 top-3 text-sm text-slate-400">
+                      {{ getCardType() }}
+                    </div>
+                  </div>
+                  @if (cardNumber() && !isCardNumberValid()) {
+                    <p class="text-red-400 text-sm mt-1">Número de tarjeta inválido</p>
+                  }
+                </div>
+
+                <!-- Expiration and CVV -->
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label for="expirationMonth" class="block text-sm font-medium text-slate-300 mb-2">
+                      Mes de Vencimiento *
+                    </label>
+                    <select 
+                      id="expirationMonth" 
+                      [ngModel]="expirationMonth()" 
+                      (ngModelChange)="expirationMonth.set($event)"
+                      class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+                      <option value="">Mes</option>
+                      @for(month of months; track month.value) {
+                        <option [value]="month.value">{{ month.label }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div>
+                    <label for="expirationYear" class="block text-sm font-medium text-slate-300 mb-2">
+                      Año de Vencimiento *
+                    </label>
+                    <select 
+                      id="expirationYear" 
+                      [ngModel]="expirationYear()" 
+                      (ngModelChange)="expirationYear.set($event)"
+                      class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+                      <option value="">Año</option>
+                      @for(year of years; track year) {
+                        <option [value]="year">{{ year }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label for="cvv" class="block text-sm font-medium text-slate-300 mb-2">
+                    CVV/CVC *
+                  </label>
+                  <input 
+                    type="text" 
+                    id="cvv" 
+                    [ngModel]="cvv()" 
+                    (ngModelChange)="cvv.set($event)"
+                    placeholder="123"
+                    maxlength="4"
+                    class="w-32 bg-slate-600 border-slate-500 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
+                    [class.border-red-500]="cvv() && !isCvvValid()"
+                    [class.border-green-500]="cvv() && isCvvValid()">
+                  @if (cvv() && !isCvvValid()) {
+                    <p class="text-red-400 text-sm mt-1">CVV inválido</p>
+                  }
+                </div>
+
+                <!-- Security Notice -->
+                <div class="bg-slate-800 p-4 rounded-lg border border-slate-600">
+                  <div class="flex items-start space-x-3">
+                    <div class="text-green-500 mt-1">🔒</div>
+                    <div>
+                      <h4 class="font-semibold text-slate-200 mb-1">Pago Seguro</h4>
+                      <p class="text-slate-400 text-sm">
+                        Tu información de pago está protegida con encriptación SSL de 256 bits. 
+                        Utilizamos Culqi, una pasarela de pagos certificada y segura.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Test Cards Info (only in development) -->
+                <div class="bg-blue-900 p-4 rounded-lg">
+                  <h4 class="font-semibold text-blue-200 mb-2">💡 Tarjetas de Prueba</h4>
+                  <div class="text-blue-300 text-sm space-y-1">
+                    <p><strong>Visa:</strong> 4111 1111 1111 1111</p>
+                    <p><strong>Mastercard:</strong> 5111 1111 1111 1118</p>
+                    <p><strong>CVV:</strong> Cualquier 3 dígitos</p>
+                    <p><strong>Fecha:</strong> Cualquier fecha futura</p>
+                  </div>
                 </div>
               </div>
-            }
-          </div>
-          <div class="mt-8 flex justify-center gap-4">
-            <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
-            <button (click)="processPayment()" [disabled]="!paymentMethod()" class="bg-emerald-500 text-white font-bold py-3 px-8 rounded-full hover:bg-emerald-600 transition-all disabled:bg-slate-600">Finalizar</button>
-          </div>
+            </div>
+          }
+
+          <!-- Action Buttons -->
+          @if (!paymentProcessing()) {
+            <div class="mt-8 flex justify-center gap-4">
+              <button 
+                (click)="prevStep()" 
+                class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">
+                🠬 Atrás
+              </button>
+              <button 
+                (click)="processPaymentWithCulqi()" 
+                [disabled]="!isPaymentFormValid()"
+                class="bg-emerald-500 text-white font-bold py-3 px-8 rounded-full hover:bg-emerald-600 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
+                💳 Pagar {{ menuTotal() | currency:'PEN':'symbol':'1.2-2' }}
+              </button>
+            </div>
+          }
         </div>
       }
     }

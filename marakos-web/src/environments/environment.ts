@@ -4,5 +4,5 @@ export const environment = {
   apiUrlCustomer: 'http://localhost:8081/api',
   apiUrlReservation: 'http://localhost:8083/api',
   apiUrlAdmin: 'http://localhost:8080/api/admin', 
- 
+  apiUrlCulqi: 'http://localhost:8084/api/payment'
 };

@@ -13,12 +13,23 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class PaymentResponse {
-    private Integer transactionId;
-    private Integer reservationId;
+    // Existing fields for compatibility
+    private Long transactionId;
+    private Long reservationId;
     private LocalDateTime paymentDate;
     private String paymentMethod;
     private BigDecimal amount;
     private String status;
     private String externalTransactionId;
+    
+    // Additional fields for Culqi integration
+    private String culqiChargeId;
+    private String currency;
+    private String customerEmail;
+    private String description;
+    private LocalDateTime processedAt;
+    private String referenceCode;
+    private String errorMessage;
+    private String cardLastFour;
 }
 
