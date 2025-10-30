@@ -53,6 +53,11 @@ public class ReservationController {
         return ResponseEntity.ok(reservationService.isEventAvailable(eventTypeId, date, shift));
     }
 
+    @GetMapping("/availability")
+    public ResponseEntity<List<ScheduleAvailabilityResponse>> getScheduleAvailability(@RequestParam LocalDate date) {
+        return ResponseEntity.ok(reservationService.getScheduleAvailability(date));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<ReservationResponse> updateReservation(@PathVariable Integer id,
                                                                  @Valid @RequestBody ReservationRequest request) {

@@ -23,6 +23,8 @@ public class constant {
     public static final String RESERVATION_CANCELLED_MESSAGE = "Su reserva ha sido cancelada. Código de reserva: ";
 
     public static final String RESERVATION_STATUS_PENDING= "PENDIENTE";
+    public static final String RESERVATION_STATUS_CANCELED= "CANCELADO";
+
     public static final String NOTIFICATION_STATUS_PENDING= "PENDIENTE";
     public static final String NOTIFICATION_STATUS_SENT= "ENVIADO";
 }

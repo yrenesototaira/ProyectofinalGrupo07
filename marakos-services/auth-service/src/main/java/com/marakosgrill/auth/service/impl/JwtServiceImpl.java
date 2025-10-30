@@ -3,7 +3,6 @@ package com.marakosgrill.auth.service.impl;
 import com.marakosgrill.auth.model.User;
 import com.marakosgrill.auth.service.JwtService;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

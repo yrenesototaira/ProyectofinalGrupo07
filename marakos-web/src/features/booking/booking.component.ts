@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { BookingService } from '../../core/services/booking.service';
 import { RestaurantDataService } from '../../core/services/restaurant-data.service';
 import { AuthService } from '../../core/services/auth.service';
+import { PaymentService, PaymentRequest, PaymentResponse } from '../../core/services/payment.service';
 import { Table, MenuItem } from '../../core/models/restaurant.model';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 
@@ -20,6 +21,7 @@ export class BookingComponent {
   bookingService = inject(BookingService);
   private restaurantDataService = inject(RestaurantDataService);
   private authService = inject(AuthService);
+  private paymentService = inject(PaymentService);
 
   step = signal(1);
   
@@ -51,16 +53,41 @@ export class BookingComponent {
   termsAccepted = signal(false);
   isTermsModalOpen = signal(false);
   
-  // Step 5 signals
+  // Step 6 signals - Payment
   paymentMethod = signal<'Tarjeta'|'Efectivo'|null>(null);
+  cardNumber = signal('');
+  expirationMonth = signal('');
+  expirationYear = signal('');
+  cvv = signal('');
+  paymentProcessing = signal(false);
+  paymentError = signal<string | null>(null);
   
   currentReservation = this.bookingService.currentReservation;
   menuTotal = this.bookingService.menuTotal;
   currentUser = this.authService.currentUser;
 
+  // Helper data for dropdowns
+  months = [
+    { value: '01', label: '01 - Enero' },
+    { value: '02', label: '02 - Febrero' },
+    { value: '03', label: '03 - Marzo' },
+    { value: '04', label: '04 - Abril' },
+    { value: '05', label: '05 - Mayo' },
+    { value: '06', label: '06 - Junio' },
+    { value: '07', label: '07 - Julio' },
+    { value: '08', label: '08 - Agosto' },
+    { value: '09', label: '09 - Septiembre' },
+    { value: '10', label: '10 - Octubre' },
+    { value: '11', label: '11 - Noviembre' },
+    { value: '12', label: '12 - Diciembre' }
+  ];
+
+  years: string[] = [];
+
   constructor() {
     this.generateAvailableDates();
     this.bookingService.resetBooking();
+    this.generateYears();
     
     // Initialize customer data from current user session
     // TODO: Replace with actual backend service call when ready
@@ -211,6 +238,168 @@ export class BookingComponent {
     // Fake payment processing
     console.log('Processing payment...');
     this.finalizeReservation();
+  }
+
+  // Payment-related methods
+  private generateYears() {
+    const currentYear = new Date().getFullYear();
+    this.years = [];
+    for (let i = 0; i <= 10; i++) {
+      this.years.push((currentYear + i).toString());
+    }
+  }
+
+  updateCardNumber(value: string) {
+    // Format card number with spaces
+    const formatted = this.paymentService.formatCardNumber(value);
+    this.cardNumber.set(formatted);
+  }
+
+  isCardNumberValid(): boolean {
+    return this.paymentService.validateCardNumber(this.cardNumber());
+  }
+
+  getCardType(): string {
+    if (!this.cardNumber()) return '';
+    return this.paymentService.getCardType(this.cardNumber());
+  }
+
+  isCvvValid(): boolean {
+    if (!this.cvv()) return false;
+    return this.paymentService.validateCVV(this.cvv(), this.getCardType());
+  }
+
+  isExpirationValid(): boolean {
+    if (!this.expirationMonth() || !this.expirationYear()) return false;
+    return this.paymentService.validateExpirationDate(this.expirationMonth(), this.expirationYear());
+  }
+
+  isPaymentFormValid(): boolean {
+    return this.isCardNumberValid() && 
+           this.isCvvValid() && 
+           this.isExpirationValid() &&
+           !!this.customerName() &&
+           !!this.customerEmail() &&
+           !!this.customerPhone();
+  }
+
+  clearPaymentError() {
+    this.paymentError.set(null);
+  }
+
+  processPaymentWithCulqi() {
+    if (!this.isPaymentFormValid()) {
+      this.paymentError.set('Por favor complete todos los campos correctamente.');
+      return;
+    }
+
+    this.paymentProcessing.set(true);
+    this.paymentError.set(null);
+
+    // Prepare payment request
+    const paymentRequest: PaymentRequest = {
+      reservationId: 0, // Will be set after reservation creation
+      amount: this.menuTotal(),
+      customerEmail: this.customerEmail(),
+      customerName: this.customerName(),
+      customerPhone: this.customerPhone(),
+      paymentMethod: 'Tarjeta', // Set as card payment
+      cardNumber: this.cardNumber().replace(/\s/g, ''), // Remove spaces
+      cvv: this.cvv(),
+      expirationMonth: this.expirationMonth(),
+      expirationYear: this.expirationYear()
+    };
+
+    // First create the reservation, then process payment
+    this.createReservationAndProcessPayment(paymentRequest);
+  }
+
+  private createReservationAndProcessPayment(paymentRequest: PaymentRequest) {
+    const products = this.currentReservation().menuItems.map(item => ({
+      productId: item.item.id,
+      quantity: item.quantity,
+      subtotal: item.item.price * item.quantity,
+      observation: null
+    }));
+    
+    const paymentDate = this.selectedDate() + 'T' + this.selectedTime();
+
+    const reservationData = {
+      customerId: this.currentUser()?.idPersona ?? null,
+      reservationDate: this.selectedDate(),
+      reservationTime: this.selectedTime(),
+      peopleCount: this.guests(),
+      status: 'PENDIENTE',
+      paymentMethod: 'Digital',
+      reservationType: 'MESA',
+      eventTypeId: null,
+      eventShift: null,
+      tableDistributionType: null,
+      tableClothColor: null,
+      holderDocument: this.customerDocument(),
+      holderPhone: this.customerPhone(),
+      holderName: this.customerName(),
+      holderEmail: this.customerEmail(),
+      observation: this.currentReservation().specialRequests,
+      employeeId: null,
+      createdBy: this.currentUser()?.idUsuario ?? null,
+      tables: [
+        { tableId: this.currentReservation().table?.id }
+      ],
+      products: products,
+      events: null,
+      payments: [] // Will be updated after payment processing
+    };
+
+    console.log('Creating reservation with payment...', reservationData);
+
+    // Create reservation first
+    this.bookingService.confirmReservation(reservationData).subscribe({
+      next: (reservationResponse) => {
+        console.log('Reservation created successfully:', reservationResponse);
+        
+        // Update payment request with reservation ID
+        paymentRequest.reservationId = reservationResponse.id;
+        
+        // Process payment with Culqi
+        this.paymentService.processPaymentWithCulqi(paymentRequest).subscribe({
+          next: (paymentResponse: PaymentResponse) => {
+            console.log('Payment processed successfully:', paymentResponse);
+            this.paymentProcessing.set(false);
+            
+            // Navigate to confirmation page with payment success details
+            this.router.navigate(['/confirmation', reservationResponse.id], {
+              queryParams: {
+                transactionId: paymentResponse.culqiChargeId,
+                amount: paymentResponse.amount,
+                status: paymentResponse.status,
+                paymentSuccess: 'true'
+              }
+            });
+          },
+          error: (error) => {
+            console.error('Payment failed but reservation was created:', error);
+            this.paymentProcessing.set(false);
+            
+            // Important: Don't navigate multiple times
+            // Only navigate once with payment failure information
+            this.router.navigate(['/confirmation', reservationResponse.id], {
+              queryParams: {
+                paymentFailed: 'true',
+                paymentError: error.userMessage || 'Error procesando el pago',
+                reservationCreated: 'true'
+              }
+            });
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error creating reservation:', error);
+        this.paymentProcessing.set(false);
+        this.paymentError.set('Error creando la reserva. Intente nuevamente.');
+        // Don't navigate on reservation creation error
+      }
+    });
   }
 
   finalizeReservation() {

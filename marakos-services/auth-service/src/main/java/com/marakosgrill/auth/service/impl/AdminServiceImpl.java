@@ -518,8 +518,4 @@ public class AdminServiceImpl implements AdminService {
      * Genera una contraseña temporal que será reemplazada por el usuario
      * usando el proceso "Olvidé mi contraseña"
      */
-    private String generateTemporaryPassword() {
-        // Generar una contraseña temporal corta pero segura
-        return "TEMP_" + System.currentTimeMillis() % 10000;
-    }
 }
