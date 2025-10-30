@@ -2,6 +2,7 @@ package com.marakosgrill.reservation.service;
 
 import com.marakosgrill.reservation.dto.ReservationRequest;
 import com.marakosgrill.reservation.dto.ReservationResponse;
+import com.marakosgrill.reservation.dto.ScheduleAvailabilityResponse;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -15,4 +16,6 @@ public interface ReservationService {
     boolean isEventAvailable(Integer eventTypeId, LocalDate date, String shift);
     ReservationResponse updateReservation(Integer id, ReservationRequest request);
     ReservationResponse cancelReservation(Integer id);
+    // Consulta la disponibilidad de horarios y mesas para una fecha específica
+    List<ScheduleAvailabilityResponse> getScheduleAvailability(LocalDate date);
 }
