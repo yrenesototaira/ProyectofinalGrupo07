@@ -57,11 +57,11 @@ export class AdminReservationsComponent {
   getStatusBadgeClass(status: Reservation['status']): string {
     const baseClasses = 'font-bold px-3 py-1 text-xs rounded-full';
     switch (status) {
-      case 'Confirmada':
+      case 'Pendiente':
         return `${baseClasses} bg-sky-400/20 text-sky-300`;
-      case 'Completada':
+      case 'Confirmado':
         return `${baseClasses} bg-slate-600 text-slate-200`;
-      case 'Cancelada':
+      case 'Cancelado':
         return `${baseClasses} bg-rose-400/20 text-rose-300`;
       default:
         return baseClasses;

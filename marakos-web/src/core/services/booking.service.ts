@@ -37,7 +37,7 @@ export class BookingService {
     paymentMethod: null,
     specialRequests: '',
     termsAccepted: false,
-    status: 'Confirmada',
+    status: 'Confirmado',
     paymentStatus: undefined,
   };
 
@@ -59,7 +59,7 @@ export class BookingService {
       paymentMethod: 'Tarjeta',
       specialRequests: 'Window seat if possible.',
       termsAccepted: true,
-      status: 'Confirmada',
+      status: 'Confirmado',
       paymentStatus: 'Pagado'
     }
   ]);
@@ -144,7 +144,7 @@ export class BookingService {
         ...state, 
         id: reservationId,
         userId: this.authService.currentUser()?.idUsuario ?? null,
-        status: 'Confirmada',
+        status: 'Confirmado',
         paymentStatus: state.totalCost > 0 ? 'Pagado' : undefined
     }));
     const newReservation = this.reservationState();
@@ -179,7 +179,7 @@ export class BookingService {
 
   processRefund(id: string) {
     this.allReservationsState.update(reservations => 
-      reservations.map(r => r.id === id ? { ...r, status: 'Cancelada', paymentStatus: 'Reembolsado' } : r)
+      reservations.map(r => r.id === id ? { ...r, status: 'Cancelado', paymentStatus: 'Reembolsado' } : r)
     );
   }
 
