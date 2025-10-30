@@ -256,6 +256,47 @@ public class ReservationServiceImpl implements ReservationService {
                 .findAny().isEmpty();
     }
 
+    @Override
+    public List<ScheduleAvailabilityResponse> getScheduleAvailability(LocalDate date) {
+        // Definir horarios fijos
+        String[][] schedules = {
+            {"08:00:00", "Mañana"}, {"09:00:00", "Mañana"}, {"10:00:00", "Mañana"}, {"11:00:00", "Mañana"}, {"12:00:00", "Mañana"},
+            {"13:00:00", "Tarde"}, {"14:00:00", "Tarde"}, {"15:00:00", "Tarde"}, {"16:00:00", "Tarde"}, {"17:00:00", "Tarde"}, {"18:00:00", "Tarde"},
+            {"19:00:00", "Noche"}, {"20:00:00", "Noche"}, {"21:00:00", "Noche"}, {"22:00:00", "Noche"}, {"23:00:00", "Noche"}
+        };
+        // Definir mesas fijas
+        int[] tableIds = {1,2,3,4,5,6,7,8};
+        String[] tableNames = {"MESA-01","MESA-02","MESA-03","MESA-04","MESA-05","MESA-06","MESA-07","MESA-08"};
+
+        List<ReservationTable> reservationTables = reservationTableRepository.findAll().stream()
+                .filter(rt -> rt.getReservation().getReservationDate().equals(date)
+                        && Boolean.TRUE.equals(rt.getActive())
+                        && !RESERVATION_STATUS_CANCELED.equals(rt.getReservation().getStatus()))
+                .toList();
+
+        List<ScheduleAvailabilityResponse> result = new java.util.ArrayList<>();
+        for (String[] schedule : schedules) {
+            String time = schedule[0];
+            String shift = schedule[1];
+            List<TableAvailabilityResponse> tables = new java.util.ArrayList<>();
+            int reservedtables = 0;
+            for (int i = 0; i < tableIds.length; i++) {
+                int tableId = tableIds[i];
+                String tableName = tableNames[i];
+
+                boolean isReserved = reservationTables.stream().anyMatch(rt ->
+                        rt.getTableId() == tableId &&
+                        rt.getReservation().getReservationTime().equals(java.time.LocalTime.parse(time))
+                );
+                if (isReserved) reservedtables++;
+                tables.add(new TableAvailabilityResponse(tableId, tableName, !isReserved));
+            }
+            boolean scheduleAvailable = reservedtables < tableIds.length;
+            result.add(new ScheduleAvailabilityResponse(time, shift, scheduleAvailable, tables));
+        }
+        return result;
+    }
+
     private ReservationResponse toResponse(Reservation reservation) {
         List<ReservationTableResponse> tables = reservationTableRepository.findAll().stream()
                 .filter(rt -> rt.getReservation().getId().equals(reservation.getId()))
