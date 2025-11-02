@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import { Reservation, Table, MenuItem } from '../models/restaurant.model';
+import { ReservationEdit } from '../models/reservation-edit.model';
 
 @Injectable({ providedIn: 'root' })
 export class BookingService {
@@ -18,9 +19,27 @@ export class BookingService {
     return this.http.get<any[]>(`${environment.apiUrlReservation}/reservation/customer/${currentUser.idPersona}`);
   }
 
+  getReservationById(id: string): Observable<ReservationEdit> {
+    return this.http.get<ReservationEdit>(`${environment.apiUrlReservation}/reservation/${id}`);
+  }
+
+  confirmReservation(resevationData: any): Observable<any> {
+    console.log('confirmReservation', resevationData);
+    return this.http.post<any>(`${environment.apiUrlReservation}/reservation`, resevationData);
+  }
+
+  updateReservation(id: number, resevationData: any) {
+    console.log('updateReservation', resevationData);
+    return this.http.put(`${environment.apiUrlReservation}/reservation/${id}`, resevationData);
+  }
+
   cancelReservation(id: string): Observable<any> {
     return this.http.patch(`${environment.apiUrlReservation}/reservation/${id}/cancel`, {});
   }
+
+
+
+
 
   // Metodos antiguos:
     private initialReservationState: Reservation = {
@@ -37,7 +56,7 @@ export class BookingService {
     paymentMethod: null,
     specialRequests: '',
     termsAccepted: false,
-    status: 'Confirmada',
+    status: 'Confirmado',
     paymentStatus: undefined,
   };
 
@@ -59,7 +78,7 @@ export class BookingService {
       paymentMethod: 'Tarjeta',
       specialRequests: 'Window seat if possible.',
       termsAccepted: true,
-      status: 'Confirmada',
+      status: 'Confirmado',
       paymentStatus: 'Pagado'
     }
   ]);
@@ -144,7 +163,7 @@ export class BookingService {
         ...state, 
         id: reservationId,
         userId: this.authService.currentUser()?.idUsuario ?? null,
-        status: 'Confirmada',
+        status: 'Confirmado',
         paymentStatus: state.totalCost > 0 ? 'Pagado' : undefined
     }));
     const newReservation = this.reservationState();
@@ -153,11 +172,9 @@ export class BookingService {
     return reservationId;
   }
 
-  confirmReservation(resevationData: any): Observable<any> {
-    console.log('confirmReservation', resevationData);
-    return this.http.post<any>(`${environment.apiUrlReservation}/reservation`, resevationData);
-  }
+
   
+
   getReservationById_Old(id: string): Reservation | undefined {
     // This is a temporary fix for when confirming a reservation.
     // The "confirmed" reservation is still in the booking service's transient state.
@@ -167,19 +184,11 @@ export class BookingService {
     return this.allReservationsState().find(r => r.id === id);
   }
 
-  getReservationById(id: string): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrlReservation}/reservation/${id}`);
-  }
-  
-  updateReservation(id: string, updates: Partial<Reservation>) {
-    this.allReservationsState.update(reservations => 
-      reservations.map(r => r.id === id ? { ...r, ...updates } : r)
-    );
-  }
+
 
   processRefund(id: string) {
     this.allReservationsState.update(reservations => 
-      reservations.map(r => r.id === id ? { ...r, status: 'Cancelada', paymentStatus: 'Reembolsado' } : r)
+      reservations.map(r => r.id === id ? { ...r, status: 'Cancelado', paymentStatus: 'Reembolsado' } : r)
     );
   }
 
