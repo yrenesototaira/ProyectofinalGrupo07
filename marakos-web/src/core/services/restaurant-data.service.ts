@@ -1,18 +1,10 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { Table, MenuItem } from '../models/restaurant.model';
+import { TableService } from './table.service';
 
 @Injectable({ providedIn: 'root' })
 export class RestaurantDataService {
-  private readonly tables: Table[] = [
-    { id: 1, capacity: 2, isAvailable: true, shape: 'square' },
-    { id: 2, capacity: 2, isAvailable: true, shape: 'square' },
-    { id: 3, capacity: 4, isAvailable: false, shape: 'round' },
-    { id: 4, capacity: 4, isAvailable: true, shape: 'square' },
-    { id: 5, capacity: 6, isAvailable: true, shape: 'square' },
-    { id: 6, capacity: 8, isAvailable: true, shape: 'round' },
-    { id: 7, capacity: 2, isAvailable: true, shape: 'round' },
-    { id: 8, capacity: 4, isAvailable: true, shape: 'square' },
-  ];
+  private tableService = inject(TableService);
 
   private readonly initialMenu: MenuItem[] = [
     { id: 1, name: 'Bruschetta', description: 'Grilled bread with tomatoes, garlic, basil.', price: 12, category: 'Appetizer', imageUrl: 'https://picsum.photos/id/10/400/300' },
@@ -28,7 +20,7 @@ export class RestaurantDataService {
   private menuSignal = signal<MenuItem[]>(this.initialMenu);
 
   getTables() {
-    return signal(this.tables);
+    return this.tableService.getTablesSignal();
   }
 
   getMenu() {

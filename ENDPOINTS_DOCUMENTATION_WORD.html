@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentación de Endpoints - Sistema Marakos Grill</title>
+    <style>
+        body {
+            font-family: 'Calibri', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 40px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #e74c3c;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #16a085;
+            margin-top: 25px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        }
+        th {
+            background-color: #34495e;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        tr:hover {
+            background-color: #e8f4f8;
+        }
+        .service-header {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0 10px 0;
+            border-left: 5px solid #3498db;
+        }
+        .endpoint-group {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+            border-left: 3px solid #16a085;
+        }
+        .method-get { color: #28a745; font-weight: bold; }
+        .method-post { color: #007bff; font-weight: bold; }
+        .method-put { color: #ffc107; font-weight: bold; }
+        .method-patch { color: #fd7e14; font-weight: bold; }
+        .method-delete { color: #dc3545; font-weight: bold; }
+        .summary-table {
+            background-color: #f1f3f4;
+            border: 2px solid #34495e;
+        }
+        .summary-table th {
+            background-color: #2c3e50;
+        }
+        .port-info {
+            color: #7f8c8d;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+        .total-row {
+            background-color: #e8f4f8 !important;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>📋 DOCUMENTACIÓN DE ENDPOINTS - SISTEMA MARAKOS GRILL</h1>
+    <p><strong>Arquitectura:</strong> Microservicios REST API</p>
+    <p><strong>Fecha:</strong> Noviembre 2025</p>
+    <p><strong>Versión:</strong> 1.0</p>
+
+    <h2>🔐 AUTH-SERVICE</h2>
+    <div class="service-header">
+        <strong>Puerto:</strong> 8080 (Configurado en application.properties)<br>
+        <strong>Base URL:</strong> http://localhost:8080
+    </div>
+
+    <div class="endpoint-group">
+        <h3>🔑 Autenticación (/api/auth)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Método</th>
+                    <th>Endpoint</th>
+                    <th>Descripción</th>
+                    <th>Request Body</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/auth/login</td>
+                    <td>Iniciar sesión</td>
+                    <td>AuthLoginRequest</td>
+                </tr>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/auth/register</td>
+                    <td>Registrar nuevo usuario</td>
+                    <td>AuthRegisterRequest</td>
+                </tr>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/auth/forgot-password</td>
+                    <td>Solicitar reset de contraseña</td>
+                    <td>ForgotPasswordRequest</td>
+                </tr>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/auth/reset-password</td>
+                    <td>Resetear contraseña</td>
+                    <td>ResetPasswordRequest</td>
+                </tr>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/auth/update-password</td>
+                    <td>Actualizar contraseña</td>
+                    <td>UserPasswordUpdateRequest</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="endpoint-group">
+        <h3>👑 Administración (/api/admin)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Método</th>
+                    <th>Endpoint</th>
+                    <th>Descripción</th>
+                    <th>Request Body</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/admin/user-types</td>
+                    <td>Obtener tipos de usuario</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/admin/roles</td>
+                    <td>Obtener roles del sistema</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/admin/users</td>
+                    <td>Crear nuevo usuario</td>
+                    <td>CreateUserRequest</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/admin/users</td>
+                    <td>Listar todos los usuarios</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/admin/users/paginated</td>
+                    <td>Usuarios paginados</td>
+                    <td>Query params</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/admin/users/{id}</td>
+                    <td>Obtener usuario por ID</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/admin/users/{id}/detail</td>
+                    <td>Detalle completo del usuario</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-put">PUT</td>
+                    <td>/api/admin/users/{id}</td>
+                    <td>Actualizar usuario</td>
+                    <td>CreateUserRequest</td>
+                </tr>
+                <tr>
+                    <td class="method-delete">DELETE</td>
+                    <td>/api/admin/users/{id}</td>
+                    <td>Eliminar usuario</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="endpoint-group">
+        <h3>🔧 Debug (/api/debug)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Método</th>
+                    <th>Endpoint</th>
+                    <th>Descripción</th>
+                    <th>Request Body</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/debug/db-connections</td>
+                    <td>Conexiones activas de BD</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/debug/connection-count</td>
+                    <td>Contador de conexiones</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/debug/datasource-info</td>
+                    <td>Información del DataSource</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>👥 CUSTOMER-SERVICE</h2>
+    <div class="service-header">
+        <strong>Puerto:</strong> 8081 (Configurado en application.properties)<br>
+        <strong>Base URL:</strong> http://localhost:8081
+    </div>
+
+    <div class="endpoint-group">
+        <h3>👤 Clientes (/api/customer)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Método</th>
+                    <th>Endpoint</th>
+                    <th>Descripción</th>
+                    <th>Request Body</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/customer/findAll</td>
+                    <td>Listar todos los clientes</td>
+                    <td>Query params</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/customer/{id}</td>
+                    <td>Obtener cliente por ID</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/customer</td>
+                    <td>Crear nuevo cliente</td>
+                    <td>CustomerRequest</td>
+                </tr>
+                <tr>
+                    <td class="method-patch">PATCH</td>
+                    <td>/api/customer/{id}</td>
+                    <td>Actualizar cliente</td>
+                    <td>CustomerRequest</td>
+                </tr>
+                <tr>
+                    <td class="method-delete">DELETE</td>
+                    <td>/api/customer/{id}</td>
+                    <td>Eliminar cliente</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>🍽️ MANAGEMENT-SERVICE</h2>
+    <div class="service-header">
+        <strong>Puerto:</strong> 8082 (Configurado en application.properties)<br>
+        <strong>Base URL:</strong> http://localhost:8082
+    </div>
+
+    <div class="endpoint-group">
+        <h3>📂 Categorías (/api/category)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Método</th>
+                    <th>Endpoint</th>
+                    <th>Descripción</th>
+                    <th>Request Body</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/category/findAll</td>
+                    <td>Listar categorías</td>
+                    <td>Query params</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/category/{id}</td>
+                    <td>Obtener categoría por ID</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/category</td>
+                    <td>Crear nueva categoría</td>
+                    <td>CategoryDTO</td>
+                </tr>
+                <tr>
+                    <td class="method-patch">PATCH</td>
+                    <td>/api/category/{id}</td>
+                    <td>Actualizar categoría</td>
+                    <td>CategoryDTO</td>
+                </tr>
+                <tr>
+                    <td class="method-delete">DELETE</td>
+                    <td>/api/category/{id}</td>
+                    <td>Eliminar categoría</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="endpoint-group">
+        <h3>🍽️ Productos (/api/product)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Método</th>
+                    <th>Endpoint</th>
+                    <th>Descripción</th>
+                    <th>Request Body</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/product/findAll</td>
+                    <td>Listar productos</td>
+                    <td>Query params</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/product/{id}</td>
+                    <td>Obtener producto por ID</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/product/public</td>
+                    <td>Productos públicos (carta)</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/product</td>
+                    <td>Crear nuevo producto</td>
+                    <td>ProductDTO</td>
+                </tr>
+                <tr>
+                    <td class="method-patch">PATCH</td>
+                    <td>/api/product/{id}</td>
+                    <td>Actualizar producto</td>
+                    <td>ProductDTO</td>
+                </tr>
+                <tr>
+                    <td class="method-delete">DELETE</td>
+                    <td>/api/product/{id}</td>
+                    <td>Eliminar producto</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="endpoint-group">
+        <h3>🪑 Mesas (/api/table)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Método</th>
+                    <th>Endpoint</th>
+                    <th>Descripción</th>
+                    <th>Request Body</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/table/findAll</td>
+                    <td>Listar mesas</td>
+                    <td>Query params</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/table/{id}</td>
+                    <td>Obtener mesa por ID</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/table</td>
+                    <td>Crear nueva mesa</td>
+                    <td>TableDTO</td>
+                </tr>
+                <tr>
+                    <td class="method-patch">PATCH</td>
+                    <td>/api/table/{id}</td>
+                    <td>Actualizar mesa</td>
+                    <td>TableDTO</td>
+                </tr>
+                <tr>
+                    <td class="method-delete">DELETE</td>
+                    <td>/api/table/{id}</td>
+                    <td>Eliminar mesa</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="endpoint-group">
+        <h3>🎉 Servicios (/api/service)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Método</th>
+                    <th>Endpoint</th>
+                    <th>Descripción</th>
+                    <th>Request Body</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/service/findAll</td>
+                    <td>Listar servicios</td>
+                    <td>Query params</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/service/{id}</td>
+                    <td>Obtener servicio por ID</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/service</td>
+                    <td>Crear nuevo servicio</td>
+                    <td>ServiceDTO</td>
+                </tr>
+                <tr>
+                    <td class="method-patch">PATCH</td>
+                    <td>/api/service/{id}</td>
+                    <td>Actualizar servicio</td>
+                    <td>ServiceDTO</td>
+                </tr>
+                <tr>
+                    <td class="method-delete">DELETE</td>
+                    <td>/api/service/{id}</td>
+                    <td>Eliminar servicio</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>📅 RESERVATION-SERVICE</h2>
+    <div class="service-header">
+        <strong>Puerto:</strong> 8083 (Configurado en application.properties)<br>
+        <strong>Base URL:</strong> http://localhost:8083
+    </div>
+
+    <div class="endpoint-group">
+        <h3>🎫 Reservas (/api/reservation)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Método</th>
+                    <th>Endpoint</th>
+                    <th>Descripción</th>
+                    <th>Request Body</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/reservation</td>
+                    <td>Crear nueva reserva</td>
+                    <td>ReservationRequest</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/reservation/{id}</td>
+                    <td>Obtener reserva por ID</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/reservation/customer/{customerId}</td>
+                    <td>Reservas por cliente</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/reservation/date/{date}</td>
+                    <td>Reservas por fecha</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/reservation/table-availability</td>
+                    <td>Verificar disponibilidad de mesa</td>
+                    <td>Query params</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/reservation/event-availability</td>
+                    <td>Verificar disponibilidad de evento</td>
+                    <td>Query params</td>
+                </tr>
+                <tr>
+                    <td class="method-put">PUT</td>
+                    <td>/api/reservation/{id}</td>
+                    <td>Actualizar reserva</td>
+                    <td>ReservationRequest</td>
+                </tr>
+                <tr>
+                    <td class="method-patch">PATCH</td>
+                    <td>/api/reservation/{id}/cancel</td>
+                    <td>Cancelar reserva</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="endpoint-group">
+        <h3>📢 Notificaciones (/api/notification)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Método</th>
+                    <th>Endpoint</th>
+                    <th>Descripción</th>
+                    <th>Request Body</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/notification</td>
+                    <td>Crear notificación</td>
+                    <td>NotificationRequest</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/notification/reservation/{reservationId}</td>
+                    <td>Notificaciones por reserva</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/notification/{id}</td>
+                    <td>Obtener notificación por ID</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>💳 PAYMENT-SERVICE</h2>
+    <div class="service-header">
+        <strong>Puerto:</strong> 8084 (Configurado en application.properties)<br>
+        <strong>Base URL:</strong> http://localhost:8084
+    </div>
+
+    <div class="endpoint-group">
+        <h3>💰 Pagos (/api/payment)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Método</th>
+                    <th>Endpoint</th>
+                    <th>Descripción</th>
+                    <th>Request Body</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/payment/send</td>
+                    <td>Procesar pago interno</td>
+                    <td>PaymentRequest</td>
+                </tr>
+                <tr>
+                    <td class="method-post">POST</td>
+                    <td>/api/payment/culqi</td>
+                    <td>Procesar pago con Culqi</td>
+                    <td>PaymentRequest</td>
+                </tr>
+                <tr>
+                    <td class="method-get">GET</td>
+                    <td>/api/payment/health</td>
+                    <td>Estado del servicio</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>📊 RESUMEN ESTADÍSTICO</h2>
+    <table class="summary-table">
+        <thead>
+            <tr>
+                <th>Servicio</th>
+                <th>Puerto</th>
+                <th>Total Endpoints</th>
+                <th>GET</th>
+                <th>POST</th>
+                <th>PUT/PATCH</th>
+                <th>DELETE</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Auth Service</strong></td>
+                <td>8080</td>
+                <td>15</td>
+                <td>9</td>
+                <td>6</td>
+                <td>1</td>
+                <td>1</td>
+            </tr>
+            <tr>
+                <td><strong>Customer Service</strong></td>
+                <td>8081</td>
+                <td>5</td>
+                <td>2</td>
+                <td>1</td>
+                <td>1</td>
+                <td>1</td>
+            </tr>
+            <tr>
+                <td><strong>Management Service</strong></td>
+                <td>8082</td>
+                <td>20</td>
+                <td>12</td>
+                <td>4</td>
+                <td>4</td>
+                <td>4</td>
+            </tr>
+            <tr>
+                <td><strong>Reservation Service</strong></td>
+                <td>8083</td>
+                <td>9</td>
+                <td>6</td>
+                <td>2</td>
+                <td>1</td>
+                <td>0</td>
+            </tr>
+            <tr>
+                <td><strong>Payment Service</strong></td>
+                <td>8084</td>
+                <td>3</td>
+                <td>1</td>
+                <td>2</td>
+                <td>0</td>
+                <td>0</td>
+            </tr>
+            <tr class="total-row">
+                <td><strong>TOTAL SISTEMA</strong></td>
+                <td>-</td>
+                <td><strong>52</strong></td>
+                <td><strong>30</strong></td>
+                <td><strong>15</strong></td>
+                <td><strong>7</strong></td>
+                <td><strong>6</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="margin-top: 40px; padding: 20px; background-color: #f8f9fa; border-radius: 5px;">
+        <p><strong>Notas:</strong></p>
+        <ul>
+            <li>Todos los puertos están configurados en los archivos application.properties de cada microservicio</li>
+            <li>Los endpoints de administración (/api/admin) requieren permisos especiales</li>
+            <li>Los endpoints públicos no requieren autenticación</li>
+            <li>Query params incluye parámetros como: page, size, search, name, active, etc.</li>
+            <li>Base de datos: PostgreSQL en AWS RDS (marakosbd.cx4a2amsay8c.us-east-2.rds.amazonaws.com)</li>
+        </ul>
+    </div>
+
+    <div style="margin-top: 30px; text-align: center; color: #7f8c8d;">
+        <hr>
+        <p><em>Documentación generada el: Noviembre 2025 - Sistema Marakos Grill v1.0</em></p>
+    </div>
+</body>
+</html>

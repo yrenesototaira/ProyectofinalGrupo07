@@ -1,8 +1,12 @@
 export interface Table {
   id: number;
+  code?: string; // Código de la mesa como MESA-01, MESA-02, etc.
   capacity: number;
   isAvailable: boolean;
   shape: 'square' | 'round';
+  location: string; // Cambiado para ser más flexible con los datos de BD
+  number?: number; // Número de mesa, podría ser diferente del ID
+  description?: string; // Descripción adicional
 }
 
 export interface MenuItem {

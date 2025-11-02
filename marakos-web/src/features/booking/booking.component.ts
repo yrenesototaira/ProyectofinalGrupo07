@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 // Fix: Corrected import paths
 import { BookingService } from '../../core/services/booking.service';
 import { RestaurantDataService } from '../../core/services/restaurant-data.service';
+import { TableService } from '../../core/services/table.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PaymentService, PaymentRequest, PaymentResponse } from '../../core/services/payment.service';
 import { Table, MenuItem } from '../../core/models/restaurant.model';
@@ -12,7 +13,7 @@ import { ModalComponent } from '../../shared/components/modal/modal.component';
 
 @Component({
   selector: 'app-booking',
-  imports: [CommonModule, FormsModule, ModalComponent],
+  imports: [CommonModule, FormsModule, ModalComponent, CurrencyPipe],
   templateUrl: './booking.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -20,6 +21,7 @@ export class BookingComponent {
   private router = inject(Router);
   bookingService = inject(BookingService);
   private restaurantDataService = inject(RestaurantDataService);
+  private tableService = inject(TableService);
   private authService = inject(AuthService);
   private paymentService = inject(PaymentService);
 
@@ -43,7 +45,7 @@ export class BookingComponent {
   availableTimes = signal<{ time: string; label: string; available: boolean }[]>([]);
   
   // Step 3 signals - Table Selection
-  tables = this.restaurantDataService.getTables();
+  tables = this.tableService.getTablesSignal();
   selectedTable = signal<Table | null>(null);
   
   // Step 4 signals - Menu
@@ -52,6 +54,9 @@ export class BookingComponent {
   // Step 5 signals - Summary & Terms
   termsAccepted = signal(false);
   isTermsModalOpen = signal(false);
+  
+  // Payment Type Selection
+  paymentType = signal<'online'|'presencial'|null>(null);
   
   // Step 6 signals - Payment
   paymentMethod = signal<'Tarjeta'|'Efectivo'|null>(null);
@@ -89,10 +94,12 @@ export class BookingComponent {
     this.bookingService.resetBooking();
     this.generateYears();
     
+    // Load tables from database
+    this.tableService.loadTables().subscribe();
+    
     // Initialize customer data from current user session
     // TODO: Replace with actual backend service call when ready
     effect(() => {
-      console.log("Effect called Ingreso a la pantalla de reserva de mesa")
       const user = this.currentUser();
       if (user) {
         // Auto-fill customer data with current user info as default
@@ -159,9 +166,22 @@ export class BookingComponent {
 
   // Step 2 - Date & Time Methods
   async checkAvailability() {
-    // This method is no longer needed - availability is checked automatically
-    // Just proceed to next step if date and time are selected
     if (this.selectedDate() && this.selectedTime()) {
+      // Load available tables from database for the selected date, time and guests
+      this.tableService.getAvailableTables(
+        this.selectedDate(), 
+        this.selectedTime(), 
+        this.guests()
+      ).subscribe({
+        next: (availableTables) => {
+          // The tables signal will be updated automatically by the service
+          console.log('Available tables loaded:', availableTables);
+        },
+        error: (error) => {
+          console.error('Error loading available tables:', error);
+        }
+      });
+      
       this.bookingService.setBookingDetails({ 
         date: this.selectedDate(), 
         time: this.selectedTime(), 
@@ -226,9 +246,21 @@ export class BookingComponent {
 
   completeBooking() {
     if (this.menuTotal() > 0) {
-      this.nextStep(); // Go to payment step
+      this.nextStep(); // Go to payment type selection step
     } else {
       this.finalizeReservation();
+    }
+  }
+
+  selectPaymentType(type: 'online' | 'presencial') {
+    this.paymentType.set(type);
+    
+    if (type === 'presencial') {
+      // For presential payment, finalize reservation without payment processing
+      this.finalizeReservationPresencial();
+    } else {
+      // For online payment, go to payment details step (step 7)
+      this.nextStep();
     }
   }
 
@@ -236,7 +268,6 @@ export class BookingComponent {
     if(!this.paymentMethod()) return;
     this.bookingService.setPaymentMethod(this.paymentMethod()!);
     // Fake payment processing
-    console.log('Processing payment...');
     this.finalizeReservation();
   }
 
@@ -351,20 +382,15 @@ export class BookingComponent {
       payments: [] // Will be updated after payment processing
     };
 
-    console.log('Creating reservation with payment...', reservationData);
-
     // Create reservation first
     this.bookingService.confirmReservation(reservationData).subscribe({
       next: (reservationResponse) => {
-        console.log('Reservation created successfully:', reservationResponse);
-        
         // Update payment request with reservation ID
         paymentRequest.reservationId = reservationResponse.id;
         
         // Process payment with Culqi
         this.paymentService.processPaymentWithCulqi(paymentRequest).subscribe({
           next: (paymentResponse: PaymentResponse) => {
-            console.log('Payment processed successfully:', paymentResponse);
             this.paymentProcessing.set(false);
             
             // Navigate to confirmation page with payment success details
@@ -445,11 +471,9 @@ export class BookingComponent {
         { paymentDate: paymentDate, paymentMethod: this.paymentMethod(), amount: this.menuTotal(), status: 'PAGADO', externalTransactionId: null, createdBy: this.currentUser()?.idUsuario ?? null }
       ]
     };
-    console.log('resevationData', resevationData);
 
     this.bookingService.confirmReservation(resevationData).subscribe({
         next: (response) => {
-          console.log('Reservation confirmed successfully:', response);
           this.router.navigate(['/confirmation', response.id]);
         },
         error: (error) => {
@@ -459,6 +483,58 @@ export class BookingComponent {
       }
     );
     // this.router.navigate(['/confirmation', reservationId]);
+  }
+
+  finalizeReservationPresencial() {
+    const products = this.currentReservation().menuItems.map(item => ({
+      productId: item.item.id,
+      quantity: item.quantity,
+      subtotal: item.item.price * item.quantity,
+      observation: null
+    }));
+    
+    const resevationData = {
+      customerId: this.currentUser()?.idPersona ?? null,
+      reservationDate: this.selectedDate(),
+      reservationTime: this.selectedTime(),
+      peopleCount: this.guests(),
+      status: 'PENDIENTE',
+      paymentMethod: 'Presencial',
+      reservationType: 'MESA',
+      eventTypeId: null,
+      eventShift: null,
+      tableDistributionType: null,
+      tableClothColor: null,
+      holderDocument: this.customerDocument(),
+      holderPhone: this.customerPhone(),
+      holderName: this.customerName(),
+      holderEmail: this.customerEmail(),
+      observation: this.currentReservation().specialRequests,
+      employeeId: null,
+      createdBy: this.currentUser()?.idUsuario ?? null,
+      tables: [
+        { tableId: this.currentReservation().table?.id }
+      ],
+      products: products,
+      events: null,
+      payments: [] // No payment yet for presential payment
+    };
+
+    this.bookingService.confirmReservation(resevationData).subscribe({
+        next: (response) => {
+          this.router.navigate(['/confirmation', response.id], {
+            queryParams: {
+              paymentType: 'presencial',
+              amount: this.menuTotal()
+            }
+          });
+        },
+        error: (error) => {
+          console.error('Error confirming reservation:', error);
+          // Handle error, maybe show a message to the user
+        }
+      }
+    );
   }
 
   // Calendar methods
@@ -544,5 +620,61 @@ export class BookingComponent {
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
     return months[this.currentCalendarMonth()];
+  }
+
+  // Table selection and location methods
+  getLocationGroups(): { name: string; tables: any[] }[] {
+    const tables = this.tables();
+    const locationGroups: { [key: string]: any[] } = {};
+    
+    // Group tables by location
+    tables.forEach(table => {
+      if (!locationGroups[table.location]) {
+        locationGroups[table.location] = [];
+      }
+      locationGroups[table.location].push(table);
+    });
+    
+    // Convert to array and sort by location priority (dinámico basado en las ubicaciones reales)
+    const allLocations = Object.keys(locationGroups);
+    
+    // Definir orden de prioridad para ubicaciones conocidas, pero incluir todas las demás
+    const locationPriority: { [key: string]: number } = {
+      'VIP': 1,
+      'Salón privado': 2,
+      'Terraza': 3,
+      'Zona central': 4,
+      'Cerca a ventana': 5,
+      'Ventana': 5,
+      'Jardín': 6,
+      'Zona fumadores': 7,
+      'Interior': 8
+    };
+    
+    return allLocations
+      .sort((a, b) => {
+        const priorityA = locationPriority[a] || 999;
+        const priorityB = locationPriority[b] || 999;
+        return priorityA - priorityB;
+      })
+      .map(location => ({
+        name: location,
+        tables: locationGroups[location].sort((a, b) => a.id - b.id)
+      }));
+  }
+
+  getLocationIcon(location: string): string {
+    const icons: { [key: string]: string } = {
+      'VIP': '👑',
+      'Salón privado': '🎭',
+      'Terraza': '🌅',
+      'Zona central': '🏢',
+      'Cerca a ventana': '🪟',
+      'Ventana': '🪟',
+      'Jardín': '🌳',
+      'Zona fumadores': '🚬',
+      'Interior': '🏠'
+    };
+    return icons[location] || '📍';
   }
 }

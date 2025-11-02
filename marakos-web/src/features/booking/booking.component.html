@@ -2,7 +2,7 @@
   <!-- Progress Bar -->
   <div class="p-6 border-b border-slate-700">
     <div class="flex items-center justify-between">
-      @for(stepInfo of ['Datos', 'Disponibilidad', 'Mesa', 'Menú', 'Resumen', 'Pago']; track stepInfo; let i = $index) {
+      @for(stepInfo of ['Datos', 'Disponibilidad', 'Mesa', 'Menú', 'Resumen', 'Pago', 'Tarjeta']; track $index; let i = $index) {
         <div class="flex items-center" [class.opacity-50]="step() < i + 1">
           <div class="flex items-center justify-center w-10 h-10 rounded-full" [class]="step() >= i + 1 ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-slate-400'">
             <span class="font-bold">{{ i + 1 }}</span>
@@ -11,7 +11,7 @@
             {{ stepInfo }}
           </span>
         </div>
-        @if (i < 5) {
+        @if (i < 6) {
           <div class="flex-auto border-t-2 mx-4" [class]="step() > i + 1 ? 'border-amber-500' : 'border-slate-700'"></div>
         }
       }
@@ -144,7 +144,7 @@
 
                 <!-- Calendar Days -->
                 <div class="grid grid-cols-7 gap-1">
-                  @for(day of getCalendarDays(); track day) {
+                  @for(day of getCalendarDays(); track $index; let i = $index) {
                     <button 
                       (click)="selectCalendarDate(day)"
                       [disabled]="!isDateAvailable(day)"
@@ -225,26 +225,89 @@
       @case (3) {
         <div class="animate-fade-in">
           <h2 class="text-3xl font-bold text-slate-100 mb-6">3. Selecciona tu Mesa</h2>
-          <div class="p-6 bg-slate-900 rounded-lg">
-            <div class="grid grid-cols-4 gap-4">
-              @for(table of tables(); track table.id) {
-                <div 
-                  class="flex items-center justify-center h-20 w-20 text-slate-100 font-bold transition-all duration-300"
-                  [class.bg-emerald-600]="table.isAvailable"
-                  [class.bg-rose-700]="!table.isAvailable"
-                  [class.opacity-50]="!table.isAvailable || table.capacity < guests()"
-                  [class.cursor-pointer]="table.isAvailable && table.capacity >= guests()"
-                  [class.cursor-not-allowed]="!table.isAvailable || table.capacity < guests()"
-                  [class.ring-4]="isTableSelected(table)"
-                  [class.ring-amber-500]="isTableSelected(table)"
-                  [class.rounded-lg]="table.shape === 'square'"
-                  [class.rounded-full]="table.shape === 'round'"
-                  (click)="selectTable(table)">
-                  T{{ table.id }} ({{ table.capacity }})
+          
+          <!-- Table Selection by Location -->
+          <div class="space-y-6">
+            @for(location of getLocationGroups(); track location.name) {
+              <div class="p-6 bg-slate-900 rounded-lg border border-slate-700">
+                <div class="flex items-center mb-4">
+                  <span class="text-2xl mr-3">{{ getLocationIcon(location.name) }}</span>
+                  <h3 class="text-xl font-semibold text-slate-100">{{ location.name }}</h3>
+                  <span class="ml-2 text-sm text-slate-400">({{ location.tables.length }} mesas)</span>
                 </div>
-              }
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  @for(table of location.tables; track table.id) {
+                    <div 
+                      class="relative group cursor-pointer transition-all duration-300 transform hover:scale-105"
+                      [class.opacity-50]="!table.isAvailable || table.capacity < guests()"
+                      [class.cursor-not-allowed]="!table.isAvailable || table.capacity < guests()"
+                      (click)="selectTable(table)">
+                      
+                      <!-- Table Visual -->
+                      <div 
+                        class="flex flex-col items-center justify-center h-20 w-20 mx-auto text-slate-100 font-bold transition-all duration-300 relative"
+                        [class.bg-emerald-600]="table.isAvailable && table.capacity >= guests()"
+                        [class.bg-rose-700]="!table.isAvailable"
+                        [class.bg-yellow-600]="table.isAvailable && table.capacity < guests()"
+                        [class.ring-4]="isTableSelected(table)"
+                        [class.ring-amber-500]="isTableSelected(table)"
+                        [class.rounded-lg]="table.shape === 'square'"
+                        [class.rounded-full]="table.shape === 'round'">
+                        
+                        <!-- Table Number -->
+                        <div class="text-lg font-bold">{{ table.code || table.id }}</div>
+                        <!-- Capacity -->
+                        <div class="text-xs opacity-75">{{ table.capacity }}p</div>
+                        
+                        <!-- Selection indicator -->
+                        @if(isTableSelected(table)) {
+                          <div class="absolute -top-2 -right-2 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
+                            <span class="text-slate-900 text-xs font-bold">✓</span>
+                          </div>
+                        }
+                      </div>
+                      
+                      <!-- Table Status -->
+                      <div class="text-center mt-2">
+                        @if (!table.isAvailable) {
+                          <span class="text-xs text-rose-400 font-medium">Ocupada</span>
+                        } @else if (table.capacity < guests()) {
+                          <span class="text-xs text-yellow-400 font-medium">Muy pequeña</span>
+                        } @else {
+                          <span class="text-xs text-emerald-400 font-medium">Disponible</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Legend -->
+          <div class="mt-6 p-4 bg-slate-800 rounded-lg">
+            <h4 class="text-sm font-semibold text-slate-300 mb-3">Leyenda:</h4>
+            <div class="flex flex-wrap gap-4 text-xs">
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-emerald-600 rounded"></div>
+                <span class="text-slate-300">Disponible</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-rose-700 rounded"></div>
+                <span class="text-slate-300">Ocupada</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-yellow-600 rounded"></div>
+                <span class="text-slate-300">Capacidad insuficiente</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-emerald-600 rounded ring-2 ring-amber-500"></div>
+                <span class="text-slate-300">Mesa seleccionada</span>
+              </div>
             </div>
           </div>
+          
           <div class="mt-8 text-center">
             <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
           </div>
@@ -345,10 +408,96 @@
           </div>
         </div>
       }
-      <!-- Step 6: Payment -->
+      <!-- Step 6: Payment Type Selection -->
       @case (6) {
         <div class="animate-fade-in">
-          <h2 class="text-3xl font-bold text-slate-100 mb-6">💳 Detalles del Pago</h2>
+          <h2 class="text-3xl font-bold text-slate-100 mb-6">💳 Forma de Pago</h2>
+          <p class="text-slate-300 text-center mb-8">Elige cómo prefieres realizar el pago de tu pre-orden</p>
+          
+          <!-- Payment Summary -->
+          <div class="bg-slate-700 p-6 rounded-lg mb-8">
+            <h3 class="text-xl font-semibold text-amber-500 mb-4">Resumen del Monto a Pagar</h3>
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <span class="text-slate-300">Pre-orden de comida:</span>
+                <span class="font-semibold">{{ menuTotal() | currency:'PEN':'symbol':'1.2-2' }}</span>
+              </div>
+              <hr class="border-slate-600 my-3">
+              <div class="flex justify-between text-xl font-bold text-amber-500">
+                <span>Total a Pagar:</span>
+                <span>{{ menuTotal() | currency:'PEN':'symbol':'1.2-2' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Type Options -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <!-- Online Payment Option -->
+            <div class="bg-slate-700 rounded-lg p-6 border-2 transition-all cursor-pointer hover:border-amber-500"
+                 [class.border-amber-500]="paymentType() === 'online'"
+                 [class.bg-amber-500/10]="paymentType() === 'online'"
+                 (click)="selectPaymentType('online')">
+              <div class="text-center">
+                <div class="text-4xl mb-4">💳</div>
+                <h3 class="text-xl font-bold text-slate-100 mb-3">Pago Online</h3>
+                <p class="text-slate-300 mb-4">Paga ahora de forma segura con tu tarjeta de crédito o débito</p>
+                <div class="bg-green-600 text-white py-2 px-4 rounded-full text-sm font-medium inline-block">
+                  ✓ Pago Inmediato
+                </div>
+              </div>
+              <div class="mt-4 text-sm text-slate-400">
+                <p>• Procesamiento inmediato</p>
+                <p>• Confirmación automática</p>
+                <p>• Sin necesidad de ir al local antes</p>
+              </div>
+            </div>
+
+            <!-- Presential Payment Option -->
+            <div class="bg-slate-700 rounded-lg p-6 border-2 transition-all cursor-pointer hover:border-amber-500"
+                 [class.border-amber-500]="paymentType() === 'presencial'"
+                 [class.bg-amber-500/10]="paymentType() === 'presencial'"
+                 (click)="selectPaymentType('presencial')">
+              <div class="text-center">
+                <div class="text-4xl mb-4">🏪</div>
+                <h3 class="text-xl font-bold text-slate-100 mb-3">Pago Presencial</h3>
+                <p class="text-slate-300 mb-4">Paga cuando llegues al restaurante</p>
+                <div class="bg-orange-600 text-white py-2 px-4 rounded-full text-sm font-medium inline-block">
+                  📅 Pagar en Local
+                </div>
+              </div>
+              <div class="mt-4 text-sm text-slate-400">
+                <p>• Pago en efectivo o tarjeta</p>
+                <p>• Debes llegar <strong class="text-orange-400">dentro de 24 horas</strong></p>
+                <p>• Confirma tu llegada al personal</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Important Notice for Presential Payment -->
+          @if (paymentType() === 'presencial') {
+            <div class="bg-orange-900 border border-orange-500 rounded-lg p-6 mb-6">
+              <h4 class="text-lg font-semibold text-orange-200 mb-2">⚠️ Importante - Pago Presencial</h4>
+              <div class="text-orange-300 space-y-2">
+                <p>• <strong>Debes acercarte al restaurante dentro de las próximas 24 horas</strong> para confirmar y pagar tu reserva.</p>
+                <p>• La reserva quedará en estado <strong>PENDIENTE DE PAGO</strong> hasta tu llegada.</p>
+                <p>• Puedes pagar en efectivo o con tarjeta en el local.</p>
+                <p>• Si no confirmas el pago en 24 horas, tu reserva será cancelada automáticamente.</p>
+              </div>
+            </div>
+          }
+
+          <div class="mt-8 flex justify-center gap-4">
+            <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
+            @if (paymentType() === 'online') {
+              <span class="text-slate-400 py-3 px-8">Procesando...</span>
+            }
+          </div>
+        </div>
+      }
+      <!-- Step 7: Online Payment Details -->
+      @case (7) {
+        <div class="animate-fade-in">
+          <h2 class="text-3xl font-bold text-slate-100 mb-6">💳 Detalles del Pago Online</h2>
           
           <!-- Payment Summary -->
           <div class="bg-slate-700 p-6 rounded-lg mb-6">

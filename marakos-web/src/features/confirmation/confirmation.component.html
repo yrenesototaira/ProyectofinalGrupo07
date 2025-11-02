@@ -11,8 +11,31 @@
   @else if (reservation()?.id) {
     <div class="bg-slate-800 p-8 rounded-lg shadow-2xl">
       
+      <!-- Presential Payment -->
+      @if (isPresentialPayment()) {
+        <div class="mb-6 p-6 bg-orange-900 border-2 border-orange-500 rounded-lg">
+          <h1 class="text-3xl font-extrabold text-orange-400 mb-4">🏪 ¡Reserva Confirmada - Pago Presencial!</h1>
+          <p class="text-orange-200 mb-4">
+            ¡Excelente! Tu reserva ha sido <strong>confirmada exitosamente</strong>.
+          </p>
+          <div class="bg-orange-800 p-4 rounded-lg mb-4">
+            <p class="text-orange-100 font-semibold mb-2">
+              📅 <strong>IMPORTANTE:</strong> Debes presentarte en el restaurante dentro de las próximas 24 horas para pagar tu pre-orden.
+            </p>
+            <p class="text-orange-100 text-sm">
+              💰 <strong>Monto a pagar en el local:</strong> {{ paymentAmount() | currency:'PEN':'symbol':'1.2-2' }}
+            </p>
+          </div>
+          <div class="text-orange-300 text-sm space-y-2">
+            <p>• Puedes pagar en efectivo o con tarjeta en el restaurante</p>
+            <p>• Presenta este código QR al personal para confirmar tu reserva</p>
+            <p>• Si no pagas dentro de 24 horas, tu reserva será cancelada automáticamente</p>
+          </div>
+        </div>
+      } 
+
       <!-- Payment Failed but Reservation Created -->
-      @if (paymentFailed() && reservationCreated()) {
+      @else if (paymentFailed() && reservationCreated()) {
         <div class="mb-6 p-6 bg-amber-900 border-2 border-amber-600 rounded-lg">
           <h1 class="text-3xl font-extrabold text-amber-400 mb-4">⚠️ Reserva Creada - Pago Pendiente</h1>
           <p class="text-amber-200 mb-4">
@@ -66,7 +89,13 @@
         }
 
         <!-- Payment Status -->
-        @if (paymentFailed() && reservationCreated()) {
+        @if (isPresentialPayment()) {
+          <div class="mt-4 p-4 bg-orange-900 rounded-lg">
+            <p class="text-orange-200"><strong>Estado del Pago:</strong> Pendiente de Pago Presencial</p>
+            <p class="text-orange-200"><strong>Monto a Pagar:</strong> {{ paymentAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+            <p class="text-orange-200 text-sm mt-2">⏰ Pagar en el restaurante dentro de 24 horas</p>
+          </div>
+        } @else if (paymentFailed() && reservationCreated()) {
           <div class="mt-4 p-4 bg-red-900 rounded-lg">
             <p class="text-red-200"><strong>Estado del Pago:</strong> Pendiente</p>
             <p class="text-red-200 text-sm mt-2">Puedes pagar en el restaurante o intentar pagar en línea más tarde.</p>
@@ -110,6 +139,21 @@
             <li>• Puedes pagar la pre-orden directamente en el restaurante</li>
             <li>• También puedes acceder a tus reservas desde tu perfil para intentar pagar nuevamente</li>
             <li>• Si tienes dudas, contacta al restaurante con tu código de reserva</li>
+          </ul>
+        </div>
+      }
+
+      <!-- Additional Info for Presential Payment -->
+      @if (isPresentialPayment()) {
+        <div class="mt-6 p-4 bg-orange-800 border border-orange-500 rounded-lg text-left">
+          <h4 class="font-semibold text-orange-200 mb-2">📋 Instrucciones para el Pago Presencial:</h4>
+          <ul class="text-orange-300 text-sm space-y-1">
+            <li>• <strong>Plazo:</strong> Tienes 24 horas desde ahora para pagar en el restaurante</li>
+            <li>• <strong>Qué llevar:</strong> Tu documento de identidad y este código QR</li>
+            <li>• <strong>Formas de pago aceptadas:</strong> Efectivo, tarjeta de crédito/débito</li>
+            <li>• <strong>Ubicación:</strong> Marakos Grill - Av. Principal 123, Lima</li>
+            <li>• <strong>Horarios de atención:</strong> Lunes a Domingo de 12:00 PM a 11:00 PM</li>
+            <li>• <strong>Importante:</strong> Si no pagas en 24 horas, tu reserva se cancelará automáticamente</li>
           </ul>
         </div>
       }

@@ -24,12 +24,10 @@ export class BookingService {
   }
 
   confirmReservation(resevationData: any): Observable<any> {
-    console.log('confirmReservation', resevationData);
     return this.http.post<any>(`${environment.apiUrlReservation}/reservation`, resevationData);
   }
 
   updateReservation(id: number, resevationData: any) {
-    console.log('updateReservation', resevationData);
     return this.http.put(`${environment.apiUrlReservation}/reservation/${id}`, resevationData);
   }
 
@@ -69,7 +67,7 @@ export class BookingService {
       date: '2024-08-15',
       time: '20:00',
       guests: 2,
-      table: { id: 4, capacity: 4, isAvailable: true, shape: 'square' },
+      table: { id: 4, capacity: 4, isAvailable: true, shape: 'square', location: 'Terraza' },
       menuItems: [
         { item: { id: 201, name: 'Filet Mignon', description: '8oz center-cut tenderloin, with mashed potatoes.', price: 45, category: 'Main Course' }, quantity: 2 },
         { item: { id: 401, name: 'Red Wine', description: 'Glass of house Cabernet Sauvignon.', price: 16, category: 'Beverage' }, quantity: 2 },
@@ -168,7 +166,6 @@ export class BookingService {
     }));
     const newReservation = this.reservationState();
     this.allReservationsState.update(reservations => [...reservations, newReservation]);
-    console.log('Reservation Confirmed:', newReservation);
     return reservationId;
   }
 

@@ -26,6 +26,9 @@ public class TableEntity {
     @Column(name = "ubicacion", length = 100)
     private String location;
 
+    @Column(name = "forma", length = 20)
+    private String shape;
+
     @Column(name = "estado", length = 20)
     private String status;
 

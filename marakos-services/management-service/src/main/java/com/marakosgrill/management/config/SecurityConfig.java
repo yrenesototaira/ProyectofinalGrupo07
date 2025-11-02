@@ -58,6 +58,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/product/public").permitAll()
+                        .requestMatchers("/api/table/findAll").permitAll() // Permitir acceso público a las mesas
+                        .requestMatchers("/api/table/**").permitAll() // Permitir acceso público a todas las operaciones de mesa (temporal)
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )

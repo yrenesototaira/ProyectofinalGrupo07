@@ -26,4 +26,29 @@ export class HeaderComponent {
   closeMobileMenu() {
     this.isMobileMenuOpen = false;
   }
+
+  getUserInitials(): string {
+    const user = this.currentUser();
+    if (!user || !user.nombre) return 'U';
+    
+    const names = user.nombre.split(' ');
+    if (names.length >= 2) {
+      return (names[0][0] + names[1][0]).toUpperCase();
+    }
+    return user.nombre[0].toUpperCase();
+  }
+
+  getRoleDisplayName(): string {
+    const user = this.currentUser();
+    if (!user) return '';
+    
+    switch (user.tipoUsuario) {
+      case 'Empleado':
+        return 'Administrador';
+      case 'Cliente':
+        return 'Cliente';
+      default:
+        return user.tipoUsuario || 'Usuario';
+    }
+  }
 }

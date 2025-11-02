@@ -52,7 +52,6 @@ export class PaymentService {
     return this.http.post<PaymentResponse>(`${this.apiUrl}/culqi`, paymentData, { headers })
       .pipe(
         map(response => {
-          console.log('Payment processed successfully:', response);
           return response;
         }),
         catchError(error => {

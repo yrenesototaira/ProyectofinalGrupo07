@@ -46,6 +46,7 @@ public class TableServiceImpl implements TableService {
         table.setCode(dto.getCode());
         table.setCapacity(dto.getCapacity());
         table.setLocation(dto.getLocation());
+        table.setShape(dto.getShape());
         table.setStatus(dto.getStatus());
         table.setUpdatedBy(dto.getUpdatedBy());
         table.setUpdatedAt(java.time.LocalDateTime.now());
@@ -67,6 +68,7 @@ public class TableServiceImpl implements TableService {
                 .code(table.getCode())
                 .capacity(table.getCapacity())
                 .location(table.getLocation())
+                .shape(table.getShape())
                 .status(table.getStatus())
                 .createdBy(table.getCreatedBy())
                 .updatedBy(table.getUpdatedBy())
@@ -80,6 +82,7 @@ public class TableServiceImpl implements TableService {
                 .code(dto.getCode())
                 .capacity(dto.getCapacity())
                 .location(dto.getLocation())
+                .shape(dto.getShape())
                 .status(dto.getStatus())
                 .createdBy(dto.getCreatedBy())
                 .updatedBy(dto.getUpdatedBy())

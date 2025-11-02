@@ -189,11 +189,8 @@ export class ReservationTypeComponent implements OnInit, OnDestroy {
 
   // Método para navegar a las páginas de reserva
   navigateToBooking(route: string) {
-    console.log('Navegando a:', route);
-    
     // Feedback visual opcional
     const routeType = route.includes('mesa') ? 'mesa' : 'evento';
-    console.log(`Usuario seleccionó: ${routeType === 'mesa' ? 'Reserva de Mesa' : 'Planificación de Evento'}`);
     
     this.router.navigate([route]).catch(error => {
       console.error('Error al navegar:', error);

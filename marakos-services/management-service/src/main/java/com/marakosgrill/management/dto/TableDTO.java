@@ -26,6 +26,9 @@ public class TableDTO {
     private String location;
 
     @Size(max = 20)
+    private String shape;
+
+    @Size(max = 20)
     private String status;
 
     private Integer createdBy;

@@ -25,6 +25,10 @@ export class ConfirmationComponent implements OnInit, AfterViewInit {
   paymentSuccess = signal<boolean>(false);
   paymentError = signal<string | null>(null);
   reservationCreated = signal<boolean>(false);
+  
+  // Presential payment signals
+  isPresentialPayment = signal<boolean>(false);
+  paymentAmount = signal<number>(0);
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -36,14 +40,13 @@ export class ConfirmationComponent implements OnInit, AfterViewInit {
     this.paymentError.set(queryParams['paymentError'] || null);
     this.reservationCreated.set(queryParams['reservationCreated'] === 'true');
     
-    console.log('Confirmation Component - Query params:', queryParams);
-    console.log('Payment failed:', this.paymentFailed());
-    console.log('Reservation created:', this.reservationCreated());
+    // Handle presential payment
+    this.isPresentialPayment.set(queryParams['paymentType'] === 'presencial');
+    this.paymentAmount.set(parseFloat(queryParams['amount']) || 0);
     
     if (id) {
       this.bookingService.getReservationById(id).subscribe({
         next: (data) => {
-          console.log('Reservation data loaded:', data);
           this.reservation.set(data);
           this.isLoading.set(false);
         },
@@ -64,7 +67,6 @@ export class ConfirmationComponent implements OnInit, AfterViewInit {
   retryPayment() {
     // TODO: Implementar lógica para reintentar el pago
     // Podría redirigir a una página de pago específica o mostrar un modal de pago
-    console.log('Retry payment for reservation:', this.reservation()?.id);
     // Por ahora, simplemente refrescar la página o redirigir al booking
     // this.router.navigate(['/payment-retry'], { queryParams: { reservationId: this.reservation()?.id } });
   }
