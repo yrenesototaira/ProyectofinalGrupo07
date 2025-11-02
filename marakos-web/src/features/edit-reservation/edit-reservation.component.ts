@@ -3,8 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BookingService } from '../../core/services/booking.service';
-import { RestaurantDataService } from '../../core/services/restaurant-data.service';
-import { MenuItem, Reservation } from '../../core/models/restaurant.model';
+import { ProductService } from '../../core/services/product.service';
+import { ReservationEdit, ReservationEvent, ReservationProduct } from '../../core/models/reservation-edit.model';
+import { Product } from '../../core/models/product.model';
+import { AuthService } from '@/src/core/services/auth.service';
+import { AdditionalServicesService } from '@/src/core/services/additional-services.service';
 
 @Component({
   selector: 'app-edit-reservation',
@@ -16,143 +19,183 @@ export class EditReservationComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private bookingService = inject(BookingService);
-  private restaurantDataService = inject(RestaurantDataService);
+  private productService = inject(ProductService);
+  private additionalServicesService = inject(AdditionalServicesService);
+  private authService = inject(AuthService);
+  currentUser = this.authService.currentUser;
 
-  reservationId = signal<string | null>(null);
-  reservation = signal<Reservation | null>(null);
+  reservation = signal<ReservationEdit | null>(null);
+  allProducts = signal<Product[]>([]);
+  allServices = signal<any[]>([]);
+  editedProducts = signal<ReservationProduct[]>([]);
+  editedServices = signal<ReservationEvent[]>([]);
 
   // Dynamic return path
-  returnPath = signal('/dashboard/reservations');
+  returnPath = signal('/dashboard/my-reservations');
 
-  // Editable fields
-  guests = signal(2);
-  selectedDate = signal('');
-  selectedTime = signal('');
-  menuItems = signal<{ item: MenuItem; quantity: number }[]>([]);
-  specialRequests = signal('');
+  productsTotal = computed(() => {
+    return this.editedProducts().reduce((total, p) => total + p.subtotal, 0);
+  });
 
-  // Control state
-  isCheckingAvailability = signal(false);
-  availabilityMessage = signal('');
-  availabilityChecked = signal(false);
+  servicesTotal = computed(() => {
+    return this.editedServices().reduce((total, s) => total + s.subtotal, 0);
+  });
 
-  // Data
-  menu = this.restaurantDataService.getMenu();
-
-  totalCost = computed(() =>
-    this.menuItems().reduce((acc, curr) => acc + curr.item.price * curr.quantity, 0)
-  );
+  grandTotal = computed(() => {
+    const reservationBasePrice = this.reservation()?.reservationType === 'EVENTO' ? 50 : 0;
+    return this.productsTotal() + this.servicesTotal() + reservationBasePrice;
+  });
 
   ngOnInit() {
     if (this.router.url.startsWith('/admin')) {
       this.returnPath.set('/admin/reservations');
     }
 
+    this.loadAllProducts();
+    this.loadAllServices();
+
     const id = this.route.snapshot.paramMap.get('id');
-    // if (id) {
-    //   const existingReservation = this.bookingService.getReservationById(id);
-    //   if (existingReservation && existingReservation.status === 'Confirmada') {
-    //     this.reservationId.set(id);
-    //     this.reservation.set(existingReservation);
-    //     // Initialize editable fields
-    //     this.guests.set(existingReservation.guests);
-    //     this.selectedDate.set(existingReservation.date ?? '');
-    //     this.selectedTime.set(existingReservation.time ?? '');
-    //     this.menuItems.set(JSON.parse(JSON.stringify(existingReservation.menuItems))); // Deep copy
-    //     this.specialRequests.set(existingReservation.specialRequests ?? '');
-    //   } else {
-    //     // If not found or not editable, go back to the list
-    //     this.router.navigate([this.returnPath()]);
-    //   }
-    // }
-  }
-  
-  getTodayDateString(): string {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    const day = today.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-  
-  onDetailsChange() {
-    this.availabilityChecked.set(false);
-    this.availabilityMessage.set('');
-  }
-
-  async checkAvailability() {
-    this.isCheckingAvailability.set(true);
-    this.availabilityMessage.set('');
-    const available = await this.restaurantDataService.checkAvailability(
-      this.selectedDate(),
-      this.selectedTime(),
-      this.guests()
-    );
-    if (available) {
-      this.availabilityMessage.set('¡Perfecto! Hay disponibilidad para la nueva fecha/hora.');
-      this.availabilityChecked.set(true);
-    } else {
-      this.availabilityMessage.set('Lo sentimos, no hay disponibilidad en el nuevo horario. Por favor, intenta de nuevo.');
-      this.availabilityChecked.set(false);
-    }
-    this.isCheckingAvailability.set(false);
-  }
-
-  addMenuItem(item: MenuItem) {
-    this.menuItems.update(items => {
-      const existingItem = items.find(i => i.item.id === item.id);
-      if (existingItem) {
-        existingItem.quantity++;
-        return [...items];
-      }
-      return [...items, { item, quantity: 1 }];
-    });
-  }
-
-  removeMenuItem(itemId: number) {
-    this.menuItems.update(items => {
-      const updatedItems = items.map(i => {
-        if (i.item.id === itemId) {
-          return { ...i, quantity: i.quantity - 1 };
+    if (id) {
+      this.bookingService.getReservationById(id).subscribe({
+        next: (data) => {
+          this.reservation.set(data);
+          this.editedProducts.set(JSON.parse(JSON.stringify(data.products)));
+          this.editedServices.set(JSON.parse(JSON.stringify(data.events)));
+        },
+        error: (err) => {
+          console.error('Error loading reservation data', err);
+          this.router.navigate([this.returnPath()]);
         }
-        return i;
       });
-      return updatedItems.filter(i => i.quantity > 0);
+    } else {
+      this.router.navigate([this.returnPath()]);
+    }
+  }
+
+  loadAllProducts() {
+    this.productService.getProducts().subscribe({
+      next: (products) => {
+        this.allProducts.set(products);
+      },
+      error: (err) => console.error('Error loading products', err)
     });
   }
 
-  getItemQuantity(itemId: number): number {
-    return this.menuItems().find(i => i.item.id === itemId)?.quantity ?? 0;
-  }
-  
-  saveChanges() {
-    if (!this.availabilityChecked() && this.detailsChanged()) {
-      this.availabilityMessage.set('Debes verificar la disponibilidad de los nuevos detalles antes de guardar.');
-      return;
-    }
-    
-    if (this.reservationId()) {
-      this.bookingService.updateReservation(this.reservationId()!, {
-        date: this.selectedDate(),
-        time: this.selectedTime(),
-        guests: this.guests(),
-        menuItems: this.menuItems(),
-        totalCost: this.totalCost(),
-        specialRequests: this.specialRequests(),
-      });
-      
-      // Navigate to the correct place after saving
-      if (this.router.url.startsWith('/admin')) {
-        this.router.navigate(['/admin/reservations']);
-      } else {
-        this.router.navigate(['/dashboard/reservations', this.reservationId()]);
-      }
-    }
+  loadAllServices() {
+    this.additionalServicesService.getAditionalServices().subscribe({
+      next: (services) => {
+        this.allServices.set(services);
+      },
+      error: (err) => console.error('Error loading services', err)
+    });
   }
 
-  detailsChanged(): boolean {
-      const original = this.reservation();
-      if (!original) return false;
-      return original.date !== this.selectedDate() || original.time !== this.selectedTime() || original.guests !== this.guests();
+  getProductQuantity(productId: number): number {
+    const product = this.editedProducts().find(p => p.productId === productId);
+    return product ? product.quantity : 0;
+  }
+
+  getServiceQuantity(serviceId: number): number {
+    const service = this.editedServices().find(s => s.serviceId === serviceId);
+    return service ? service.quantity : 0;
+  }
+
+  addProduct(productToAdd: Product) {
+    this.editedProducts.update(products => {
+      const existingProduct = products.find(p => p.productId === productToAdd.id);
+      if (existingProduct) {
+        existingProduct.quantity++;
+        existingProduct.subtotal = existingProduct.quantity * productToAdd.price;
+      } else {
+        products.push({
+          id: 0, // New items have no reservation-specific ID yet
+          productId: productToAdd.id,
+          quantity: 1,
+          subtotal: productToAdd.price,
+          observation: null
+        });
+      }
+      return [...products];
+    });
+  }
+
+  removeProduct(productId: number) {
+    this.editedProducts.update(products => {
+      const existingProduct = products.find(p => p.productId === productId);
+      if (existingProduct) {
+        const productInfo = this.allProducts().find(p => p.id === productId);
+        existingProduct.quantity--;
+        if (existingProduct.quantity <= 0) {
+          return products.filter(p => p.productId !== productId);
+        } else {
+          if (productInfo) {
+            existingProduct.subtotal = existingProduct.quantity * productInfo.price;
+          }
+        }
+      }
+      return [...products];
+    });
+  }
+
+  addService(serviceToAdd: any) {
+    this.editedServices.update(services => {
+      const existingService = services.find(s => s.serviceId === serviceToAdd.id);
+      if (existingService) {
+        existingService.quantity++;
+        existingService.subtotal = existingService.quantity * serviceToAdd.price;
+      } else {
+        services.push({
+          id: 0, // New items have no reservation-specific ID yet
+          serviceId: serviceToAdd.id,
+          quantity: 1,
+          subtotal: serviceToAdd.price,
+          observation: null
+        });
+      }
+      return [...services];
+    });
+  }
+
+  removeService(serviceId: number) {
+    this.editedServices.update(services => {
+      const existingService = services.find(s => s.serviceId === serviceId);
+      if (existingService) {
+        const serviceInfo = this.allServices().find(s => s.id === serviceId);
+        existingService.quantity--;
+        if (existingService.quantity <= 0) {
+          return services.filter(s => s.serviceId !== serviceId);
+        } else {
+          if (serviceInfo) {
+            existingService.subtotal = existingService.quantity * serviceInfo.price;
+          }
+        }
+      }
+      return [...services];
+    });
+  }
+
+  saveChanges() {
+    const currentReservation = this.reservation();
+    if (currentReservation) {
+      const updatedReservation: ReservationEdit = {
+        ...currentReservation,
+        createdBy: this.currentUser()?.idUsuario ?? null,
+        products: this.editedProducts(),
+        events: this.editedServices()
+      };
+      console.log('Saving changes:', updatedReservation);
+      console.log('returnPath', this.returnPath());
+
+      // this.bookingService.updateReservation(currentReservation.id, updatedReservation).subscribe({
+      //   next: () => {
+      //     console.log('Changes saved successfully');
+      //     this.router.navigate([this.returnPath()]);
+      //   },
+      //   error: (err) => console.error('Error saving changes', err)
+      // });
+    } else {
+      console.error('No reservation found');
+      this.router.navigate([this.returnPath()]);
+    }
   }
 }

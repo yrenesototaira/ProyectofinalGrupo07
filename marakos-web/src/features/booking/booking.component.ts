@@ -418,7 +418,7 @@ export class BookingComponent {
       reservationDate: this.selectedDate(),
       reservationTime: this.selectedTime(),
       peopleCount: this.guests(),
-      status: 'PENDIENTE',
+      status: 'PENDIENTE',  // AUITAR ESTE CAMPO
       paymentMethod: 'Digital',
       reservationType: 'MESA',
       eventTypeId: null,
