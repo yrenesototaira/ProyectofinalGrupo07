@@ -91,6 +91,14 @@ export class AuthService {
     return this.http.post(`${environment.apiUrl}/auth/update-password`, data);
   }
 
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post(`${environment.apiUrlAuth}/auth/forgot-password`, { email });
+  }
+
+  resetPassword(data: { email: string, verificationCode: string, newPassword: string }): Observable<any> {
+    return this.http.post(`${environment.apiUrlAuth}/auth/reset-password`, data);
+  }
+
 
   
   // Admin methods

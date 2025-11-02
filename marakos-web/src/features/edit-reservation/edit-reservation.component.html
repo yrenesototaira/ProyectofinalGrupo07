@@ -1,100 +1,195 @@
 <div>
   <a [routerLink]="returnPath()" class="inline-flex items-center gap-2 text-amber-500 hover:text-amber-400 mb-6">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-    Cancelar y Volver
+    Volver a Mis Reservas
   </a>
 
   @if(reservation(); as res) {
     <h1 class="text-3xl font-bold text-slate-100 mb-2">Editar Reserva</h1>
-    <p class="text-slate-400 mb-6">ID: <span class="font-mono">{{ res.id }}</span></p>
+    <p class="text-slate-400 mb-6">Editando la reserva con código: <span class="font-mono bg-slate-700 px-2 py-1 rounded">{{ res.code }}</span></p>
 
-    <div class="space-y-8">
+    <form (ngSubmit)="saveChanges()" #editForm="ngForm" class="space-y-8">
+
+      <!-- Detalles Generales -->
+      <div class="bg-slate-700/50 border border-slate-700 p-6 rounded-lg">
+        <h2 class="text-xl font-bold text-slate-200 mb-4">Información General</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-slate-400">Estado</label>
+            <p class="text-lg font-semibold mt-1" [ngClass]="{ 'text-sky-400': res.status === 'PENDIENTE', 'text-emerald-400': res.status === 'CONFIRMADO', 'text-rose-400': res.status === 'CANCELADO' }">{{ res.status }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-400">Tipo de Reserva</label>
+            <p class="text-lg font-semibold mt-1">{{ res.reservationType }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-400">Fecha de Creación</label>
+            <p class="text-lg font-semibold mt-1">{{ res.createdAt | date:'dd/MM/yyyy h:mm a' }}</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Detalles de la Reserva -->
       <div class="bg-slate-700/50 border border-slate-700 p-6 rounded-lg">
         <h2 class="text-xl font-bold text-slate-200 mb-4">Detalles de la Reserva</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label for="guests" class="block text-sm font-medium text-slate-300 mb-2">Comensales</label>
-            <select id="guests" [ngModel]="guests()" (ngModelChange)="guests.set($event); onDetailsChange()" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-              @for(i of [1,2,3,4,5,6,7,8]; track i) { <option [value]="i">{{ i }} Comensal{{ i > 1 ? 'es' : '' }}</option> }
-            </select>
+            <label for="peopleCount" class="block text-sm font-medium text-slate-300 mb-2">Comensales</label>
+            <input type="number" id="peopleCount" name="peopleCount" [(ngModel)]="res.peopleCount" class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
           </div>
           <div>
-            <label for="date" class="block text-sm font-medium text-slate-300 mb-2">Fecha</label>
-            <input type="date" id="date" [ngModel]="selectedDate()" (ngModelChange)="selectedDate.set($event); onDetailsChange()" [min]="getTodayDateString()" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+            <label for="reservationDate" class="block text-sm font-medium text-slate-300 mb-2">Fecha</label>
+            <input type="date" id="reservationDate" name="reservationDate" [(ngModel)]="res.reservationDate" class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
           </div>
           <div>
-            <label for="time" class="block text-sm font-medium text-slate-300 mb-2">Hora</label>
-            <select id="time" [ngModel]="selectedTime()" (ngModelChange)="selectedTime.set($event); onDetailsChange()" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-              <option value="18:00">06:00 PM</option>
-              <option value="19:00">07:00 PM</option>
-              <option value="20:00">08:00 PM</option>
-              <option value="21:00">09:00 PM</option>
-            </select>
+            <label for="reservationTime" class="block text-sm font-medium text-slate-300 mb-2">Hora</label>
+            <input type="time" id="reservationTime" name="reservationTime" [(ngModel)]="res.reservationTime" class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
           </div>
         </div>
-         @if(detailsChanged()){
-          <div class="mt-6 text-center">
-              <button (click)="checkAvailability()" [disabled]="isCheckingAvailability()" class="bg-sky-600 text-white font-bold py-2 px-6 rounded-full hover:bg-sky-500 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed">
-                @if (isCheckingAvailability()) {
-                  <span>Verificando...</span>
-                } @else {
-                  <span>Verificar Nueva Disponibilidad</span>
-                }
-              </button>
-              @if (availabilityMessage()) {
-                <p class="mt-4 text-sm" [class.text-emerald-400]="availabilityMessage().startsWith('¡Perfecto!')" [class.text-rose-400]="availabilityMessage().startsWith('Lo sentimos')">{{ availabilityMessage() }}</p>
-              }
+        @if (res.reservationType === 'EVENTO') {
+          <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="holderName" class="block text-sm font-medium text-slate-300 mb-2">Nombre del Titular</label>
+              <input type="text" id="holderName" name="holderName" [(ngModel)]="res.holderName" class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
+            </div>
+            <div>
+              <label for="holderEmail" class="block text-sm font-medium text-slate-300 mb-2">Email del Titular</label>
+              <input type="email" id="holderEmail" name="holderEmail" [(ngModel)]="res.holderEmail" class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
+            </div>
           </div>
         }
+        <div class="mt-6">
+            <label for="observation" class="block text-sm font-medium text-slate-300 mb-2">Observaciones</label>
+            <textarea id="observation" name="observation" [(ngModel)]="res.observation" rows="3" class="w-full bg-slate-600 border-slate-500 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500"></textarea>
+        </div>
       </div>
 
-      <!-- Pedido del Menú -->
+      <!-- Productos -->
       <div class="bg-slate-700/50 border border-slate-700 p-6 rounded-lg">
-        <h2 class="text-xl font-bold text-slate-200 mb-4">Pedido del Menú</h2>
+        <h2 class="text-xl font-bold text-slate-200 mb-4">Editar Productos del Pedido</h2>
         <div class="space-y-4 max-h-96 overflow-y-auto pr-2">
-          @for(item of menu(); track item.id) {
+          @for(product of allProducts(); track product.id) {
             <div class="flex items-center justify-between bg-slate-700 p-4 rounded-lg">
               <div>
-                <h4 class="font-bold text-lg">{{ item.name }}</h4>
-                <p class="text-sm text-slate-400">{{ item.description }}</p>
-                <p class="text-amber-500 font-semibold mt-1">{{ item.price | currency }}</p>
+                <h4 class="font-bold text-lg">{{ product.name }}</h4>
+                <p class="text-sm text-slate-400">{{ product.description }}</p>
+                <p class="text-amber-500 font-semibold mt-1">{{ product.price | currency }}</p>
               </div>
               <div class="flex items-center space-x-3">
-                @if (getItemQuantity(item.id) > 0) {
-                  <button (click)="removeMenuItem(item.id)" class="w-8 h-8 rounded-full bg-slate-600 hover:bg-slate-500">-</button>
-                  <span class="w-8 text-center font-bold">{{ getItemQuantity(item.id) }}</span>
+                @if (getProductQuantity(product.id) > 0) {
+                  <button type="button" (click)="removeProduct(product.id)" class="w-8 h-8 rounded-full bg-slate-600 hover:bg-slate-500">-</button>
+                  <span class="w-8 text-center font-bold">{{ getProductQuantity(product.id) }}</span>
                 }
-                <button (click)="addMenuItem(item)" class="w-8 h-8 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-900">+</button>
+                <button type="button" (click)="addProduct(product)" class="w-8 h-8 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-900">+</button>
               </div>
             </div>
           }
+          @empty {
+            <p class="text-slate-400">No hay productos disponibles para agregar.</p>
+          }
         </div>
-        @if(menuItems().length > 0) {
+        @if(editedProducts().length > 0) {
            <div class="mt-4 pt-4 border-t border-slate-600 flex justify-between text-lg font-bold text-amber-500">
-            <span>Nuevo Costo Total:</span><span>{{ totalCost() | currency }}</span>
+            <span>Nuevo Total de Productos:</span><span>{{ productsTotal() | currency }}</span>
            </div>
         }
       </div>
 
-      <!-- Peticiones Especiales -->
+      <!-- Servicios Adicionales -->
       <div class="bg-slate-700/50 border border-slate-700 p-6 rounded-lg">
-        <h2 class="text-xl font-bold text-slate-200 mb-4">Peticiones Especiales</h2>
-        <textarea [ngModel]="specialRequests()" (ngModelChange)="specialRequests.set($event)" rows="3" class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500" placeholder="Ej: Alergias, celebración de cumpleaños, etc."></textarea>
+        <h2 class="text-xl font-bold text-slate-200 mb-4">Editar Servicios Adicionales</h2>
+        <div class="space-y-4 max-h-96 overflow-y-auto pr-2">
+          @for(service of allServices(); track service.id) {
+            <div class="flex items-center justify-between bg-slate-700 p-4 rounded-lg">
+              <div>
+                <h4 class="font-bold text-lg">{{ service.name }}</h4>
+                <p class="text-sm text-slate-400">{{ service.description }}</p>
+                <p class="text-amber-500 font-semibold mt-1">{{ service.price | currency }}</p>
+              </div>
+              <div class="flex items-center space-x-3">
+                @if (getServiceQuantity(service.id) > 0) {
+                  <button type="button" (click)="removeService(service.id)" class="w-8 h-8 rounded-full bg-slate-600 hover:bg-slate-500">-</button>
+                  <span class="w-8 text-center font-bold">{{ getServiceQuantity(service.id) }}</span>
+                }
+                <button type="button" (click)="addService(service)" class="w-8 h-8 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-900">+</button>
+              </div>
+            </div>
+          }
+          @empty {
+            <p class="text-slate-400">No hay servicios disponibles para agregar.</p>
+          }
+        </div>
+        @if(editedServices().length > 0) {
+          <div class="mt-4 pt-4 border-t border-slate-600 flex justify-between text-lg font-bold text-amber-500">
+            <span>Nuevo Total de Servicios:</span><span>{{ servicesTotal() | currency }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Total General -->
+      <div class="bg-slate-800 border border-slate-700 p-6 rounded-lg">
+        <h2 class="text-2xl font-bold text-white mb-4">Resumen de la Reserva</h2>
+        <div class="space-y-3">
+          <div class="flex justify-between text-slate-300">
+            <span>Subtotal de Productos:</span>
+            <span>{{ productsTotal() | currency }}</span>
+          </div>
+          <div class="flex justify-between text-slate-300">
+            <span>Subtotal de Servicios:</span>
+            <span>{{ servicesTotal() | currency }}</span>
+          </div>
+          @if (reservation()?.reservationType === 'EVENTO') {
+            <div class="flex justify-between text-slate-300">
+              <span>Costo Base de Evento:</span>
+              <span>{{ 50 | currency }}</span>
+            </div>
+          }
+          <div class="flex justify-between text-2xl font-bold text-amber-500 pt-4 border-t border-slate-600">
+            <span>Total General:</span>
+            <span>{{ grandTotal() | currency }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mesas -->
+      <div class="bg-slate-700/50 border border-slate-700 p-6 rounded-lg">
+        <h2 class="text-xl font-bold text-slate-200 mb-4">Mesas Asignadas</h2>
+        <div class="flex flex-wrap gap-2">
+          @for(table of res.tables; track table.id) {
+            <span class="bg-sky-500/20 text-sky-300 font-medium px-3 py-1 rounded-full">Mesa #{{ table.tableId }}</span>
+          }
+          @empty {
+            <p class="text-slate-400">No hay mesas asignadas.</p>
+          }
+        </div>
+      </div>
+
+      <!-- Pagos -->
+      <div class="bg-slate-700/50 border border-slate-700 p-6 rounded-lg">
+        <h2 class="text-xl font-bold text-slate-200 mb-4">Historial de Pagos</h2>
+        <div class="space-y-2">
+          @for(payment of res.payments; track payment.id) {
+            <div class="flex justify-between items-center bg-slate-600/50 p-3 rounded-md">
+              <span>{{ payment.paymentDate | date:'medium' }}</span>
+              <span>{{ payment.paymentMethod }}</span>
+              <span class="font-semibold text-emerald-400">{{ payment.amount | currency }}</span>
+              <span class="font-bold text-xs px-2 py-1 rounded-full" [ngClass]="payment.status === 'PAGADO' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-500/20 text-slate-300'">{{ payment.status }}</span>
+            </div>
+          }
+          @empty {
+            <p class="text-slate-400">No se han registrado pagos.</p>
+          }
+        </div>
       </div>
 
       <!-- Acciones -->
       <div class="flex justify-end gap-4 mt-8">
         <a [routerLink]="returnPath()" class="px-6 py-3 bg-slate-600 text-slate-100 rounded-md hover:bg-slate-500 font-medium transition-colors">Cancelar</a>
-        <button (click)="saveChanges()" 
-                [disabled]="detailsChanged() && !availabilityChecked()"
-                class="px-6 py-3 bg-emerald-600 text-white rounded-md hover:bg-emerald-500 font-medium transition-colors disabled:bg-slate-500 disabled:cursor-not-allowed">
-          Guardar Cambios
-        </button>
+        <button type="submit" class="px-6 py-3 bg-amber-600 text-white rounded-md hover:bg-amber-500 font-medium transition-colors">Guardar Cambios</button>
       </div>
 
-    </div>
+    </form>
   } @else {
-    <p class="text-rose-400">No se pudo cargar la información de la reserva.</p>
+    <p class="text-center text-slate-400">Cargando información de la reserva...</p>
   }
 </div>

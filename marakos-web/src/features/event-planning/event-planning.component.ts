@@ -160,9 +160,9 @@ export class EventPlanningComponent {
       if (user && !this.eventReservation().customerName) {
         this.eventReservation.update(reservation => ({
           ...reservation,
-          customerName: user.name,
+          customerName: user.nombre,
           customerEmail: user.email,
-          customerPhone: user.phone || ''
+          customerPhone: user.telefono || ''
         }));
       }
     }, { allowSignalWrites: true });

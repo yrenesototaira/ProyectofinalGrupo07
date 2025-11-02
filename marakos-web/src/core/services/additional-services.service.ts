@@ -2,12 +2,14 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, of } from 'rxjs';
 import { AdditionalService } from '../models/restaurant.model';
+import { environment } from '@/src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AdditionalServicesService {
-  private readonly apiUrl = 'http://localhost:8083/api/service'; // management-service port
+  private apiUrl = environment.apiUrlManagement;
+  //private readonly apiUrl = 'http://localhost:8083/api/service'; // management-service port
   private additionalServices = signal<AdditionalService[]>([]);
 
   // Mock data as fallback (will be replaced by API data when available)
@@ -167,11 +169,15 @@ export class AdditionalServicesService {
     });
   }
 
+  getAditionalServices(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/service/findAll?active=true`);
+  }
+
   /**
    * Gets services from the backend API
    */
   private getServicesFromAPI(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/findAll?active=true`)
+    return this.http.get<any[]>(`${this.apiUrl}/service/findAll?active=true`)
       .pipe(
         catchError((error) => {
           console.error('Error fetching services from API:', error);
