@@ -15,15 +15,55 @@ import { HttpErrorResponse } from '@angular/common/http';
 export class LoginComponent {
   private authService = inject(AuthService);
 
-  email = 'admin@restaurante.com';
-  password = 'admin123';
+  email = 'cliente1@mail.com';
+  password = 'cliente1';
   errorMessage = signal<string | null>(null);
+  isLoading = signal<boolean>(false);
 
   login() {
     this.errorMessage.set(null);
+    this.isLoading.set(true);
+    
+    console.log('Attempting login with:', { email: this.email, password: this.password });
+    
     this.authService.login({ email: this.email, password: this.password })
       .subscribe({
-        error: (err: HttpErrorResponse) => this.errorMessage.set(err.error.message || 'Correo o contraseña incorrectos.')
+        next: (response) => {
+          console.log('Login successful:', response);
+          this.isLoading.set(false);
+        },
+        error: (err: HttpErrorResponse) => {
+          console.error('Login error:', err);
+          this.isLoading.set(false);
+          
+          let errorMsg = 'Error de conexión. Verifica que el servidor esté funcionando.';
+          
+          if (err.error?.message) {
+            // Use the custom message from the auth service
+            errorMsg = err.error.message;
+          } else if (err.status === 401) {
+            errorMsg = 'Credenciales incorrectas. Usa las credenciales de desarrollo:\n• cliente1@mail.com / cliente1\n• admin@marakos.com / admin123';
+          } else if (err.status === 400) {
+            errorMsg = 'Datos de login inválidos.';
+          } else if (err.status === 0) {
+            errorMsg = 'No se puede conectar al servidor. Usando modo de desarrollo.';
+          }
+          
+          this.errorMessage.set(errorMsg);
+        }
       });
+  }
+
+  // Métodos para probar con diferentes credenciales
+  tryAdminCredentials() {
+    this.email = 'admin@marakos.com';
+    this.password = 'admin123';
+    this.login();
+  }
+
+  tryClientCredentials() {
+    this.email = 'cliente1@mail.com';
+    this.password = 'cliente1';
+    this.login();
   }
 }

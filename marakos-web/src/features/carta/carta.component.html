@@ -5,102 +5,189 @@
       <h1 class="text-5xl md:text-6xl font-bold text-white mb-4">
         Nuestra <span class="text-amber-500">Carta</span>
       </h1>
-      <p class="text-xl text-slate-300 max-w-2xl mx-auto">
+      <p class="text-xl text-slate-300 max-w-2xl mx-auto mb-6">
         Descubre los auténticos sabores de la parrilla del norte del Perú con ingredientes frescos y recetas tradicionales
       </p>
+      
+      <!-- Search Bar -->
+      <div class="max-w-md mx-auto mt-6">
+        <div class="relative">
+          <input 
+            type="text" 
+            placeholder="Buscar platos..." 
+            (input)="onSearch($event)"
+            class="w-full px-4 py-3 pl-12 bg-slate-800 border border-slate-700 rounded-full text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all">
+          <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+      </div>
     </div>
   </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="container mx-auto px-6 py-16 text-center">
+      <div class="inline-flex items-center px-6 py-3 bg-slate-800 rounded-lg">
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-slate-300">Cargando carta...</span>
+      </div>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error() && !loading()) {
+    <div class="container mx-auto px-6 py-8">
+      <div class="bg-amber-900/20 border border-amber-500/30 rounded-lg p-4 text-center">
+        <div class="flex items-center justify-center mb-2">
+          <svg class="w-5 h-5 text-amber-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+          </svg>
+          <span class="text-amber-400 font-medium">{{ error() }}</span>
+        </div>
+        <button 
+          (click)="refreshMenu()" 
+          class="px-4 py-2 bg-amber-500 text-slate-900 rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium">
+          Reintentar
+        </button>
+      </div>
+    </div>
+  }
 
   <!-- Popular Items Section -->
-  <div class="container mx-auto px-6 py-12">
-    <div class="text-center mb-12">
-      <h2 class="text-3xl font-bold text-white mb-4">🔥 Platos Más Populares</h2>
-      <p class="text-slate-400">Los favoritos de nuestros clientes</p>
-    </div>
-    
-    <div class="grid md:grid-cols-3 gap-6 mb-16">
-      @for (item of popularItems; track item.id) {
-        <div class="bg-slate-800 rounded-lg overflow-hidden hover:bg-slate-700 transition-all duration-300 border border-slate-700 hover:border-amber-500/30 hover:scale-105">
-          <div class="h-48 bg-cover bg-center relative" [style.background-image]="'url(' + item.image + ')'">
-            <div class="absolute inset-0 bg-black/30"></div>
-            <span class="absolute top-4 right-4 bg-amber-500/90 text-slate-900 px-3 py-1 rounded-full text-xs font-bold">
-              Popular
-            </span>
-          </div>
-          <div class="p-6">
-            <div class="flex justify-between items-start mb-3">
-              <h3 class="text-xl font-semibold text-white">{{ item.name }}</h3>
-              <span class="text-amber-500 font-bold text-lg">S/{{ item.price }}</span>
-            </div>
-            <p class="text-slate-300 text-sm">{{ item.description }}</p>
-          </div>
-        </div>
-      }
-    </div>
-  </div>
-
-  <!-- Categories Filter -->
-  <div class="container mx-auto px-6 mb-8">
-    <div class="flex flex-wrap justify-center gap-4">
-      <button 
-        (click)="selectCategory('all')"
-        [class]="selectedCategory === 'all' ? 'bg-amber-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
-        class="px-6 py-3 rounded-full font-medium transition-colors">
-        🍽️ Todo el Menú
-      </button>
-      @for (category of categories; track category.id) {
-        <button 
-          (click)="selectCategory(category.id)"
-          [class]="selectedCategory === category.id ? 'bg-amber-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
-          class="px-6 py-3 rounded-full font-medium transition-colors">
-          {{ category.icon }} {{ category.name }}
-        </button>
-      }
-    </div>
-  </div>
-
-  <!-- Menu Items Section -->
-  <div class="container mx-auto px-6 pb-16">
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      @for (item of filteredItems; track item.id) {
-        <div class="bg-slate-800 rounded-lg overflow-hidden hover:bg-slate-700 transition-all duration-300 border border-slate-700 hover:border-amber-500/30 hover:scale-105 menu-item">
-          @if (item.image) {
-            <div class="h-48 bg-cover bg-center relative" [style.background-image]="'url(' + item.image + ')'">
-              <div class="absolute inset-0 bg-black/30"></div>
-              @if (item.popular) {
+  @if (popularItems().length > 0 && !loading()) {
+    <div class="container mx-auto px-6 py-12">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-white mb-4">🔥 Platos Más Populares</h2>
+        <p class="text-slate-400">Los favoritos de nuestros clientes</p>
+      </div>
+      
+      <div class="grid md:grid-cols-3 gap-6 mb-16">
+        @for (item of popularItems(); track item.id) {
+          <div class="bg-slate-800 rounded-lg overflow-hidden hover:bg-slate-700 transition-all duration-300 border border-slate-700 hover:border-amber-500/30 hover:scale-105">
+            @if (item.image) {
+              <div class="h-48 bg-cover bg-center relative" [style.background-image]="'url(' + item.image + ')'">
+                <div class="absolute inset-0 bg-black/30"></div>
                 <span class="absolute top-4 right-4 bg-amber-500/90 text-slate-900 px-3 py-1 rounded-full text-xs font-bold">
                   Popular
                 </span>
-              }
-              <span class="absolute bottom-4 left-4 text-amber-500 font-bold text-2xl price">S/{{ item.price }}</span>
-            </div>
-          }
-          <div class="p-6">
-            <div class="flex justify-between items-start mb-3">
-              <h3 class="text-xl font-semibold text-white">{{ item.name }}</h3>
-              @if (!item.image) {
-                <span class="text-amber-500 font-bold text-lg">S/{{ item.price }}</span>
-              }
-            </div>
-            <p class="text-slate-300 text-sm mb-4">{{ item.description }}</p>
-            
-            @if (item.popular && !item.image) {
-              <span class="inline-block bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-xs font-medium mb-3">
-                Popular
-              </span>
+              </div>
             }
-            
-            <div class="flex justify-between items-center">
-              <span class="text-slate-400 text-xs capitalize">{{ item.category }}</span>
-              <button class="bg-amber-500 hover:bg-amber-600 text-slate-900 px-4 py-2 rounded-lg font-medium text-sm transition-colors">
-                Agregar
-              </button>
+            <div class="p-6">
+              <div class="flex justify-between items-start mb-3">
+                <h3 class="text-xl font-semibold text-white">{{ item.name }}</h3>
+                <span class="text-amber-500 font-bold text-lg">S/{{ item.price }}</span>
+              </div>
+              <p class="text-slate-300 text-sm mb-2">{{ item.description }}</p>
+              @if (item.stock !== undefined) {
+                <div class="text-xs text-slate-400 mb-4">
+                  Stock: {{ item.stock > 0 ? item.stock + ' disponibles' : 'Agotado' }}
+                </div>
+              }
             </div>
           </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Categories Filter -->
+  @if (categories().length > 0 && !loading()) {
+    <div class="container mx-auto px-6 mb-8">
+      <div class="flex flex-wrap justify-center gap-4">
+        <button 
+          (click)="selectCategory('all')"
+          [class]="selectedCategory() === 'all' ? 'bg-amber-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+          class="px-6 py-3 rounded-full font-medium transition-colors">
+          🍽️ Todo el Menú
+        </button>
+        @for (category of categories(); track category.id) {
+          <button 
+            (click)="selectCategory(category.id)"
+            [class]="selectedCategory() === category.id ? 'bg-amber-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+            class="px-6 py-3 rounded-full font-medium transition-colors">
+            {{ category.icon }} {{ category.name }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Menu Items Section -->
+  @if (!loading()) {
+    <div class="container mx-auto px-6 pb-16">
+      @if (filteredItems().length > 0) {
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          @for (item of filteredItems(); track item.id) {
+            <div class="bg-slate-800 rounded-lg overflow-hidden hover:bg-slate-700 transition-all duration-300 border border-slate-700 hover:border-amber-500/30 hover:scale-105 menu-item">
+              @if (item.image) {
+                <div class="h-48 bg-cover bg-center relative" [style.background-image]="'url(' + item.image + ')'">
+                  <div class="absolute inset-0 bg-black/30"></div>
+                  @if (item.popular) {
+                    <span class="absolute top-4 right-4 bg-amber-500/90 text-slate-900 px-3 py-1 rounded-full text-xs font-bold">
+                      Popular
+                    </span>
+                  }
+                  <span class="absolute bottom-4 left-4 text-amber-500 font-bold text-2xl price">S/{{ item.price }}</span>
+                </div>
+              }
+              <div class="p-6">
+                <div class="flex justify-between items-start mb-3">
+                  <h3 class="text-xl font-semibold text-white">{{ item.name }}</h3>
+                  @if (!item.image) {
+                    <span class="text-amber-500 font-bold text-lg">S/{{ item.price }}</span>
+                  }
+                </div>
+                <p class="text-slate-300 text-sm mb-4">{{ item.description }}</p>
+                
+                <!-- Stock Information -->
+                @if (item.stock !== undefined) {
+                  <div class="text-xs text-slate-400 mb-3">
+                    @if (item.stock > 0) {
+                      <span class="text-green-400">✅ Disponible ({{ item.stock }} en stock)</span>
+                    } @else {
+                      <span class="text-red-400">❌ Agotado</span>
+                    }
+                  </div>
+                }
+                
+                @if (item.popular && !item.image) {
+                  <span class="inline-block bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-xs font-medium mb-3">
+                    Popular
+                  </span>
+                }
+                
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-400 text-xs capitalize">{{ item.category }}</span>
+                  <button 
+                    [disabled]="item.stock === 0"
+                    [class]="item.stock === 0 ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-600 text-slate-900'"
+                    class="px-4 py-2 rounded-lg font-medium text-sm transition-colors">
+                    {{ item.stock === 0 ? 'Agotado' : 'Agregar' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <!-- No Results Found -->
+        <div class="text-center py-16">
+          <div class="text-6xl mb-4">🔍</div>
+          <h3 class="text-2xl font-bold text-slate-300 mb-2">No se encontraron platos</h3>
+          <p class="text-slate-400 mb-6">Intenta con otros términos de búsqueda o selecciona una categoría diferente</p>
+          <button 
+            (click)="selectCategory('all'); searchQuery.set('')"
+            class="px-6 py-3 bg-amber-500 text-slate-900 rounded-full font-medium hover:bg-amber-600 transition-colors">
+            Ver toda la carta
+          </button>
         </div>
       }
     </div>
-  </div>
+  }
 
   <!-- Call to Action -->
   <div class="bg-gradient-to-r from-amber-600 to-amber-500 py-16">
