@@ -1,9 +1,10 @@
-/* Marakos Grill - Estilos globales */
+/* Estilos personalizados adicionales - Tailwind se carga desde CDN en index.html */
 
-body {
-  background-color: #0f172a; /* slate-900 */
-  color: #e2e8f0; /* slate-200 */
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+/* Reset y estilos base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 /* Animaciones personalizadas */

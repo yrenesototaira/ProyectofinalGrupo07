@@ -1,56 +1,200 @@
 <div class="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-md w-full space-y-8 bg-slate-800 p-10 rounded-lg shadow-md">
+  <div class="max-w-4xl w-full space-y-8 bg-slate-800 p-10 rounded-lg shadow-md">
     <div>
       <h2 class="mt-6 text-center text-3xl font-extrabold text-slate-100">
         Crea una nueva cuenta
       </h2>
+      <p class="mt-2 text-center text-sm text-slate-400">
+        Únete a Marakos Grill y disfruta de nuestros servicios
+      </p>
     </div>
-    <form class="mt-8 space-y-6" (ngSubmit)="register()" #registerForm="ngForm">
-      <div class="rounded-md shadow-sm">
-        <div class="mb-4">
-          <label for="firstName" class="sr-only">Nombre</label>
+    
+    <form class="mt-8" (ngSubmit)="register()" #registerForm="ngForm">
+      <!-- Grid de 2 columnas para campos básicos -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <!-- Nombre -->
+        <div>
+          <label for="firstName" class="block text-sm font-medium text-slate-300 mb-1">Nombre *</label>
           <input id="firstName" name="firstName" type="text" required [(ngModel)]="firstName"
                  class="rounded relative block w-full px-3 py-2 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                 placeholder="Nombre">
+                 placeholder="Juan">
         </div>
-        <div class="mb-4">
-          <label for="lastName" class="sr-only">Apellido</label>
+
+        <!-- Apellido -->
+        <div>
+          <label for="lastName" class="block text-sm font-medium text-slate-300 mb-1">Apellido *</label>
           <input id="lastName" name="lastName" type="text" required [(ngModel)]="lastName"
                  class="rounded relative block w-full px-3 py-2 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                 placeholder="Apellido">
+                 placeholder="Pérez">
         </div>
-        <div class="mb-4">
-          <label for="phone" class="sr-only">Teléfono</label>
-          <input id="phone" name="phone" type="text" required [(ngModel)]="phone"
-                 class="rounded relative block w-full px-3 py-2 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                 placeholder="Teléfono">
-        </div>
-        <div class="mb-4">
-          <label for="email-address" class="sr-only">Correo electrónico</label>
-          <input id="email-address" name="email" type="email" autocomplete="email" required [(ngModel)]="email"
-                 class="rounded relative block w-full px-3 py-2 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                 placeholder="Correo electrónico">
-        </div>
+
+        <!-- Teléfono -->
         <div>
-          <label for="password" class="sr-only">Contraseña</label>
-          <input id="password" name="password" type="password" autocomplete="new-password" required [(ngModel)]="password"
+          <label for="phone" class="block text-sm font-medium text-slate-300 mb-1">Teléfono (WhatsApp) *</label>
+          <input id="phone" name="phone" type="tel" required [(ngModel)]="phone"
+                 (blur)="onPhoneBlur()"
+                 [class.border-rose-500]="phoneTouched() && !isPhoneValid && phone.length > 0"
+                 [class.border-green-500]="phoneTouched() && isPhoneValid"
                  class="rounded relative block w-full px-3 py-2 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                 placeholder="Contraseña">
+                 placeholder="987654321">
+          @if (phoneTouched() && !isPhoneValid && phone.length > 0) {
+            <p class="text-rose-400 text-xs mt-1">📱 Número inválido (9 dígitos)</p>
+          }
+          @if (phoneTouched() && isPhoneValid) {
+            <p class="text-green-400 text-xs mt-1">✓ Válido</p>
+          }
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label for="email-address" class="block text-sm font-medium text-slate-300 mb-1">Correo electrónico *</label>
+          <input id="email-address" name="email" type="email" autocomplete="email" required [(ngModel)]="email"
+                 (blur)="onEmailBlur()"
+                 [class.border-rose-500]="emailTouched() && !isEmailValid && email.length > 0"
+                 [class.border-green-500]="emailTouched() && isEmailValid"
+                 class="rounded relative block w-full px-3 py-2 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                 placeholder="ejemplo@correo.com">
+          @if (emailTouched() && !isEmailValid && email.length > 0) {
+            <p class="text-rose-400 text-xs mt-1">📧 Correo inválido</p>
+          }
+          @if (emailTouched() && isEmailValid) {
+            <p class="text-green-400 text-xs mt-1">✓ Válido</p>
+          }
+        </div>
+      </div>
+
+      <!-- Sección de contraseñas -->
+      <div class="border-t border-slate-700 pt-4 mt-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Contraseña -->
+          <div>
+            <label for="password" class="block text-sm font-medium text-slate-300 mb-1">Contraseña *</label>
+            <div class="relative">
+              <input id="password" name="password" [type]="showPassword() ? 'text' : 'password'" autocomplete="new-password" required [(ngModel)]="password"
+                     (blur)="onPasswordBlur()"
+                     [class.border-rose-500]="passwordTouched() && !isPasswordValid && password.length > 0"
+                     [class.border-green-500]="passwordTouched() && isPasswordValid"
+                     class="rounded relative block w-full px-3 py-2 pr-10 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                     placeholder="Mínimo 8 caracteres">
+              <button type="button" (click)="togglePasswordVisibility()"
+                      class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200">
+                @if (showPassword()) {
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                } @else {
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                }
+              </button>
+            </div>
+            
+            <!-- Indicadores compactos de requisitos -->
+            @if (password.length > 0) {
+              <div class="mt-2 grid grid-cols-2 gap-1">
+                <div class="flex items-center space-x-1">
+                  <span class="text-xs" [class]="passwordValidations.minLength ? 'text-green-400' : 'text-slate-500'">
+                    {{ passwordValidations.minLength ? '✓' : '○' }} 8+ caracteres
+                  </span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <span class="text-xs" [class]="passwordValidations.hasUpperCase ? 'text-green-400' : 'text-slate-500'">
+                    {{ passwordValidations.hasUpperCase ? '✓' : '○' }} Mayúscula
+                  </span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <span class="text-xs" [class]="passwordValidations.hasLowerCase ? 'text-green-400' : 'text-slate-500'">
+                    {{ passwordValidations.hasLowerCase ? '✓' : '○' }} Minúscula
+                  </span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <span class="text-xs" [class]="passwordValidations.hasNumber ? 'text-green-400' : 'text-slate-500'">
+                    {{ passwordValidations.hasNumber ? '✓' : '○' }} Número
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Confirmar Contraseña -->
+          <div>
+            <label for="confirmPassword" class="block text-sm font-medium text-slate-300 mb-1">Confirmar contraseña *</label>
+            <div class="relative">
+              <input id="confirmPassword" name="confirmPassword" [type]="showConfirmPassword() ? 'text' : 'password'" autocomplete="new-password" required [(ngModel)]="confirmPassword"
+                     (blur)="onConfirmPasswordBlur()"
+                     [class.border-rose-500]="confirmPasswordTouched() && !passwordsMatch && confirmPassword.length > 0"
+                     [class.border-green-500]="confirmPasswordTouched() && passwordsMatch"
+                     class="rounded relative block w-full px-3 py-2 pr-10 border bg-slate-700 border-slate-600 placeholder-slate-400 text-slate-100 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
+                     placeholder="Repite tu contraseña">
+              <button type="button" (click)="toggleConfirmPasswordVisibility()"
+                      class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200">
+                @if (showConfirmPassword()) {
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                } @else {
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                }
+              </button>
+            </div>
+            @if (confirmPasswordTouched() && !passwordsMatch && confirmPassword.length > 0) {
+              <p class="text-rose-400 text-xs mt-1">🔒 Las contraseñas no coinciden</p>
+            }
+            @if (confirmPasswordTouched() && passwordsMatch) {
+              <p class="text-green-400 text-xs mt-1">✓ Las contraseñas coinciden</p>
+            }
+          </div>
         </div>
       </div>
       
+      <!-- Mensajes de error y éxito -->
       @if (errorMessage()) {
-        <p class="text-rose-400 text-sm mt-2">{{ errorMessage() }}</p>
+        <div class="bg-rose-500/10 border border-rose-500 rounded-lg p-4">
+          <p class="text-rose-400 text-sm">❌ {{ errorMessage() }}</p>
+        </div>
       }
 
+      @if (successMessage()) {
+        <div class="bg-green-500/10 border border-green-500 rounded-lg p-4">
+          <p class="text-green-400 text-sm">{{ successMessage() }}</p>
+        </div>
+      }
+
+      <!-- Botón de registro -->
       <div>
-        <button type="submit" [disabled]="!registerForm.form.valid"
-                class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:bg-slate-600 mt-4">
-          Registrarse
+        <button type="submit" 
+                [disabled]="!isFormValid || isLoading()"
+                class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-all duration-200">
+          @if (isLoading()) {
+            <span class="flex items-center">
+              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Registrando...
+            </span>
+          } @else {
+            Crear cuenta
+          }
         </button>
       </div>
-      <div class="text-sm text-center mt-4">
-        <a routerLink="/login" class="font-medium text-amber-500 hover:text-amber-400">
+
+      <!-- Info adicional -->
+      <div class="bg-slate-700/50 rounded-lg p-3 mt-4">
+        <p class="text-xs text-slate-300 text-center">
+          � Al registrarte, recibirás un correo de bienvenida<br>
+          📱 Las notificaciones de reservas se enviarán por WhatsApp
+        </p>
+      </div>
+
+      <!-- Link a login -->
+      <div class="text-sm text-center">
+        <a routerLink="/login" class="font-medium text-amber-500 hover:text-amber-400 transition-colors">
           ¿Ya tienes una cuenta? Inicia sesión
         </a>
       </div>
