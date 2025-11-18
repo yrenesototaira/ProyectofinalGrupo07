@@ -6,5 +6,6 @@ export const environment = {
   apiUrlManagement: 'http://localhost:8082/api',
   apiUrlReservation: 'http://localhost:8083/api',
   apiUrlAdmin: 'http://localhost:8080/api/admin', 
-  apiUrlCulqi: 'http://localhost:8084/api/payment'
+  apiUrlCulqi: 'http://localhost:8084/api/payment',
+  apiUrlNotification: 'http://localhost:8085/api'
 };
