@@ -24,6 +24,8 @@ export class BookingService {
   }
 
   confirmReservation(resevationData: any): Observable<any> {
+    console.log('🌐 BOOKING SERVICE: Enviando petición HTTP a:', `${environment.apiUrlReservation}/reservation`);
+    console.log('📦 BOOKING SERVICE: Datos de reserva:', resevationData);
     return this.http.post<any>(`${environment.apiUrlReservation}/reservation`, resevationData);
   }
 

@@ -6,9 +6,11 @@ import com.marakosgrill.reservation.repository.*;
 import com.marakosgrill.reservation.service.NotificationService;
 import com.marakosgrill.reservation.service.ReservationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -18,6 +20,7 @@ import static com.marakosgrill.reservation.util.constant.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReservationServiceImpl implements ReservationService {
     private final ReservationRepository reservationRepository;
     private final ReservationTableRepository reservationTableRepository;
@@ -29,6 +32,11 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @Transactional
     public ReservationResponse createReservation(ReservationRequest request) {
+        log.info("🟢 ===== INICIO createReservation =====");
+        log.info("📝 Request recibido: {}", request.getHolderName());
+        log.info("📞 Teléfono: {}", request.getHolderPhone());
+        log.info("📅 Fecha: {}", request.getReservationDate());
+        
         // Validar disponibilidad de mesas/eventos
         if ("MESA".equalsIgnoreCase(request.getReservationType())) {
             for (ReservationTableRequest tableReq : request.getTables()) {
@@ -169,6 +177,7 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         // Notificación al crear reserva
+        log.info("📧 Creando notificación EMAIL...");
         notificationService.createNotification(
                 NotificationRequest.builder()
                         .reservationId(reservation.getId())
@@ -180,6 +189,39 @@ public class ReservationServiceImpl implements ReservationService {
                         .createdBy(request.getCreatedBy())
                         .build()
         );
+        log.info("✅ Notificación EMAIL creada exitosamente");
+
+        // Enviar notificación de WhatsApp
+        try {
+            log.info("🔔 ===== INICIANDO NOTIFICACIÓN WHATSAPP =====");
+            log.info("🎫 Reserva creada: {}", reservation.getCode());
+            log.info("👤 Cliente: {}", reservation.getHolderName());
+            log.info("📞 Teléfono: {}", reservation.getHolderPhone());
+            log.info("📅 Fecha: {}", reservation.getReservationDate());
+            log.info("⏰ Hora: {}", reservation.getReservationTime());
+            
+            // Calcular total de la reserva
+            BigDecimal totalAmount = BigDecimal.ZERO;
+            if (request.getProducts() != null) {
+                totalAmount = request.getProducts().stream()
+                    .map(p -> p.getSubtotal() != null ? p.getSubtotal() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            }
+            if (request.getEvents() != null) {
+                BigDecimal eventTotal = request.getEvents().stream()
+                    .map(e -> e.getSubtotal() != null ? e.getSubtotal() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                totalAmount = totalAmount.add(eventTotal);
+            }
+
+            log.info("💰 Total calculado: {}", totalAmount);
+            log.info("� NOTA: Notificación WhatsApp será enviada desde el frontend");
+        } catch (Exception e) {
+            // Log pero no fallar la reserva
+            log.error("🔥 Error enviando notificación de WhatsApp: {}", e.getMessage(), e);
+        }
+
+        log.info("🎉 ===== FIN createReservation =====");
 
         // Construir respuesta
         return ReservationResponse.builder()
@@ -574,7 +616,7 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setCancellationDate(java.time.LocalDateTime.now());
         reservation = reservationRepository.save(reservation);
 
-        // Registrar notificación de modificación
+        // Registrar notificación de cancelación
         notificationService.createNotification(
                 NotificationRequest.builder()
                         .reservationId(reservation.getId())
@@ -586,6 +628,10 @@ public class ReservationServiceImpl implements ReservationService {
                         .createdBy(DEFAULT_CREATED_BY_USER_ID)
                         .build()
         );
+
+        // Nota: Notificación de cancelación por WhatsApp será enviada desde el frontend
+        log.info("📱 NOTA: Notificación de cancelación WhatsApp será enviada desde el frontend para reserva: {}", reservation.getCode());
+        
         return toResponse(reservation);
     }
 

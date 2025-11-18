@@ -45,7 +45,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthLoginResponse login(AuthLoginRequest request) {
-        Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
+         Optional<User> userOpt = userRepository.findByEmailAndActiveTrue(request.getEmail());
         if (userOpt.isEmpty()) {
             throw new InvalidCredentialsException(INVALID_CREDENTIALS_EMAIL_NOT_FOUND);
         }
@@ -97,41 +97,88 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthRegisterResponse register(AuthRegisterRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        // Verificar si existe un usuario ACTIVO con este email
+        Optional<User> activeUserOpt = userRepository.findByEmailAndActiveTrue(request.getEmail());
+        if (activeUserOpt.isPresent()) {
             throw new EmailAlreadyExistsException(EMAIL_ALREADY_EXISTS);
         }
 
         UserType userType = userTypeRepository.findById(DEFAULT_USER_TYPE_ID)
                 .orElseThrow(() -> new RuntimeException(USER_TYPE_NOT_FOUND));
 
-        // Save user details
-        User user = new User();
-        user.setUserType(userType);
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setStatus(DEFAULT_STATUS_ACTIVE);
-        user.setCreatedBy(DEFAULT_CREATED_BY_USER_ID);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setActive(true);
-        userRepository.save(user);
+        // Verificar si existe un usuario INACTIVO con este email
+        Optional<User> existingUserOpt = userRepository.findByEmail(request.getEmail());
+        User user;
+        Client client;
+        
+        if (existingUserOpt.isPresent() && !existingUserOpt.get().getActive()) {
+            // Reactivar usuario existente inactivo
+            user = existingUserOpt.get();
+            user.setUserType(userType);
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setStatus(DEFAULT_STATUS_ACTIVE);
+            user.setVerificationCode(null); // Limpiar código de verificación anterior
+            user.setUpdatedBy(DEFAULT_CREATED_BY_USER_ID);
+            user.setUpdatedAt(LocalDateTime.now());
+            user.setActive(true);
+            userRepository.save(user);
 
-        // Save client details
-        Client client = new Client();
-        client.setUser(user);
-        client.setFirstName(request.getFirstName());
-        client.setLastName(request.getLastName());
-        client.setPhone(request.getPhone());
-        client.setStatus(DEFAULT_STATUS_ACTIVE);
-        client.setCreatedBy(DEFAULT_CREATED_BY_USER_ID);
-        client.setCreatedAt(LocalDateTime.now());
-        client.setActive(true);
-        clientRepository.save(client);
+            // Buscar cliente existente asociado
+            Optional<Client> existingClientOpt = clientRepository.findByUser(user);
+            if (existingClientOpt.isPresent()) {
+                // Actualizar datos del cliente existente
+                client = existingClientOpt.get();
+                client.setFirstName(request.getFirstName());
+                client.setLastName(request.getLastName());
+                client.setPhone(request.getPhone());
+                client.setStatus(DEFAULT_STATUS_ACTIVE);
+                client.setUpdatedBy(DEFAULT_CREATED_BY_USER_ID);
+                client.setUpdatedAt(LocalDateTime.now());
+                client.setActive(true);
+                clientRepository.save(client);
+            } else {
+                // Crear nuevo cliente si no existe
+                client = new Client();
+                client.setUser(user);
+                client.setFirstName(request.getFirstName());
+                client.setLastName(request.getLastName());
+                client.setPhone(request.getPhone());
+                client.setStatus(DEFAULT_STATUS_ACTIVE);
+                client.setCreatedBy(DEFAULT_CREATED_BY_USER_ID);
+                client.setCreatedAt(LocalDateTime.now());
+                client.setActive(true);
+                clientRepository.save(client);
+            }
+        } else {
+            // Crear nuevo usuario
+            user = new User();
+            user.setUserType(userType);
+            user.setEmail(request.getEmail());
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setStatus(DEFAULT_STATUS_ACTIVE);
+            user.setCreatedBy(DEFAULT_CREATED_BY_USER_ID);
+            user.setCreatedAt(LocalDateTime.now());
+            user.setActive(true);
+            userRepository.save(user);
 
+            // Crear nuevo cliente
+            client = new Client();
+            client.setUser(user);
+            client.setFirstName(request.getFirstName());
+            client.setLastName(request.getLastName());
+            client.setPhone(request.getPhone());
+            client.setStatus(DEFAULT_STATUS_ACTIVE);
+            client.setCreatedBy(DEFAULT_CREATED_BY_USER_ID);
+            client.setCreatedAt(LocalDateTime.now());
+            client.setActive(true);
+            clientRepository.save(client);
+        }
+
+        // Enviar email de bienvenida
         String htmlBody = loadWelcomeTemplate(client.getFirstName(), client.getLastName(), user.getEmail());
 
         try {
-            emailService.sendEmailHtml(user.getEmail(), WELCOME_EMAIL_SUBJECT, htmlBody
-            );
+            emailService.sendEmailHtml(user.getEmail(), WELCOME_EMAIL_SUBJECT, htmlBody);
         } catch (MessagingException e) {
             throw new RuntimeException(e);
         }
