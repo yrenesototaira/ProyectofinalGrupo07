@@ -8,6 +8,7 @@ import { RestaurantDataService } from '../../core/services/restaurant-data.servi
 import { TableService } from '../../core/services/table.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PaymentService, PaymentRequest, PaymentResponse } from '../../core/services/payment.service';
+import { NotificationService, WhatsAppNotificationRequest } from '../../core/services/notification.service';
 import { Table, MenuItem } from '../../core/models/restaurant.model';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 
@@ -24,6 +25,7 @@ export class BookingComponent {
   private tableService = inject(TableService);
   private authService = inject(AuthService);
   private paymentService = inject(PaymentService);
+  private notificationService = inject(NotificationService);
 
   step = signal(1);
   
@@ -131,6 +133,12 @@ export class BookingComponent {
         this.bookingService.setCustomerDetails({ name: user.nombre, email: user.email });
       }
     });
+
+    // Log inicial para debug de notificaciones WhatsApp
+    console.log('📱 FRONTEND: BookingComponent inicializado - listo para monitorear notificaciones WhatsApp');
+    
+    // Verificar disponibilidad del servicio de notificaciones
+    this.checkNotificationServiceAvailability();
   }
 
   getTodayDateString(): string {
@@ -320,6 +328,13 @@ export class BookingComponent {
       return;
     }
 
+    console.log('💳 FRONTEND: Iniciando proceso de pago con Culqi');
+    console.log('📱 FRONTEND: Datos del cliente para notificación WhatsApp:', {
+      customerName: this.customerName(),
+      customerPhone: this.customerPhone(),
+      customerEmail: this.customerEmail()
+    });
+
     this.paymentProcessing.set(true);
     this.paymentError.set(null);
 
@@ -379,14 +394,29 @@ export class BookingComponent {
     };
 
     // Create reservation first
+    console.log('🚀 FRONTEND: Enviando datos de reserva:', reservationData);
+    console.log('📱 FRONTEND: Esperando notificación WhatsApp para:', {
+      customerName: reservationData.holderName,
+      customerPhone: reservationData.holderPhone,
+      reservationCode: 'PENDIENTE',
+      paymentType: 'Digital'
+    });
     this.bookingService.confirmReservation(reservationData).subscribe({
       next: (reservationResponse) => {
+        console.log('✅ FRONTEND: Respuesta de confirmación de reserva recibida:', reservationResponse);
+        console.log('📱 FRONTEND: Verificando si se activó notificación WhatsApp para reserva ID:', reservationResponse.id);
+        
+        // Enviar notificación WhatsApp
+        this.sendWhatsAppNotification(reservationResponse, 'Digital');
+        
         // Update payment request with reservation ID
         paymentRequest.reservationId = reservationResponse.id;
         
         // Process payment with Culqi
         this.paymentService.processPaymentWithCulqi(paymentRequest).subscribe({
           next: (paymentResponse: PaymentResponse) => {
+            console.log('💳 FRONTEND: Pago procesado exitosamente:', paymentResponse);
+            console.log('📱 FRONTEND: Reserva y pago completados - WhatsApp debería haber sido enviado para reserva ID:', reservationResponse.id);
             this.paymentProcessing.set(false);
             
             // Navigate to confirmation page with payment success details
@@ -401,6 +431,8 @@ export class BookingComponent {
           },
           error: (error) => {
             console.error('Payment failed but reservation was created:', error);
+            console.log('📱 FRONTEND: Verificando si se envió notificación WhatsApp a pesar del error de pago');
+            console.log('📱 FRONTEND: Reserva creada con ID:', reservationResponse.id, 'pero pago falló');
             this.paymentProcessing.set(false);
             
             // Important: Don't navigate multiple times
@@ -416,7 +448,7 @@ export class BookingComponent {
         });
       },
       error: (error) => {
-        console.error('Error creating reservation:', error);
+        console.error('❌ FRONTEND: Error en confirmación de reserva:', error);
         this.paymentProcessing.set(false);
         this.paymentError.set('Error creando la reserva. Intente nuevamente.');
         // Don't navigate on reservation creation error
@@ -468,12 +500,26 @@ export class BookingComponent {
       ]
     };
 
+    console.log('🚀 FRONTEND finalizeReservation: Enviando datos de reserva:', resevationData);
+    console.log('📱 FRONTEND finalizeReservation: Esperando notificación WhatsApp para:', {
+      customerName: resevationData.holderName,
+      customerPhone: resevationData.holderPhone,
+      paymentMethod: resevationData.paymentMethod,
+      totalAmount: this.menuTotal()
+    });
     this.bookingService.confirmReservation(resevationData).subscribe({
         next: (response) => {
+          console.log('✅ FRONTEND finalizeReservation: Respuesta de confirmación de reserva recibida:', response);
+          console.log('📱 FRONTEND finalizeReservation: Verificando notificación WhatsApp enviada para reserva ID:', response.id);
+          console.log('📱 FRONTEND finalizeReservation: Código de reserva para WhatsApp:', response.code || response.reservationCode || 'NO_CODE');
+          
+          // Enviar notificación WhatsApp
+          this.sendWhatsAppNotification(response, this.paymentMethod() || 'Digital');
+          
           this.router.navigate(['/confirmation', response.id]);
         },
         error: (error) => {
-          console.error('Error confirming reservation:', error);
+          console.error('❌ FRONTEND finalizeReservation: Error confirmando reserva:', error);
           // Handle error, maybe show a message to the user
         }
       }
@@ -516,8 +562,22 @@ export class BookingComponent {
       payments: [] // No payment yet for presential payment
     };
 
+    console.log('🚀 FRONTEND finalizeReservationPresencial: Enviando datos de reserva:', resevationData);
+    console.log('📱 FRONTEND finalizeReservationPresencial: Esperando notificación WhatsApp para pago presencial:', {
+      customerName: resevationData.holderName,
+      customerPhone: resevationData.holderPhone,
+      paymentMethod: 'Presencial',
+      reservationType: resevationData.reservationType
+    });
     this.bookingService.confirmReservation(resevationData).subscribe({
         next: (response) => {
+          console.log('✅ FRONTEND finalizeReservationPresencial: Respuesta de confirmación de reserva recibida:', response);
+          console.log('📱 FRONTEND finalizeReservationPresencial: Verificando notificación WhatsApp para reserva presencial ID:', response.id);
+          console.log('📱 FRONTEND finalizeReservationPresencial: Código de reserva:', response.code || response.reservationCode || 'NO_CODE');
+          
+          // Enviar notificación WhatsApp para pago presencial
+          this.sendWhatsAppNotification(response, 'Presencial');
+          
           this.router.navigate(['/confirmation', response.id], {
             queryParams: {
               paymentType: 'presencial',
@@ -526,7 +586,7 @@ export class BookingComponent {
           });
         },
         error: (error) => {
-          console.error('Error confirming reservation:', error);
+          console.error('❌ FRONTEND finalizeReservationPresencial: Error confirmando reserva:', error);
           // Handle error, maybe show a message to the user
         }
       }
@@ -700,5 +760,60 @@ export class BookingComponent {
       'Interior': '🏠'
     };
     return icons[location] || '📍';
+  }
+
+  /**
+   * Envía notificación WhatsApp después de una reserva exitosa
+   */
+  private sendWhatsAppNotification(reservationResponse: any, paymentType: string = 'Digital'): void {
+    try {
+      console.log('📱 FRONTEND: Iniciando envío de notificación WhatsApp');
+      
+      // Preparar datos para la notificación
+      const notificationData: WhatsAppNotificationRequest = {
+        customerName: this.customerName(),
+        customerPhone: this.notificationService.formatPhoneNumber(this.customerPhone()),
+        customerEmail: this.customerEmail() || 'no-disponible@marakos.pe',
+        reservationCode: reservationResponse.code || reservationResponse.reservationCode || `RES-${reservationResponse.id}`,
+        reservationDate: this.selectedDate(),
+        reservationTime: this.selectedTime(),
+        guestCount: this.guests(),
+        tableInfo: `Mesa ${this.selectedTable()?.number || 'por asignar'}`,
+        specialRequests: 'Sin observaciones especiales',
+        paymentType: paymentType,
+        paymentStatus: paymentType === 'presencial' ? 'PENDIENTE' : 'PAGADO',
+        totalAmount: this.menuTotal(),
+        reservationStatus: 'CONFIRMADA'
+      };
+
+      console.log('📱 FRONTEND: Datos de notificación preparados:', notificationData);
+
+      // Enviar notificación
+      this.notificationService.sendReservationConfirmation(notificationData).subscribe({
+        next: (response) => {
+          console.log('✅ FRONTEND: Notificación WhatsApp enviada exitosamente:', response);
+        },
+        error: (error) => {
+          console.error('❌ FRONTEND: Error enviando notificación WhatsApp:', error);
+          // La notificación falla pero no afecta el flujo principal de la reserva
+        }
+      });
+    } catch (error) {
+      console.error('❌ FRONTEND: Error preparando notificación WhatsApp:', error);
+    }
+  }
+
+  /**
+   * Verifica la disponibilidad del servicio de notificaciones al inicializar
+   */
+  private checkNotificationServiceAvailability(): void {
+    this.notificationService.checkNotificationServiceHealth().subscribe({
+      next: (response) => {
+        console.log('✅ FRONTEND: Servicio de notificaciones disponible:', response);
+      },
+      error: (error) => {
+        console.warn('⚠️ FRONTEND: Servicio de notificaciones no disponible:', error);
+      }
+    });
   }
 }
