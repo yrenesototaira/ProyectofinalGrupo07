@@ -108,24 +108,20 @@ export class BookingComponent {
         this.customerPhone.set(user.telefono || ''); // TODO: Add phone to user model
       }
     });
-    
-    // Update available times when date or guests change
+
     effect(() => {
-      const date = this.selectedDate();
-      const guests = this.guests();
-      if (date) {
-        const times = this.restaurantDataService.getAvailableTimesForDate(date, guests);
-        this.availableTimes.set(times);
-        
-        // Auto-select first available time if no time is selected
-        if (!this.selectedTime() && times.some(t => t.available)) {
-          const firstAvailable = times.find(t => t.available);
-          if (firstAvailable) {
-            this.selectedTime.set(firstAvailable.time);
-          }
+      const time = this.selectedTime();
+      const availability = this.availabilityData();
+      
+      if (time && availability.length > 0) {
+        const selectedSlot = availability.find(slot => slot.time === time);
+        if (selectedSlot && selectedSlot.tables) {
+          this.tableService.updateTablesAvailability(selectedSlot.tables);
         }
       }
     });
+    
+
     
     effect(() => {
       const user = this.currentUser();
@@ -586,6 +582,8 @@ export class BookingComponent {
     return this.selectedDate() === dateStr;
   }
 
+  availabilityData = signal<any[]>([]);
+
   selectCalendarDate(day: number | null) {
     if (!day || !this.isDateAvailable(day)) return;
     
@@ -594,6 +592,32 @@ export class BookingComponent {
     const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     
     this.selectedDate.set(dateStr);
+
+    this.bookingService.getAvailableTables(dateStr).subscribe({
+      next: (availability) => {
+        this.availabilityData.set(availability);
+        const formattedTimes = availability.map(slot => ({
+          time: slot.time,
+          label: slot.time.substring(0, 5), // "08:00:00" -> "08:00"
+          available: slot.available
+        }));
+        this.availableTimes.set(formattedTimes);
+
+        // Auto-select first available time
+        if (formattedTimes.some(t => t.available)) {
+          const firstAvailable = formattedTimes.find(t => t.available);
+          if (firstAvailable) {
+            this.selectedTime.set(firstAvailable.time);
+          }
+        } else {
+          this.selectedTime.set(''); // No available times
+        }
+      },
+      error: (error) => {
+        console.error('Error fetching available times:', error);
+        this.availableTimes.set([]); // Clear times on error
+      }
+      });
   }
 
   previousMonth() {
