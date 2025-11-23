@@ -4,37 +4,87 @@
     Volver a Mis Reservas
   </a>
   
-  @if (reservation()) {
+  @if (isLoading()) {
+    <div class="text-center py-12">
+      <div class="animate-spin mx-auto mb-4 w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full"></div>
+      <p class="text-slate-400">Cargando detalles de la reserva...</p>
+    </div>
+  } @else if (reservation()) {
     <h1 class="text-3xl font-bold text-slate-100 mb-2">Detalle de la Reserva</h1>
-    <p class="text-slate-400 mb-6">ID de Reserva: <span class="font-mono">{{ reservation()?.id }}</span></p>
+    <p class="text-slate-400 mb-6">Código de Reserva: <span class="font-mono text-amber-500">{{ reservation()?.code }}</span></p>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div class="md:col-span-2 space-y-4">
         <div class="border border-slate-700 rounded-lg p-4">
-          <h3 class="font-bold text-lg text-slate-200">Información Principal</h3>
-          <p><strong>Fecha y Hora:</strong> {{ reservation()?.date }} a las {{ reservation()?.time }}</p>
-          <p><strong>Comensales:</strong> {{ reservation()?.guests }}</p>
-          <p><strong>Mesa:</strong> Mesa #{{ reservation()?.table?.id }}</p>
-          <p><strong>Estado:</strong> {{ reservation()?.status }}</p>
+          <h3 class="font-bold text-lg text-slate-200 mb-3">Información Principal</h3>
+          <div class="space-y-2 text-slate-300">
+            <p><strong class="text-slate-100">Cliente:</strong> {{ reservation()?.holderName }}</p>
+            <p><strong class="text-slate-100">Email:</strong> {{ reservation()?.holderEmail }}</p>
+            <p><strong class="text-slate-100">Teléfono:</strong> {{ reservation()?.holderPhone }}</p>
+            <p><strong class="text-slate-100">Fecha y Hora:</strong> {{ reservation()?.reservationDate }} a las {{ reservation()?.reservationTime }}</p>
+            <p><strong class="text-slate-100">Comensales:</strong> {{ reservation()?.peopleCount }}</p>
+            @if (reservation()?.tables && reservation()!.tables.length > 0) {
+              <p><strong class="text-slate-100">Mesas:</strong> 
+                @for (table of reservation()?.tables; track table.id) {
+                  Mesa #{{ table.tableId }}@if (!$last) {, }
+                }
+              </p>
+            }
+            <p><strong class="text-slate-100">Estado:</strong> 
+              <span [class]="reservation()?.status === 'CONFIRMED' ? 'text-green-400' : 
+                             reservation()?.status === 'CANCELLED' ? 'text-red-400' : 
+                             'text-yellow-400'">
+                {{ reservation()?.status }}
+              </span>
+            </p>
+            <p><strong class="text-slate-100">Método de Pago:</strong> {{ reservation()?.paymentMethod }}</p>
+          </div>
         </div>
         
         <div class="border border-slate-700 rounded-lg p-4">
-          <h3 class="font-bold text-lg text-slate-200">Pedido del Menú</h3>
-          @if (reservation()?.menuItems && reservation()!.menuItems.length > 0) {
-            <ul class="list-disc pl-5 mt-2 space-y-1">
-              @for (item of reservation()?.menuItems; track item.item.id) {
-                <li>{{ item.item.name }} x {{ item.quantity }}</li>
+          <h3 class="font-bold text-lg text-slate-200 mb-3">Pre-Orden del Menú</h3>
+          @if (reservation()?.products && reservation()!.products.length > 0) {
+            <ul class="space-y-2">
+              @for (product of reservation()?.products; track product.id) {
+                <li class="flex justify-between text-slate-300">
+                  <span>Producto #{{ product.productId }} x {{ product.quantity }}</span>
+                  <span class="font-semibold">{{ product.subtotal | currency:'PEN':'symbol':'1.2-2' }}</span>
+                </li>
               }
             </ul>
-            <p class="font-bold mt-2">Total Pedido: {{ totalCost() | currency }}</p>
+            <div class="mt-3 pt-3 border-t border-slate-600">
+              <p class="font-bold text-lg text-slate-100 flex justify-between">
+                <span>Total Pre-Orden:</span>
+                <span class="text-amber-500">{{ totalCost() | currency:'PEN':'symbol':'1.2-2' }}</span>
+              </p>
+            </div>
           } @else {
             <p class="text-slate-400">No se pre-ordenó comida.</p>
           }
         </div>
-         @if (reservation()?.specialRequests) {
+        
+        @if (reservation()?.payments && reservation()!.payments.length > 0) {
           <div class="border border-slate-700 rounded-lg p-4">
-            <h3 class="font-bold text-lg text-slate-200">Peticiones Especiales</h3>
-            <p class="text-slate-300">{{ reservation()?.specialRequests }}</p>
+            <h3 class="font-bold text-lg text-slate-200 mb-3">Pagos</h3>
+            @for (payment of reservation()?.payments; track payment.id) {
+              <div class="bg-slate-800 p-3 rounded mb-2">
+                <p class="text-slate-300"><strong class="text-slate-100">Monto:</strong> {{ payment.amount | currency:'PEN':'symbol':'1.2-2' }}</p>
+                <p class="text-slate-300"><strong class="text-slate-100">Método:</strong> {{ payment.paymentMethod }}</p>
+                <p class="text-slate-300"><strong class="text-slate-100">Estado:</strong> 
+                  <span [class]="payment.status === 'COMPLETED' ? 'text-green-400' : 'text-yellow-400'">
+                    {{ payment.status }}
+                  </span>
+                </p>
+                <p class="text-slate-300"><strong class="text-slate-100">Fecha:</strong> {{ payment.paymentDate }}</p>
+              </div>
+            }
+          </div>
+        }
+        
+        @if (reservation()?.observation) {
+          <div class="border border-slate-700 rounded-lg p-4">
+            <h3 class="font-bold text-lg text-slate-200 mb-2">Observaciones</h3>
+            <p class="text-slate-300">{{ reservation()?.observation }}</p>
           </div>
         }
       </div>

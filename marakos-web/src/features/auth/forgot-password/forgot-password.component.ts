@@ -20,6 +20,52 @@ export class ForgotPasswordComponent {
   confirmPassword = '';
   errorMessage = signal<string | null>(null);
   successMessage = signal<string | null>(null);
+  
+  // Validación de contraseña
+  showPassword = signal(false);
+  showConfirmPassword = signal(false);
+  passwordTouched = signal(false);
+  confirmPasswordTouched = signal(false);
+  
+  passwordValidations = {
+    minLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false
+  };
+  
+  get isPasswordValid(): boolean {
+    return Object.values(this.passwordValidations).every(v => v);
+  }
+  
+  get passwordsMatch(): boolean {
+    return this.newPassword === this.confirmPassword && this.confirmPassword.length > 0;
+  }
+
+  togglePasswordVisibility() {
+    this.showPassword.set(!this.showPassword());
+  }
+  
+  toggleConfirmPasswordVisibility() {
+    this.showConfirmPassword.set(!this.showConfirmPassword());
+  }
+  
+  onPasswordBlur() {
+    this.passwordTouched.set(true);
+  }
+  
+  onConfirmPasswordBlur() {
+    this.confirmPasswordTouched.set(true);
+  }
+  
+  validatePassword() {
+    this.passwordValidations = {
+      minLength: this.newPassword.length >= 8,
+      hasUpperCase: /[A-Z]/.test(this.newPassword),
+      hasLowerCase: /[a-z]/.test(this.newPassword),
+      hasNumber: /[0-9]/.test(this.newPassword)
+    };
+  }
 
   sendRecoveryEmail() {
     this.errorMessage.set(null);

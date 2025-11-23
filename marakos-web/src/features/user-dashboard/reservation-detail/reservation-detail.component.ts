@@ -16,42 +16,59 @@ export class ReservationDetailComponent implements OnInit, AfterViewInit {
 
   reservation = signal<any | undefined>(undefined);
   qrCodeUrl = signal<string | null>(null);
+  isLoading = signal<boolean>(true);
 
   totalCost = computed(() => {
-    return this.reservation()?.menuItems.reduce((acc, curr) => acc + (curr.item.price * curr.quantity), 0) ?? 0;
+    const products = this.reservation()?.products || [];
+    return products.reduce((acc: number, curr: any) => acc + curr.subtotal, 0);
   });
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
-      this.reservation.set(this.bookingService.getReservationById(id));
+      this.isLoading.set(true);
+      this.bookingService.getReservationById(id).subscribe({
+        next: (data) => {
+          this.reservation.set(data);
+          this.isLoading.set(false);
+          // Generar QR después de cargar los datos
+          setTimeout(() => this.generateQRCode(), 100);
+        },
+        error: (err) => {
+          console.error('Error al cargar reserva:', err);
+          this.isLoading.set(false);
+        }
+      });
     }
   }
   
   ngAfterViewInit() {
-    this.waitForQRCodeAndGenerate();
-  }
-  
-  private waitForQRCodeAndGenerate(): void {
-    const qrCodeGenerator = (window as any).QRCode;
-    if (typeof qrCodeGenerator !== 'undefined') {
-      this.generateQRCode();
-    } else {
-      setTimeout(() => this.waitForQRCodeAndGenerate(), 100);
-    }
+    // No hacer nada aquí, el QR se genera después de cargar los datos
   }
 
   private generateQRCode(): void {
     const reservationData = this.reservation();
-    if (reservationData && reservationData.id) {
-      const qrCodeGenerator = (window as any).QRCode;
-      qrCodeGenerator.toDataURL(JSON.stringify({ reservationId: reservationData.id }), { width: 200 }, (err: any, url: string) => {
-        if (err) {
-          console.error('Failed to generate QR code', err);
-          return;
-        }
-        this.qrCodeUrl.set(url);
-      });
+    console.log('Intentando generar QR con datos:', reservationData);
+    
+    if (reservationData && (reservationData.id || reservationData.code)) {
+      const qrData = {
+        reservationId: reservationData.id,
+        code: reservationData.code,
+        customerName: reservationData.holderName,
+        date: reservationData.reservationDate,
+        time: reservationData.reservationTime
+      };
+      
+      console.log('Generando QR con datos:', qrData);
+      
+      // Usar API externa de QR Code (no requiere librería)
+      const qrContent = encodeURIComponent(JSON.stringify(qrData));
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrContent}`;
+      
+      console.log('QR generado exitosamente con API externa');
+      this.qrCodeUrl.set(qrUrl);
+    } else {
+      console.error('Reservation data not available to generate QR code. Data:', reservationData);
     }
   }
 }
