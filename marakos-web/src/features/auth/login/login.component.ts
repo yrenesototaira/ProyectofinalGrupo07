@@ -19,6 +19,11 @@ export class LoginComponent {
   password = 'cliente1';
   errorMessage = signal<string | null>(null);
   isLoading = signal<boolean>(false);
+  showPassword = signal(false);
+
+  togglePasswordVisibility() {
+    this.showPassword.set(!this.showPassword());
+  }
 
   login() {
     this.errorMessage.set(null);
