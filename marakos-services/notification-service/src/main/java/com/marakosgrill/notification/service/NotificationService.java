@@ -10,15 +10,17 @@ import org.springframework.stereotype.Service;
 public class NotificationService {
 
     private final WhatsAppService whatsAppService;
+    private final EmailService emailService;
 
     /**
-     * Envía notificación de confirmación de reserva
+     * Envía notificación de confirmación de reserva (WhatsApp + Email)
      */
     public boolean sendReservationConfirmation(ReservationNotificationData data) {
         try {
             log.info("🚀 INICIO NotificationService.sendReservationConfirmation");
             log.info("📋 Procesando notificación de confirmación para reserva: {}", data.getReservationCode());
             log.info("📞 Teléfono destino: {}, Cliente: {}", data.getCustomerPhone(), data.getCustomerName());
+            log.info("📧 Email destino: {}", data.getCustomerEmail());
             
             // Validar datos obligatorios
             if (!isValidNotificationData(data)) {
@@ -26,14 +28,33 @@ public class NotificationService {
                 return false;
             }
 
-            log.info("✅ Datos validados correctamente, enviando via WhatsApp...");
-            // Enviar via WhatsApp
-            boolean result = whatsAppService.sendReservationConfirmation(data.getCustomerPhone(), data);
+            log.info("✅ Datos validados correctamente, enviando notificaciones...");
             
-            if (result) {
+            // Enviar via WhatsApp
+            boolean whatsappResult = whatsAppService.sendReservationConfirmation(data.getCustomerPhone(), data);
+            
+            if (whatsappResult) {
                 log.info("🎉 WhatsApp enviado exitosamente para reserva: {}", data.getReservationCode());
             } else {
                 log.error("💥 Falló el envío de WhatsApp para reserva: {}", data.getReservationCode());
+            }
+            
+            // Enviar via Email
+            boolean emailResult = emailService.sendReservationConfirmationEmail(data);
+            
+            if (emailResult) {
+                log.info("📬 Email enviado exitosamente para reserva: {}", data.getReservationCode());
+            } else {
+                log.error("📭 Falló el envío de Email para reserva: {}", data.getReservationCode());
+            }
+            
+            // Retornar true si al menos uno fue exitoso
+            boolean result = whatsappResult || emailResult;
+            
+            if (result) {
+                log.info("✅ Al menos una notificación fue enviada exitosamente");
+            } else {
+                log.error("❌ Todas las notificaciones fallaron");
             }
             
             return result;
