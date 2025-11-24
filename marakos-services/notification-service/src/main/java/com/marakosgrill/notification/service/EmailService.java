@@ -91,7 +91,10 @@ public class EmailService {
                         data.getTotalAmount()
                     );
                 } else {
+                    // Pago online completado - mostrar estado PAGADO
                     amountSection = String.format(
+                        "<tr><td style='padding:12px;background-color:#f8f9fa;border:1px solid #e9ecef;font-weight:bold;color:#495057;'>Estado del Pago</td>" +
+                        "<td style='padding:12px;background-color:#f8f9fa;border:1px solid #e9ecef;color:#10b981;font-weight:bold;font-size:16px;'>✓ PAGADO</td></tr>" +
                         "<tr><td style='padding:12px;background-color:#f8f9fa;border:1px solid #e9ecef;font-weight:bold;color:#495057;'>Monto Total</td>" +
                         "<td style='padding:12px;background-color:#ffffff;border:1px solid #e9ecef;color:#f59e0b;font-weight:bold;font-size:18px;'>S/ %.2f</td></tr>",
                         data.getTotalAmount()

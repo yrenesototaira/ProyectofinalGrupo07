@@ -112,7 +112,9 @@ export class AuthService {
     
     return {
       id: Date.now().toString(),
-      nombre: isAdmin ? 'Administrador Demo' : 'Cliente Demo',
+      dni: isAdmin ? '12345678' : '87654321',
+      nombre: isAdmin ? 'Administrador' : 'Cliente',
+      apellido: isAdmin ? 'Demo' : 'Prueba',
       email: credentials.email,
       tipoUsuario: isAdmin ? 'Empleado' : 'Cliente',
       telefono: '999888777',

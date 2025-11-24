@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, effect, computed } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -9,8 +9,10 @@ import { TableService } from '../../core/services/table.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PaymentService, PaymentRequest, PaymentResponse } from '../../core/services/payment.service';
 import { NotificationService, WhatsAppNotificationRequest } from '../../core/services/notification.service';
+import { MenuService } from '../../core/services/menu.service';
 import { Table, MenuItem } from '../../core/models/restaurant.model';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
+import { CanComponentDeactivate } from '../../core/guards/can-deactivate.guard';
 
 @Component({
   selector: 'app-booking',
@@ -18,7 +20,7 @@ import { ModalComponent } from '../../shared/components/modal/modal.component';
   templateUrl: './booking.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BookingComponent {
+export class BookingComponent implements CanComponentDeactivate {
   private router = inject(Router);
   bookingService = inject(BookingService);
   private restaurantDataService = inject(RestaurantDataService);
@@ -26,11 +28,15 @@ export class BookingComponent {
   private authService = inject(AuthService);
   private paymentService = inject(PaymentService);
   private notificationService = inject(NotificationService);
+  private menuService = inject(MenuService);
 
   step = signal(1);
   
   // Tipo de reserva basado en la ruta actual
   reservationType = signal<'MESA' | 'EVENTO'>('MESA');
+  
+  // Control para navegación - permite salir cuando la reserva se completó
+  private reservationCompleted = signal(false);
   
   // Step 1 signals - Customer Details
   customerDocument = signal('');
@@ -55,10 +61,39 @@ export class BookingComponent {
   
   // Step 4 signals - Menu
   menu = this.restaurantDataService.getMenu();
+  
+  // Menu filtering and search (Step 4)
+  menuItems = this.menuService.getMenuItems();
+  menuCategories = this.menuService.getCategories();
+  menuLoading = this.menuService.getLoading();
+  menuError = this.menuService.getError();
+  selectedMenuCategory = signal<string | number>('all');
+  menuSearchQuery = signal<string>('');
+  
+  // Computed filtered menu items
+  filteredMenuItems = computed(() => {
+    const query = this.menuSearchQuery();
+    const category = this.selectedMenuCategory();
+    
+    if (query.trim()) {
+      return this.menuService.searchItems(query);
+    }
+    
+    return this.menuService.getItemsByCategory(category);
+  });
+  
+  // Computed popular menu items
+  popularMenuItems = computed(() => {
+    return this.menuService.getPopularItems().slice(0, 3); // Only show top 3 popular items
+  });
 
   // Step 5 signals - Summary & Terms
   termsAccepted = signal(false);
   isTermsModalOpen = signal(false);
+  
+  // Navigation guard modal
+  isExitConfirmModalOpen = signal(false);
+  private pendingNavigation: (() => void) | null = null;
   
   // Payment Type Selection
   paymentType = signal<'online'|'presencial'|null>(null);
@@ -118,9 +153,10 @@ export class BookingComponent {
       const user = this.currentUser();
       if (user) {
         // Auto-fill customer data with current user info as default
+        this.customerDocument.set(user.dni || user.documento || '');
         this.customerName.set(user.nombre +' '+ user.apellido || '');
         this.customerEmail.set(user.email || '');
-        this.customerPhone.set(user.telefono || ''); // TODO: Add phone to user model
+        this.customerPhone.set(user.telefono || '');
       }
     });
     
@@ -220,7 +256,6 @@ export class BookingComponent {
     if(table.isAvailable && table.capacity >= this.guests()) {
       this.selectedTable.set(table);
       this.bookingService.setTable(table);
-      this.nextStep();
     }
   }
 
@@ -238,6 +273,22 @@ export class BookingComponent {
   
   getItemQuantity(itemId: number): number {
     return this.currentReservation().menuItems.find(i => i.item.id === itemId)?.quantity ?? 0;
+  }
+  
+  // Menu search and filter methods (Step 4)
+  selectMenuCategory(category: string | number): void {
+    this.selectedMenuCategory.set(category);
+    this.menuSearchQuery.set(''); // Clear search when selecting category
+  }
+  
+  onMenuSearch(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.menuSearchQuery.set(target.value);
+    this.selectedMenuCategory.set('all'); // Reset category when searching
+  }
+  
+  refreshMenuItems(): void {
+    this.menuService.refreshMenuData();
   }
 
   updateCustomerField(field: 'document' | 'name' | 'email' | 'phone', value: string) {
@@ -436,6 +487,9 @@ export class BookingComponent {
             console.log('📱 FRONTEND: Reserva y pago completados - WhatsApp debería haber sido enviado para reserva ID:', reservationResponse.id);
             this.paymentProcessing.set(false);
             
+            // Marcar reserva como completada para permitir navegación
+            this.reservationCompleted.set(true);
+            
             // Navigate to confirmation page with payment success details
             this.router.navigate(['/confirmation', reservationResponse.id], {
               queryParams: {
@@ -451,6 +505,9 @@ export class BookingComponent {
             console.log('📱 FRONTEND: Verificando si se envió notificación WhatsApp a pesar del error de pago');
             console.log('📱 FRONTEND: Reserva creada con ID:', reservationResponse.id, 'pero pago falló');
             this.paymentProcessing.set(false);
+            
+            // Marcar reserva como completada para permitir navegación
+            this.reservationCompleted.set(true);
             
             // Important: Don't navigate multiple times
             // Only navigate once with payment failure information
@@ -533,6 +590,9 @@ export class BookingComponent {
           // Enviar notificación WhatsApp
           this.sendWhatsAppNotification(response, this.paymentMethod() || 'Digital');
           
+          // Marcar reserva como completada para permitir navegación
+          this.reservationCompleted.set(true);
+          
           this.router.navigate(['/confirmation', response.id]);
         },
         error: (error) => {
@@ -545,6 +605,10 @@ export class BookingComponent {
   }
 
   finalizeReservationPresencial() {
+    // Activar indicador de procesamiento
+    this.paymentProcessing.set(true);
+    this.paymentError.set(null);
+    
     const products = this.currentReservation().menuItems.map(item => ({
       productId: item.item.id,
       quantity: item.quantity,
@@ -589,11 +653,17 @@ export class BookingComponent {
     this.bookingService.confirmReservation(resevationData).subscribe({
         next: (response) => {
           console.log('✅ FRONTEND finalizeReservationPresencial: Respuesta de confirmación de reserva recibida:', response);
-          console.log('📱 FRONTEND finalizeReservationPresencial: Verificando notificación WhatsApp para reserva presencial ID:', response.id);
+          console.log('📱 FRONTEND finalizeReservacionPresencial: Verificando notificación WhatsApp para reserva presencial ID:', response.id);
           console.log('📱 FRONTEND finalizeReservationPresencial: Código de reserva:', response.code || response.reservationCode || 'NO_CODE');
           
           // Enviar notificación WhatsApp para pago presencial
           this.sendWhatsAppNotification(response, 'Presencial');
+          
+          // Desactivar indicador de procesamiento
+          this.paymentProcessing.set(false);
+          
+          // Marcar reserva como completada para permitir navegación
+          this.reservationCompleted.set(true);
           
           this.router.navigate(['/confirmation', response.id], {
             queryParams: {
@@ -604,7 +674,8 @@ export class BookingComponent {
         },
         error: (error) => {
           console.error('❌ FRONTEND finalizeReservationPresencial: Error confirmando reserva:', error);
-          // Handle error, maybe show a message to the user
+          this.paymentProcessing.set(false);
+          this.paymentError.set('Error al confirmar la reserva. Por favor, intenta nuevamente.');
         }
       }
     );
@@ -821,5 +892,51 @@ export class BookingComponent {
         console.warn('⚠️ FRONTEND: Servicio de notificaciones no disponible:', error);
       }
     });
+  }
+
+  /**
+   * Guard de navegación - previene que el usuario salga accidentalmente del proceso de reserva
+   * Implementa CanComponentDeactivate
+   */
+  canDeactivate(): boolean | Promise<boolean> {
+    // Si la reserva fue completada, permitir navegación sin confirmación
+    if (this.reservationCompleted()) {
+      return true;
+    }
+
+    // Si el usuario está en el paso 1 y no ha ingresado ningún dato, permitir salir
+    if (this.step() === 1 && 
+        !this.customerDocument() && 
+        !this.customerName() && 
+        !this.customerEmail() && 
+        !this.customerPhone()) {
+      return true;
+    }
+
+    // En cualquier otro caso, mostrar modal de confirmación
+    return new Promise<boolean>((resolve) => {
+      this.pendingNavigation = () => resolve(true);
+      this.isExitConfirmModalOpen.set(true);
+      
+      // Si el usuario cierra el modal sin confirmar, resolver como false
+      const checkModalClosed = () => {
+        if (!this.isExitConfirmModalOpen()) {
+          resolve(false);
+        }
+      };
+    });
+  }
+
+  confirmExit(): void {
+    this.isExitConfirmModalOpen.set(false);
+    if (this.pendingNavigation) {
+      this.pendingNavigation();
+      this.pendingNavigation = null;
+    }
+  }
+
+  cancelExit(): void {
+    this.isExitConfirmModalOpen.set(false);
+    this.pendingNavigation = null;
   }
 }

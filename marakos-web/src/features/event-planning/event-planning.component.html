@@ -39,7 +39,7 @@
                 <div class="space-y-4">
                   <div class="flex justify-between">
                     <span class="text-slate-400">Nombre:</span>
-                    <span class="font-semibold">{{ currentUser()?.name || 'Usuario Mockeado' }}</span>
+                    <span class="font-semibold">{{ (currentUser()?.nombre && currentUser()?.apellido) ? (currentUser()?.nombre + ' ' + currentUser()?.apellido) : currentUser()?.nombre || 'Usuario' }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-slate-400">Email:</span>
@@ -47,7 +47,7 @@
                   </div>
                   <div class="flex justify-between">
                     <span class="text-slate-400">Tipo:</span>
-                    <span class="font-semibold">{{ currentUser()?.role || 'Cliente' }}</span>
+                    <span class="font-semibold">{{ currentUser()?.tipoUsuario || 'Cliente' }}</span>
                   </div>
                 </div>
                 <div class="mt-4 p-3 bg-blue-900 rounded-lg">
@@ -62,6 +62,17 @@
             <div>
               <h3 class="text-xl font-semibold text-amber-500 mb-4">✏️ Datos del Titular</h3>
               <div class="space-y-4">
+                <div>
+                  <label for="customerDocument" class="block text-sm font-medium text-slate-300 mb-2">Documento de Identidad *</label>
+                  <input 
+                    type="text" 
+                    id="customerDocument" 
+                    [ngModel]="eventReservation().customerDocument" 
+                    (ngModelChange)="updateCustomerField('customerDocument', $event)"
+                    placeholder="Ingresa el documento de identidad"
+                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+                </div>
+
                 <div>
                   <label for="customerName" class="block text-sm font-medium text-slate-300 mb-2">Nombre Completo *</label>
                   <input 
@@ -102,25 +113,26 @@
             <!-- Event Type Selection -->
             <div>
               <h3 class="text-xl font-semibold text-amber-500 mb-4">🎊 Tipo de Evento</h3>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                @for(eventType of eventTypes(); track eventType.id) {
+              <div class="space-y-2">
+                @for(eventType of eventTypes(); track eventType.idTipoEvento) {
                   <button 
                     (click)="selectEventType(eventType)"
-                    class="p-4 rounded-lg border-2 transition-all duration-300 text-left"
-                    [class.bg-amber-500]="eventReservation().eventType?.id === eventType.id"
-                    [class.border-amber-500]="eventReservation().eventType?.id === eventType.id"
-                    [class.text-slate-900]="eventReservation().eventType?.id === eventType.id"
-                    [class.border-slate-600]="eventReservation().eventType?.id !== eventType.id"
-                    [class.text-slate-300]="eventReservation().eventType?.id !== eventType.id"
-                    [class.hover:border-amber-400]="eventReservation().eventType?.id !== eventType.id">
-                    <div class="flex items-center">
-                      <span class="text-2xl mr-3">{{ eventType.icon }}</span>
-                      <div>
-                        <div class="font-semibold">{{ eventType.name }}</div>
-                        <div class="text-xs opacity-75">{{ eventType.description }}</div>
-                        <div class="text-sm font-bold mt-1">S/ {{ eventType.basePrice }}</div>
-                      </div>
+                    class="w-full p-3 rounded-lg border-2 transition-all duration-200 text-left flex items-center justify-between"
+                    [class.bg-amber-500]="eventReservation().eventType?.idTipoEvento === eventType.idTipoEvento"
+                    [class.border-amber-500]="eventReservation().eventType?.idTipoEvento === eventType.idTipoEvento"
+                    [class.text-slate-900]="eventReservation().eventType?.idTipoEvento === eventType.idTipoEvento"
+                    [class.border-slate-600]="eventReservation().eventType?.idTipoEvento !== eventType.idTipoEvento"
+                    [class.text-slate-300]="eventReservation().eventType?.idTipoEvento !== eventType.idTipoEvento"
+                    [class.hover:border-amber-400]="eventReservation().eventType?.idTipoEvento !== eventType.idTipoEvento">
+                    <div class="flex-1">
+                      <div class="font-semibold">{{ eventType.nombre }}</div>
+                      <div class="text-xs opacity-75 mt-0.5">{{ eventType.descripcion }}</div>
                     </div>
+                    @if(eventReservation().eventType?.idTipoEvento === eventType.idTipoEvento) {
+                      <svg class="w-5 h-5 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                    }
                   </button>
                 }
               </div>
@@ -599,7 +611,7 @@
                   </div>
                   <div class="flex justify-between">
                     <span class="text-slate-400">Tipo de Evento:</span>
-                    <span class="font-semibold">{{ eventReservation().eventType?.icon }} {{ eventReservation().eventType?.name }}</span>
+                    <span class="font-semibold">{{ eventReservation().eventType?.nombre }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-slate-400">Fecha:</span>
@@ -646,9 +658,9 @@
                 <h3 class="text-xl font-semibold text-amber-500 mb-4">Desglose de Costos</h3>
                 <div class="space-y-3">
                   @if(eventReservation().eventType) {
-                    <div class="flex justify-between">
-                      <span>{{ eventReservation().eventType.name }}</span>
-                      <span>S/ {{ eventReservation().eventType.basePrice }}</span>
+                    <div class="flex justify-between text-slate-400">
+                      <span>{{ eventReservation().eventType.nombre }}</span>
+                      <span class="text-xs">Incluido</span>
                     </div>
                   }
                   @if(eventReservation().selectedShift) {
@@ -869,5 +881,47 @@
 
     <h4 class="font-bold text-slate-100 text-base">8. Modificaciones</h4>
     <p>Marakos Grill se reserva el derecho de modificar estos términos. Los clientes serán notificados de cambios importantes con al menos 30 días de antelación. Al aceptar estos términos, confirma haber leído y entendido todas las condiciones aquí establecidas.</p>
+  </div>
+</app-modal>
+
+<!-- Modal de Confirmación de Salida -->
+<app-modal [isOpen]="isExitConfirmModalOpen()" title="¿Abandonar Reserva?" (closeModal)="cancelExit()">
+  <div class="space-y-6">
+    <!-- Icono de Advertencia -->
+    <div class="flex justify-center">
+      <div class="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Mensaje -->
+    <div class="text-center space-y-2">
+      <p class="text-slate-200 text-base font-medium">
+        Estás a punto de salir del proceso de reserva de evento
+      </p>
+      <p class="text-slate-400 text-sm">
+        Si sales ahora, perderás todos los datos ingresados y tendrás que empezar de nuevo.
+      </p>
+    </div>
+
+    <!-- Botones -->
+    <div class="flex gap-3 justify-center pt-2">
+      <button
+        type="button"
+        (click)="cancelExit()"
+        class="px-6 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg font-medium transition-colors duration-200 min-w-[120px]"
+      >
+        Continuar Reserva
+      </button>
+      <button
+        type="button"
+        (click)="confirmExit()"
+        class="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-medium transition-colors duration-200 min-w-[120px]"
+      >
+        Salir
+      </button>
+    </div>
   </div>
 </app-modal>
