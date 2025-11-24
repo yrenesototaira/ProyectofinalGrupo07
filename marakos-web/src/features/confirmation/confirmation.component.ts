@@ -4,6 +4,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 // Fix: Corrected import paths
 import { BookingService } from '../../core/services/booking.service';
 import { Reservation } from '../../core/models/restaurant.model';
+import { PdfService } from '../../core/services/pdf.service';
+import { MenuService } from '../../core/services/menu.service';
 
 @Component({
   selector: 'app-confirmation',
@@ -15,6 +17,8 @@ export class ConfirmationComponent implements OnInit, AfterViewInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private bookingService = inject(BookingService);
+  private pdfService = inject(PdfService);
+  private menuService = inject(MenuService);
 
   reservation = signal<any | undefined>(undefined);
   qrCodeUrl = signal<string | null>(null);
@@ -103,6 +107,60 @@ export class ConfirmationComponent implements OnInit, AfterViewInit {
       this.qrCodeUrl.set(qrUrl);
     } else {
       console.error('Reservation data not available to generate QR code. Data:', reservationData);
+    }
+  }
+
+  /**
+   * Descarga el PDF con los detalles de la reserva
+   */
+  async downloadReservationPDF(): Promise<void> {
+    const reservationData = this.reservation();
+    
+    if (!reservationData) {
+      console.error('No hay datos de reserva disponibles para generar PDF');
+      return;
+    }
+
+    try {
+      // Determinar el estado del pago
+      const isPresential = this.isPresentialPayment() || 
+                          reservationData.payments?.[0]?.paymentMethod === 'Presencial' ||
+                          reservationData.paymentMethod === 'Presencial';
+      
+      const paymentStatus = isPresential ? 'PENDIENTE' : (reservationData.payments?.[0]?.status || 'PAGADO');
+      
+      // Preparar items de la orden obteniendo nombres y precios del MenuService
+      const menuItems = this.menuService.getMenuItems()();
+      const orderItems = reservationData.products?.map((p: any) => {
+        const product = menuItems.find(m => m.id === p.productId);
+        return {
+          productName: product?.name || `Producto #${p.productId}`,
+          quantity: p.quantity || 1,
+          unitPrice: product?.price || (p.subtotal / p.quantity) || 0,
+          subtotal: p.subtotal || 0
+        };
+      }) || [];
+
+      await this.pdfService.generateReservationPDF({
+        id: reservationData.id,
+        code: reservationData.code,
+        holderName: reservationData.holderName,
+        holderEmail: reservationData.holderEmail,
+        holderPhone: reservationData.holderPhone,
+        reservationDate: reservationData.reservationDate,
+        reservationTime: reservationData.reservationTime,
+        peopleCount: reservationData.peopleCount,
+        tableId: reservationData.tables?.[0]?.tableId,
+        observation: reservationData.observation,
+        paymentMethod: isPresential ? 'Presencial' : (reservationData.payments?.[0]?.paymentMethod || 'Digital'),
+        paymentStatus: paymentStatus,
+        totalAmount: this.paymentAmount() || reservationData.payments?.[0]?.amount || 0,
+        qrCodeUrl: this.qrCodeUrl() || undefined,
+        orderItems: orderItems.length > 0 ? orderItems : undefined
+      });
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      alert('Hubo un error al generar el PDF. Por favor, intenta nuevamente.');
     }
   }
 }
