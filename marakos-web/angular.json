@@ -28,6 +28,14 @@
             ],
             "styles": [
               "index.css"
+            ],
+            "allowedCommonJsDependencies": [
+              "jspdf",
+              "html2canvas",
+              "canvg",
+              "core-js",
+              "raf",
+              "rgbcolor"
             ]
           },
           "configurations": {

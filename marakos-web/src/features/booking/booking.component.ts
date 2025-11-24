@@ -29,6 +29,9 @@ export class BookingComponent {
 
   step = signal(1);
   
+  // Tipo de reserva basado en la ruta actual
+  reservationType = signal<'MESA' | 'EVENTO'>('MESA');
+  
   // Step 1 signals - Customer Details
   customerDocument = signal('');
   customerName = signal('');
@@ -92,6 +95,16 @@ export class BookingComponent {
   years: string[] = [];
 
   constructor() {
+    // Detectar tipo de reserva desde la URL actual
+    const currentUrl = this.router.url;
+    if (currentUrl.includes('/booking/evento')) {
+      this.reservationType.set('EVENTO');
+      console.log('🎉 Tipo de reserva detectado: EVENTO');
+    } else {
+      this.reservationType.set('MESA');
+      console.log('🍽️ Tipo de reserva detectado: MESA');
+    }
+    
     this.generateAvailableDates();
     this.bookingService.resetBooking();
     this.generateYears();
@@ -745,6 +758,17 @@ export class BookingComponent {
     try {
       console.log('📱 FRONTEND: Iniciando envío de notificación WhatsApp');
       
+      // Detectar si tiene pre-orden de comida
+      const hasPreOrder = this.currentReservation().menuItems.length > 0 && this.menuTotal() > 0;
+      
+      // Preparar items de la orden
+      const orderItems = this.currentReservation().menuItems.map(item => ({
+        productName: item.item.name,
+        quantity: item.quantity,
+        unitPrice: item.item.price,
+        subtotal: item.item.price * item.quantity
+      }));
+      
       // Preparar datos para la notificación
       const notificationData: WhatsAppNotificationRequest = {
         customerName: this.customerName(),
@@ -759,18 +783,24 @@ export class BookingComponent {
         paymentType: paymentType,
         paymentStatus: paymentType === 'presencial' ? 'PENDIENTE' : 'PAGADO',
         totalAmount: this.menuTotal(),
-        reservationStatus: 'CONFIRMADA'
+        reservationStatus: 'CONFIRMADA',
+        // Nuevos campos para email mejorado con QR y monto condicional
+        reservationType: this.reservationType(), // "MESA" o "EVENTO"
+        reservationId: reservationResponse.id, // ID para generar QR
+        hasPreOrder: hasPreOrder, // Si tiene comida pre-ordenada
+        orderItems: hasPreOrder ? orderItems : [] // Detalle de productos
       };
 
       console.log('📱 FRONTEND: Datos de notificación preparados:', notificationData);
+      console.log(`📧 Email incluirá: QR=${!!reservationResponse.id}, Monto=${hasPreOrder || this.reservationType() === 'EVENTO'}, Tipo=${this.reservationType()}`);
 
       // Enviar notificación
       this.notificationService.sendReservationConfirmation(notificationData).subscribe({
         next: (response) => {
-          console.log('✅ FRONTEND: Notificación WhatsApp enviada exitosamente:', response);
+          console.log('✅ FRONTEND: Notificación WhatsApp + Email enviada exitosamente:', response);
         },
         error: (error) => {
-          console.error('❌ FRONTEND: Error enviando notificación WhatsApp:', error);
+          console.error('❌ FRONTEND: Error enviando notificación WhatsApp + Email:', error);
           // La notificación falla pero no afecta el flujo principal de la reserva
         }
       });

@@ -4,112 +4,113 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style='font-family:Arial,sans-serif;background-color:#f4f4f4;margin:0;padding:20px;'>
-    <table style='max-width:600px;margin:0 auto;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.1);'>
+<body style='font-family:Arial,sans-serif;background-color:#f5f5f5;margin:0;padding:20px;'>
+    <table style='max-width:600px;margin:0 auto;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);'>
+        <!-- Header -->
         <tr>
-            <td style='background:linear-gradient(135deg,#f59e0b,#d97706);padding:30px;text-align:center;'>
-                <h1 style='color:#ffffff;margin:0;font-size:28px;'>🍽️ ${companyName}</h1>
-                <p style='color:#ffffff;margin:10px 0 0 0;font-size:16px;'>Confirmación de Reserva</p>
+            <td style='background-color:#f59e0b;padding:25px;text-align:center;'>
+                <h1 style='color:#ffffff;margin:0;font-size:24px;font-weight:bold;'>${companyName}</h1>
+                <p style='color:#ffffff;margin:8px 0 0 0;font-size:14px;'>Confirmacion de Reserva</p>
             </td>
         </tr>
+        
+        <!-- Content -->
         <tr>
             <td style='padding:30px;'>
-                <h2 style='color:#27ae60;margin:0 0 20px 0;font-size:24px;'>✅ ¡Reserva Confirmada!</h2>
-                <p style='color:#333;font-size:16px;line-height:1.6;margin:0 0 20px 0;'>
-                    Hola <b>${customerName}</b>,
-                </p>
-                <p style='color:#333;font-size:16px;line-height:1.6;margin:0 0 20px 0;'>
-                    Tu reserva ha sido <b>confirmada exitosamente</b>. A continuación, los detalles:
-                </p>
-                
-                <table style='width:100%;border-collapse:collapse;margin:20px 0;'>
+                <!-- Saludo y QR -->
+                <table style='width:100%;margin-bottom:25px;'>
                     <tr>
-                        <td style='padding:12px;background-color:#f8f9fa;border:1px solid #e9ecef;font-weight:bold;color:#495057;width:40%;'>
-                            📋 Código de Reserva
+                        <td style='width:60%;vertical-align:top;'>
+                            <h2 style='color:#333;margin:0 0 10px 0;font-size:20px;font-weight:bold;'>${reservationType} Confirmada</h2>
+                            <p style='color:#555;font-size:15px;line-height:1.5;margin:0;'>
+                                Hola <b>${customerName}</b>,<br>
+                                Tu reserva ha sido confirmada exitosamente.
+                            </p>
                         </td>
-                        <td style='padding:12px;background-color:#ffffff;border:1px solid #e9ecef;color:#f59e0b;font-weight:bold;font-size:18px;'>
-                            ${reservationCode}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style='padding:12px;background-color:#f8f9fa;border:1px solid #e9ecef;font-weight:bold;color:#495057;'>
-                            📅 Fecha
-                        </td>
-                        <td style='padding:12px;background-color:#ffffff;border:1px solid #e9ecef;color:#333;'>
-                            ${reservationDate}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style='padding:12px;background-color:#f8f9fa;border:1px solid #e9ecef;font-weight:bold;color:#495057;'>
-                            🕐 Hora
-                        </td>
-                        <td style='padding:12px;background-color:#ffffff;border:1px solid #e9ecef;color:#333;'>
-                            ${reservationTime}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style='padding:12px;background-color:#f8f9fa;border:1px solid #e9ecef;font-weight:bold;color:#495057;'>
-                            👥 Comensales
-                        </td>
-                        <td style='padding:12px;background-color:#ffffff;border:1px solid #e9ecef;color:#333;'>
-                            ${peopleCount} personas
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style='padding:12px;background-color:#f8f9fa;border:1px solid #e9ecef;font-weight:bold;color:#495057;'>
-                            📧 Email de Contacto
-                        </td>
-                        <td style='padding:12px;background-color:#ffffff;border:1px solid #e9ecef;color:#333;'>
-                            ${customerEmail}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style='padding:12px;background-color:#f8f9fa;border:1px solid #e9ecef;font-weight:bold;color:#495057;'>
-                            📱 Teléfono (WhatsApp)
-                        </td>
-                        <td style='padding:12px;background-color:#ffffff;border:1px solid #e9ecef;color:#333;'>
-                            ${customerPhone}
+                        <td style='width:40%;text-align:center;vertical-align:top;'>
+                            <div style='background-color:#ffffff;padding:8px;border:2px solid #f59e0b;border-radius:8px;display:inline-block;'>
+                                <img src='${qrCodeUrl}' alt='Codigo QR' style='width:120px;height:120px;display:block;' />
+                                <p style='margin:6px 0 0 0;color:#666;font-size:11px;'>Escanea al llegar</p>
+                            </div>
                         </td>
                     </tr>
                 </table>
 
-                <div style='background-color:#fff3cd;border-left:4px solid:#f59e0b;padding:15px;margin:20px 0;border-radius:4px;'>
-                    <p style='margin:0;color:#856404;font-size:14px;line-height:1.6;'>
-                        <b>📌 Importante:</b> Presenta tu <b>código de reserva (${reservationCode})</b> al llegar al restaurante. 
-                        También hemos enviado un mensaje de confirmación a tu WhatsApp.
-                    </p>
+                <!-- Código de reserva destacado -->
+                <div style='background-color:#f59e0b;padding:12px;border-radius:6px;margin-bottom:20px;text-align:center;'>
+                    <p style='margin:0;color:#ffffff;font-size:16px;font-weight:bold;'>Codigo: ${reservationCode}</p>
                 </div>
-
-                <div style='background-color:#e8f5e9;border-left:4px solid:#27ae60;padding:15px;margin:20px 0;border-radius:4px;'>
-                    <h3 style='margin:0 0 10px 0;color:#1e7e34;font-size:16px;'>📍 Ubicación</h3>
-                    <p style='margin:0;color:#155724;font-size:14px;line-height:1.6;'>
-                        <b>Marakos Grill</b><br>
-                        Av. Principal 123, Lima<br>
-                        Teléfono: (01) 234-5678
-                    </p>
-                </div>
-
-                <div style='background-color:#f8f9fa;border-radius:4px;padding:15px;margin:20px 0;'>
-                    <h3 style='margin:0 0 10px 0;color:#495057;font-size:16px;'>⏰ Horarios de Atención</h3>
-                    <p style='margin:0;color:#6c757d;font-size:14px;line-height:1.6;'>
-                        Lunes a Domingo: 12:00 PM - 11:00 PM
-                    </p>
-                </div>
-
-                <p style='color:#666;font-size:14px;line-height:1.6;margin:20px 0 0 0;'>
-                    Si necesitas modificar o cancelar tu reserva, por favor contáctanos con anticipación.
-                </p>
                 
-                <p style='color:#333;font-size:16px;line-height:1.6;margin:20px 0 0 0;'>
-                    ¡Esperamos verte pronto!<br>
+                <!-- Detalles de la reserva -->
+                <table style='width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #e0e0e0;'>
+                    <tr>
+                        <td style='padding:10px;border-bottom:1px solid #e0e0e0;font-weight:bold;color:#333;width:35%;'>Fecha</td>
+                        <td style='padding:10px;border-bottom:1px solid #e0e0e0;color:#555;'>${reservationDate}</td>
+                    </tr>
+                    <tr>
+                        <td style='padding:10px;border-bottom:1px solid #e0e0e0;font-weight:bold;color:#333;'>Hora</td>
+                        <td style='padding:10px;border-bottom:1px solid #e0e0e0;color:#555;'>${reservationTime}</td>
+                    </tr>
+                    <tr>
+                        <td style='padding:10px;border-bottom:1px solid #e0e0e0;font-weight:bold;color:#333;'>Comensales</td>
+                        <td style='padding:10px;border-bottom:1px solid #e0e0e0;color:#555;'>${peopleCount} personas</td>
+                    </tr>
+                    <tr>
+                        <td style='padding:10px;border-bottom:1px solid #e0e0e0;font-weight:bold;color:#333;'>Email</td>
+                        <td style='padding:10px;border-bottom:1px solid #e0e0e0;color:#555;'>${customerEmail}</td>
+                    </tr>
+                    <tr>
+                        <td style='padding:10px;font-weight:bold;color:#333;'>Telefono</td>
+                        <td style='padding:10px;color:#555;'>${customerPhone}</td>
+                    </tr>
+                    ${amountSection}
+                </table>
+
+                ${orderDetails}
+
+                <!-- Nota importante -->
+                <div style='background-color:#fff8e6;border-left:3px solid #f59e0b;padding:12px;margin:20px 0;'>
+                    <p style='margin:0;color:#666;font-size:13px;line-height:1.5;'>
+                        <b>Importante:</b> Presenta tu codigo de reserva <b>${reservationCode}</b> al llegar al restaurante.
+                    </p>
+                </div>
+
+                ${paymentWarning}
+
+                <!-- Información del restaurante -->
+                <table style='width:100%;margin:25px 0 0 0;'>
+                    <tr>
+                        <td style='width:50%;vertical-align:top;padding-right:10px;'>
+                            <h4 style='margin:0 0 8px 0;color:#333;font-size:14px;font-weight:bold;'>UBICACION</h4>
+                            <p style='margin:0;color:#666;font-size:13px;line-height:1.5;'>
+                                <b>Marakos Grill</b><br>
+                                Miguel Grau 795<br>
+                                Chiclayo - Pimentel<br>
+                                Telefono: 961 845 986
+                            </p>
+                        </td>
+                        <td style='width:50%;vertical-align:top;padding-left:10px;'>
+                            <h4 style='margin:0 0 8px 0;color:#333;font-size:14px;font-weight:bold;'>HORARIOS</h4>
+                            <p style='margin:0;color:#666;font-size:13px;line-height:1.5;'>
+                                Lunes a Domingo<br>
+                                12:00 PM - 11:00 PM
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+                <p style='color:#999;font-size:13px;line-height:1.5;margin:20px 0 0 0;text-align:center;'>
+                    Esperamos verte pronto<br>
                     <b>El equipo de ${companyName}</b>
                 </p>
             </td>
         </tr>
+        
+        <!-- Footer -->
         <tr>
-            <td style='background-color:#2c3e50;padding:20px;text-align:center;'>
-                <p style='color:#ecf0f1;margin:0;font-size:12px;'>
-                    Este es un correo automático, por favor no responder.<br>
+            <td style='background-color:#333;padding:15px;text-align:center;'>
+                <p style='color:#999;margin:0;font-size:11px;'>
+                    Este es un correo automatico, por favor no responder.<br>
                     ${companyName} &copy; 2025 - Todos los derechos reservados
                 </p>
             </td>
