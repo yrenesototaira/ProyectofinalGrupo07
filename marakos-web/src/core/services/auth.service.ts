@@ -84,7 +84,7 @@ export class AuthService {
         // If not valid development credentials, show helpful error message
         const customError = {
           error: {
-            message: `❌ Credenciales no válidas para desarrollo.\n\n🔑 Credenciales disponibles:\n• cliente1@mail.com / cliente1 (Cliente)\n• admin@marakos.com / admin123 (Admin)\n• admin@example.com / password (Admin)\n• test@marakos.com / test123 (Cliente)`
+            message: `❌ Credenciales no válidas para desarrollo.\n\n🔑 Credenciales disponibles:\n• admin@marakos.com / admin123 (Administrador)\n• mozo@marakos.com / mozo123 (Mozo)\n• recepcionista@marakos.com / recep123 (Recepcionista)\n• cliente1@mail.com / cliente1 (Cliente)`
           },
           status: 401
         };
@@ -96,10 +96,12 @@ export class AuthService {
 
   private isValidDevelopmentCredentials(credentials: { email: string, password: string }): boolean {
     const validCredentials = [
-      { email: 'admin@marakos.com', password: 'admin123' },
-      { email: 'cliente1@mail.com', password: 'cliente1' },
-      { email: 'admin@example.com', password: 'password' },
-      { email: 'test@marakos.com', password: 'test123' }
+      { email: 'admin@marakos.com', password: 'admin123', rol: 'Administrador' },
+      { email: 'mozo@marakos.com', password: 'mozo123', rol: 'Mozo' },
+      { email: 'recepcionista@marakos.com', password: 'recep123', rol: 'Recepcionista' },
+      { email: 'cliente1@mail.com', password: 'cliente1', rol: null },
+      { email: 'admin@example.com', password: 'password', rol: 'Administrador' },
+      { email: 'test@marakos.com', password: 'test123', rol: null }
     ];
     
     return validCredentials.some(cred => 
@@ -108,15 +110,33 @@ export class AuthService {
   }
 
   private createMockUser(credentials: { email: string, password: string }): any {
-    const isAdmin = credentials.email.includes('admin');
+    // Determinar el rol según el email
+    let rol = null;
+    let nombre = 'Cliente';
+    let tipoUsuario = 'Cliente';
+    
+    if (credentials.email.includes('admin')) {
+      rol = 'Administrador';
+      nombre = 'Administrador';
+      tipoUsuario = 'Empleado';
+    } else if (credentials.email.includes('mozo')) {
+      rol = 'Mozo';
+      nombre = 'Mozo';
+      tipoUsuario = 'Empleado';
+    } else if (credentials.email.includes('recepcionista')) {
+      rol = 'Recepcionista';
+      nombre = 'Recepcionista';
+      tipoUsuario = 'Empleado';
+    }
     
     return {
       id: Date.now().toString(),
-      dni: isAdmin ? '12345678' : '87654321',
-      nombre: isAdmin ? 'Administrador' : 'Cliente',
-      apellido: isAdmin ? 'Demo' : 'Prueba',
+      dni: tipoUsuario === 'Empleado' ? '12345678' : '87654321',
+      nombre: nombre,
+      apellido: tipoUsuario === 'Empleado' ? 'Demo' : 'Prueba',
       email: credentials.email,
-      tipoUsuario: isAdmin ? 'Empleado' : 'Cliente',
+      tipoUsuario: tipoUsuario,
+      rol: rol, // Rol del empleado: Administrador, Mozo, Recepcionista
       telefono: '999888777',
       token: 'mock-token-' + Date.now()
     };

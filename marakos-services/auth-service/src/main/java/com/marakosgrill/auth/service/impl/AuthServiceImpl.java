@@ -85,6 +85,10 @@ public class AuthServiceImpl implements AuthService {
                 response.setNombre(employee.getFirstName());
                 response.setApellido(employee.getLastName());
                 response.setTelefono(employee.getPhone());
+                // Incluir el nombre del rol del empleado
+                if (employee.getRole() != null) {
+                    response.setRol(employee.getRole().getNombre());
+                }
             } else {
                 response.setIdPersona(null);
                 response.setNombre(null);
