@@ -81,10 +81,10 @@ export class AuthService {
           return of(mockUser);
         }
         
-        // If not valid development credentials, show helpful error message
+        // Return error for invalid credentials
         const customError = {
           error: {
-            message: `❌ Credenciales no válidas para desarrollo.\n\n🔑 Credenciales disponibles:\n• admin@marakos.com / admin123 (Administrador)\n• mozo@marakos.com / mozo123 (Mozo)\n• recepcionista@marakos.com / recep123 (Recepcionista)\n• cliente1@mail.com / cliente1 (Cliente)`
+            message: 'Credenciales incorrectas. Por favor, verifica tu correo y contraseña.'
           },
           status: 401
         };
