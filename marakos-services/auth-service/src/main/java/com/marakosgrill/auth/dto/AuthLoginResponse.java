@@ -14,4 +14,5 @@ public class AuthLoginResponse {
     private String nombre;
     private String apellido;
     private String telefono;
+    private String rol; // Nombre del rol del empleado (Administrador, Mozo, Recepcionista)
 }
