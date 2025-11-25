@@ -5,16 +5,10 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { RestaurantDataService } from '../../core/services/restaurant-data.service';
 import { AdditionalServicesService } from '../../core/services/additional-services.service';
+import { EventTypeService, EventType } from '../../core/services/event-type.service';
 import { MenuItem, AdditionalService } from '../../core/models/restaurant.model';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
-
-export interface EventType {
-  id: string;
-  name: string;
-  description: string;
-  basePrice: number;
-  icon: string;
-}
+import { CanComponentDeactivate } from '../../core/guards/can-deactivate.guard';
 
 export interface EventShift {
   id: string;
@@ -42,6 +36,7 @@ export interface LinenColor {
 
 export interface EventPlanningReservation {
   // Step 1
+  customerDocument: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -81,12 +76,13 @@ export interface EventPlanningReservation {
 })
 
   
-export class EventPlanningComponent {
+export class EventPlanningComponent implements CanComponentDeactivate {
   // Services
   private authService = inject(AuthService);
   private router = inject(Router);
   private restaurantDataService = inject(RestaurantDataService);
   private additionalServicesService = inject(AdditionalServicesService);
+  private eventTypeService = inject(EventTypeService);
 
   // Component state
   step = signal(1);
@@ -94,14 +90,16 @@ export class EventPlanningComponent {
   currentCalendarMonth = signal(new Date().getMonth());
   currentCalendarYear = signal(new Date().getFullYear());
   isTermsModalOpen = signal(false);
+  
+  // Control para navegación - permite salir cuando la reserva se completó
+  private eventReservationCompleted = signal(false);
+  
+  // Modal de confirmación de salida
+  isExitConfirmModalOpen = signal(false);
+  private pendingNavigation: (() => void) | null = null;
 
-  // Mock data for events - TODO: Replace with backend service calls
-  eventTypes = signal<EventType[]>([
-    { id: 'cumpleanos', name: 'Cumpleaños', description: 'Celebración especial', basePrice: 150, icon: '🎂' },
-    { id: 'networking', name: 'Evento de Networking', description: 'Reunión profesional', basePrice: 200, icon: '🤝' },
-    { id: 'baby-shower', name: 'Baby Shower', description: 'Celebración de bebé', basePrice: 120, icon: '👶' },
-    { id: 'boda', name: 'Boda', description: 'Ceremonia matrimonial', basePrice: 500, icon: '💒' }
-  ]);
+  // Event types from database
+  eventTypes = this.eventTypeService.getEventTypesSignal();
 
   eventShifts = signal<EventShift[]>([
     { id: 'almuerzo', name: 'Almuerzo', timeRange: '12:00 - 16:00', startTime: '12:00', endTime: '16:00', price: 0 },
@@ -133,6 +131,7 @@ export class EventPlanningComponent {
 
   // Event planning reservation state simplificado
   eventReservation = signal<EventPlanningReservation>({
+    customerDocument: '',
     customerName: '',
     customerEmail: '',
     customerPhone: '',
@@ -154,13 +153,20 @@ export class EventPlanningComponent {
   });
 
   constructor() {
+    // Cargar tipos de evento desde la base de datos
+    this.eventTypeService.getEventTypes().subscribe({
+      next: (types) => console.log('Tipos de evento cargados:', types),
+      error: (error) => console.error('Error cargando tipos de evento:', error)
+    });
+
     // Efecto para pre-llenar datos del usuario
     effect(() => {
       const user = this.authService.currentUser();
       if (user && !this.eventReservation().customerName) {
         this.eventReservation.update(reservation => ({
           ...reservation,
-          customerName: user.nombre,
+          customerDocument: user.dni || user.documento || '',
+          customerName: user.nombre + (user.apellido ? ' ' + user.apellido : ''),
           customerEmail: user.email,
           customerPhone: user.telefono || ''
         }));
@@ -200,7 +206,7 @@ export class EventPlanningComponent {
   }
 
   // Step 1 methods
-  updateCustomerField(field: 'customerName' | 'customerEmail' | 'customerPhone', value: string) {
+  updateCustomerField(field: 'customerDocument' | 'customerName' | 'customerEmail' | 'customerPhone', value: string) {
     this.eventReservation.update(res => ({
       ...res,
       [field]: value
@@ -394,7 +400,7 @@ export class EventPlanningComponent {
   // Validation methods
   canProceedFromStep1(): boolean {
     const res = this.eventReservation();
-    return !!(res.customerName && res.customerEmail && res.customerPhone && res.eventType && res.paymentMethod);
+    return !!(res.customerDocument && res.customerName && res.customerEmail && res.customerPhone && res.eventType && res.paymentMethod);
   }
 
   canProceedFromStep2(): boolean {
@@ -563,9 +569,8 @@ export class EventPlanningComponent {
     const res = this.eventReservation();
     let subtotal = 0;
 
-    // Base event price
-    subtotal += res.eventType?.basePrice || 0;
-
+    // Note: Event type no longer has a base price from database
+    
     // Shift price
     subtotal += res.selectedShift?.price || 0;
 
@@ -658,6 +663,9 @@ export class EventPlanningComponent {
     setTimeout(() => {
       alert(`🎉 ¡Pago procesado exitosamente!\n\nMonto: S/ ${this.getDepositAmount()}\nReserva confirmada para: ${this.formatDate(reservation.selectedDate)}\n\nTe enviaremos un email de confirmación.`);
       
+      // Marcar reserva como completada para permitir navegación
+      this.eventReservationCompleted.set(true);
+      
       // Redirect to confirmation or home
       this.router.navigate(['/']);
     }, 1500);
@@ -676,8 +684,53 @@ export class EventPlanningComponent {
     setTimeout(() => {
       alert(`📝 ¡Reserva confirmada!\n\nTienes 48 horas para realizar el pago del depósito.\nTotal a pagar en local: S/ ${this.getDepositAmount()}\n\nTe enviaremos un email con todos los detalles.`);
       
+      // Marcar reserva como completada para permitir navegación
+      this.eventReservationCompleted.set(true);
+      
       // Redirect to home
       this.router.navigate(['/']);
     }, 1000);
+  }
+
+  /**
+   * Guard de navegación - previene que el usuario salga accidentalmente del proceso de reserva de evento
+   * Implementa CanComponentDeactivate
+   */
+  canDeactivate(): boolean | Promise<boolean> {
+    // Si la reserva fue completada, permitir navegación sin confirmación
+    if (this.eventReservationCompleted()) {
+      return true;
+    }
+
+    // Si el usuario está en el paso 1 y no ha seleccionado tipo de evento, permitir salir
+    const reservation = this.eventReservation();
+    if (this.step() === 1 && !reservation.eventType && !reservation.customerName) {
+      return true;
+    }
+
+    // En cualquier otro caso, mostrar modal de confirmación
+    return new Promise<boolean>((resolve) => {
+      this.pendingNavigation = () => resolve(true);
+      this.isExitConfirmModalOpen.set(true);
+    });
+  }
+  
+  /**
+   * Confirma la salida y permite la navegación
+   */
+  confirmExit() {
+    this.isExitConfirmModalOpen.set(false);
+    if (this.pendingNavigation) {
+      this.pendingNavigation();
+      this.pendingNavigation = null;
+    }
+  }
+  
+  /**
+   * Cancela la salida y permanece en la página
+   */
+  cancelExit() {
+    this.isExitConfirmModalOpen.set(false);
+    this.pendingNavigation = null;
   }
 }

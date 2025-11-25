@@ -224,29 +224,140 @@
       <!-- Step 3: Select Table -->
       @case (3) {
         <div class="animate-fade-in">
-          <h2 class="text-3xl font-bold text-slate-100 mb-6">3. Selecciona tu Mesa</h2>
+          <h2 class="text-2xl font-bold text-slate-100 mb-2 text-center">3. Selecciona tu Mesa</h2>
           
-          <!-- Table Selection by Location -->
-          <div class="space-y-6">
+          @if (!selectedTable()) {
+            <p class="text-center text-slate-400 mb-4 text-sm">📍 Haz clic en una mesa disponible para continuar</p>
+          } @else {
+            <p class="text-center text-amber-400 mb-4 text-sm font-medium">✓ Mesa {{ selectedTable()!.code || selectedTable()!.id }} seleccionada</p>
+          }
+          
+          <!-- Info Cards Row -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <!-- Selected Table Info -->
+            @if (selectedTable()) {
+              <div class="p-3 bg-gradient-to-br from-amber-500/20 to-amber-600/10 rounded-lg border-2 border-amber-500">
+                <h4 class="text-sm font-bold text-amber-400 mb-2 flex items-center">
+                  <span class="mr-1">✓</span> Detalles
+                </h4>
+                <div class="space-y-1 text-xs">
+                  <div class="flex justify-between">
+                    <span class="text-slate-300">Mesa:</span>
+                    <span class="font-semibold text-white">{{ selectedTable()!.code || selectedTable()!.id }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-300">Ubicación:</span>
+                    <span class="font-semibold text-white">{{ selectedTable()!.location }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-300">Capacidad:</span>
+                    <span class="font-semibold text-white">{{ selectedTable()!.capacity }}p</span>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- Reservation Summary -->
+            <div class="p-3 bg-slate-900 rounded-lg border border-slate-700">
+              <h4 class="text-xs font-bold text-slate-300 mb-2">Resumen</h4>
+              <div class="space-y-1 text-xs">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Fecha:</span>
+                  <span class="font-medium text-slate-200">{{ selectedDate() }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Hora:</span>
+                  <span class="font-medium text-slate-200">{{ selectedTime() }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Comensales:</span>
+                  <span class="font-medium text-slate-200">{{ guests() }}p</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="p-3 bg-slate-900 rounded-lg border border-slate-700">
+              <h4 class="text-xs font-bold text-slate-300 mb-2">Leyenda</h4>
+              <div class="grid grid-cols-2 gap-2 text-[10px]">
+                <div class="flex items-center gap-1">
+                  <div class="w-2.5 h-2.5 bg-emerald-600 rounded"></div>
+                  <span class="text-slate-300">Disponible</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <div class="w-2.5 h-2.5 bg-rose-700 rounded"></div>
+                  <span class="text-slate-300">Ocupada</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <div class="w-2.5 h-2.5 bg-yellow-600 rounded"></div>
+                  <span class="text-slate-300">Pequeña</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <div class="w-2.5 h-2.5 bg-emerald-600 rounded ring-2 ring-amber-500"></div>
+                  <span class="text-slate-300">Elegida</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table Selection: 2 Column Layout -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             @for(location of getLocationGroups(); track location.name) {
-              <div class="p-6 bg-slate-900 rounded-lg border border-slate-700">
-                <div class="flex items-center mb-4">
-                  <span class="text-2xl mr-3">{{ getLocationIcon(location.name) }}</span>
-                  <h3 class="text-xl font-semibold text-slate-100">{{ location.name }}</h3>
-                  <span class="ml-2 text-sm text-slate-400">({{ location.tables.length }} mesas)</span>
+              <div class="p-3 rounded-lg border border-slate-700 relative overflow-hidden"
+                   [class.bg-gradient-to-br]="true"
+                   [class.from-slate-900]="true"
+                   [class.via-slate-900]="true"
+                   [class.to-emerald-900/20]="location.name.toLowerCase().includes('jardin') || location.name.toLowerCase().includes('terraza')"
+                   [class.to-amber-900/20]="location.name.toLowerCase().includes('central') || location.name.toLowerCase().includes('principal')"
+                   [class.to-blue-900/20]="location.name.toLowerCase().includes('vip') || location.name.toLowerCase().includes('privado')"
+                   [class.to-slate-800]="!location.name.toLowerCase().includes('jardin') && !location.name.toLowerCase().includes('terraza') && !location.name.toLowerCase().includes('central') && !location.name.toLowerCase().includes('principal') && !location.name.toLowerCase().includes('vip') && !location.name.toLowerCase().includes('privado')">
+                
+                <!-- Decorative background pattern -->
+                <div class="absolute inset-0 opacity-5 pointer-events-none">
+                  @if (location.name.toLowerCase().includes('jardin') || location.name.toLowerCase().includes('terraza')) {
+                    <!-- Leaf pattern for garden/terrace -->
+                    <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <pattern id="leaf-pattern-{{location.name}}" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M10 5 Q 15 10 10 15 Q 5 10 10 5 Z" fill="currentColor" class="text-emerald-400"/>
+                      </pattern>
+                      <rect width="100" height="100" fill="url(#leaf-pattern-{{location.name}})"/>
+                    </svg>
+                  } @else if (location.name.toLowerCase().includes('central') || location.name.toLowerCase().includes('principal')) {
+                    <!-- Grid pattern for central area -->
+                    <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <pattern id="grid-pattern-{{location.name}}" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+                        <rect width="10" height="10" fill="none" stroke="currentColor" stroke-width="0.5" class="text-amber-400"/>
+                      </pattern>
+                      <rect width="100" height="100" fill="url(#grid-pattern-{{location.name}})"/>
+                    </svg>
+                  } @else if (location.name.toLowerCase().includes('vip') || location.name.toLowerCase().includes('privado')) {
+                    <!-- Diamond pattern for VIP -->
+                    <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <pattern id="diamond-pattern-{{location.name}}" x="0" y="0" width="15" height="15" patternUnits="userSpaceOnUse">
+                        <path d="M7.5 0 L15 7.5 L7.5 15 L0 7.5 Z" fill="none" stroke="currentColor" stroke-width="0.5" class="text-blue-400"/>
+                      </pattern>
+                      <rect width="100" height="100" fill="url(#diamond-pattern-{{location.name}})"/>
+                    </svg>
+                  }
+                </div>
+
+                <div class="flex items-center mb-2 relative z-10">
+                  <span class="text-lg mr-1.5">{{ getLocationIcon(location.name) }}</span>
+                  <h3 class="text-sm font-semibold text-slate-100">{{ location.name }}</h3>
+                  <span class="ml-1.5 text-[10px] text-slate-400">({{ location.tables.length }})</span>
                 </div>
                 
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div class="grid grid-cols-4 gap-2 relative z-10">
                   @for(table of location.tables; track table.id) {
                     <div 
-                      class="relative group cursor-pointer transition-all duration-300 transform hover:scale-105"
+                      class="relative group cursor-pointer transition-all duration-200 transform hover:scale-105"
                       [class.opacity-50]="!table.isAvailable || table.capacity < guests()"
                       [class.cursor-not-allowed]="!table.isAvailable || table.capacity < guests()"
                       (click)="selectTable(table)">
                       
                       <!-- Table Visual -->
                       <div 
-                        class="flex flex-col items-center justify-center h-20 w-20 mx-auto text-slate-100 font-bold transition-all duration-300 relative"
+                        class="flex flex-col items-center justify-center h-14 w-14 mx-auto text-slate-100 font-bold transition-all duration-200 relative"
                         [class.bg-emerald-600]="table.isAvailable && table.capacity >= guests()"
                         [class.bg-rose-700]="!table.isAvailable"
                         [class.bg-yellow-600]="table.isAvailable && table.capacity < guests()"
@@ -256,26 +367,26 @@
                         [class.rounded-full]="table.shape === 'round'">
                         
                         <!-- Table Number -->
-                        <div class="text-lg font-bold">{{ table.code || table.id }}</div>
+                        <div class="text-xs font-bold">{{ table.code || table.id }}</div>
                         <!-- Capacity -->
-                        <div class="text-xs opacity-75">{{ table.capacity }}p</div>
+                        <div class="text-[9px] opacity-75">{{ table.capacity }}p</div>
                         
                         <!-- Selection indicator -->
                         @if(isTableSelected(table)) {
-                          <div class="absolute -top-2 -right-2 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
-                            <span class="text-slate-900 text-xs font-bold">✓</span>
+                          <div class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
+                            <span class="text-slate-900 text-[9px] font-bold">✓</span>
                           </div>
                         }
                       </div>
                       
                       <!-- Table Status -->
-                      <div class="text-center mt-2">
+                      <div class="text-center mt-0.5">
                         @if (!table.isAvailable) {
-                          <span class="text-xs text-rose-400 font-medium">Ocupada</span>
+                          <span class="text-[9px] text-rose-400 font-medium">Ocupada</span>
                         } @else if (table.capacity < guests()) {
-                          <span class="text-xs text-yellow-400 font-medium">Muy pequeña</span>
+                          <span class="text-[9px] text-yellow-400 font-medium">Pequeña</span>
                         } @else {
-                          <span class="text-xs text-emerald-400 font-medium">Disponible</span>
+                          <span class="text-[9px] text-emerald-400 font-medium">Libre</span>
                         }
                       </div>
                     </div>
@@ -284,67 +395,255 @@
               </div>
             }
           </div>
-
-          <!-- Legend -->
-          <div class="mt-6 p-4 bg-slate-800 rounded-lg">
-            <h4 class="text-sm font-semibold text-slate-300 mb-3">Leyenda:</h4>
-            <div class="flex flex-wrap gap-4 text-xs">
-              <div class="flex items-center gap-2">
-                <div class="w-4 h-4 bg-emerald-600 rounded"></div>
-                <span class="text-slate-300">Disponible</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <div class="w-4 h-4 bg-rose-700 rounded"></div>
-                <span class="text-slate-300">Ocupada</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <div class="w-4 h-4 bg-yellow-600 rounded"></div>
-                <span class="text-slate-300">Capacidad insuficiente</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <div class="w-4 h-4 bg-emerald-600 rounded ring-2 ring-amber-500"></div>
-                <span class="text-slate-300">Mesa seleccionada</span>
-              </div>
-            </div>
-          </div>
           
-          <div class="mt-8 text-center">
-            <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
+          <div class="mt-6 flex justify-center gap-4">
+            <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">
+              🠬 Atrás
+            </button>
+            <button 
+              (click)="nextStep()" 
+              [disabled]="!selectedTable()"
+              class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
+              Continuar 🠮
+            </button>
           </div>
         </div>
       }
       <!-- Step 4: Menu -->
       @case (4) {
         <div class="animate-fade-in">
-          <h2 class="text-3xl font-bold text-slate-100 mb-6">4. Pre-ordena tu Comida (Opcional)</h2>
-          <div class="space-y-4 max-h-96 overflow-y-auto pr-2">
-            @for(item of menu(); track item.id) {
-              <div class="flex items-center justify-between bg-slate-700 p-4 rounded-lg gap-4">
-                <div class="flex items-center gap-4 flex-grow">
-                  @if(item.imageUrl) {
-                    <img [src]="item.imageUrl" [alt]="item.name" class="w-20 h-20 object-cover rounded-md flex-shrink-0">
-                  } @else {
-                    <div class="w-20 h-20 bg-slate-600 rounded-md flex-shrink-0 flex items-center justify-center text-xs text-slate-400">Sin foto</div>
-                  }
-                  <div>
-                    <h4 class="font-bold text-lg">{{ item.name }}</h4>
-                    <p class="text-sm text-slate-400">{{ item.description }}</p>
-                    <p class="text-amber-500 font-semibold mt-1">{{ item.price | currency }}</p>
-                  </div>
-                </div>
-                <div class="flex items-center space-x-3 flex-shrink-0">
-                  @if (getItemQuantity(item.id) > 0) {
-                    <button (click)="removeMenuItemFromBooking(item.id)" class="w-8 h-8 rounded-full bg-slate-600 hover:bg-slate-500">-</button>
-                    <span class="w-8 text-center font-bold">{{ getItemQuantity(item.id) }}</span>
-                  }
-                  <button (click)="addMenuItemToBooking(item)" class="w-8 h-8 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-900">+</button>
+          <h2 class="text-3xl font-bold text-slate-100 mb-4 text-center">🍽️ Pre-ordena tu Comida</h2>
+          <p class="text-slate-300 text-center mb-6">Opcional - Selecciona tus platos favoritos y tenlos listos al llegar</p>
+          
+          <!-- Layout: Catalog on Left, Cart on Right -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- LEFT: Menu Catalog (2/3 width) -->
+            <div class="lg:col-span-2">
+              <!-- Search Bar -->
+              <div class="mb-4">
+                <div class="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Buscar platos..." 
+                    (input)="onMenuSearch($event)"
+                    [value]="menuSearchQuery()"
+                    class="w-full px-4 py-2.5 pl-10 bg-slate-700 border border-slate-600 rounded-full text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-sm">
+                  <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
                 </div>
               </div>
-            }
+
+              <!-- Loading State -->
+              @if (menuLoading()) {
+                <div class="text-center py-8">
+                  <div class="inline-flex items-center px-4 py-2 bg-slate-700 rounded-lg">
+                    <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-slate-300 text-sm">Cargando menú...</span>
+                  </div>
+                </div>
+              }
+
+              <!-- Error State -->
+              @if (menuError() && !menuLoading()) {
+                <div class="mb-4">
+                  <div class="bg-amber-900/20 border border-amber-500/30 rounded-lg p-3 text-center">
+                    <div class="flex items-center justify-center mb-2 text-sm">
+                      <svg class="w-4 h-4 text-amber-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                      </svg>
+                      <span class="text-amber-400 font-medium text-sm">{{ menuError() }}</span>
+                    </div>
+                    <button 
+                      (click)="refreshMenuItems()" 
+                      class="px-3 py-1.5 bg-amber-500 text-slate-900 rounded-lg hover:bg-amber-600 transition-colors text-xs font-medium">
+                      Reintentar
+                    </button>
+                  </div>
+                </div>
+              }
+
+              @if (!menuLoading()) {
+                <!-- Categories Filter -->
+                @if (menuCategories().length > 0) {
+                  <div class="mb-4">
+                    <div class="flex flex-wrap gap-2">
+                      <button 
+                        (click)="selectMenuCategory('all')"
+                        [class]="selectedMenuCategory() === 'all' ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
+                        class="px-3 py-1.5 rounded-full font-medium transition-colors text-xs">
+                        🍽️ Todo
+                      </button>
+                      @for (category of menuCategories(); track category.id) {
+                        <button 
+                          (click)="selectMenuCategory(category.id)"
+                          [class]="selectedMenuCategory() === category.id ? 'bg-amber-500 text-slate-900' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
+                          class="px-3 py-1.5 rounded-full font-medium transition-colors text-xs">
+                          {{ category.icon }} {{ category.name }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
+
+                <!-- Compact Menu Items List -->
+                <div class="max-h-[500px] overflow-y-auto pr-2 space-y-2">
+                  @if (filteredMenuItems().length > 0) {
+                    @for (item of filteredMenuItems(); track item.id) {
+                      <div class="bg-slate-700 rounded-lg p-3 border border-slate-600 hover:border-amber-500/50 transition-all flex items-center gap-3">
+                        <!-- Thumbnail Image -->
+                        @if (item.image) {
+                          <div class="w-16 h-16 flex-shrink-0 rounded-md bg-cover bg-center relative" [style.background-image]="'url(' + item.image + ')'">
+                            <div class="absolute inset-0 bg-black/20 rounded-md"></div>
+                            @if (item.popular) {
+                              <span class="absolute -top-1 -right-1 bg-amber-500 text-slate-900 px-1.5 py-0.5 rounded-full text-[8px] font-bold">
+                                ⭐
+                              </span>
+                            }
+                          </div>
+                        } @else {
+                          <div class="w-16 h-16 flex-shrink-0 rounded-md bg-slate-600 flex items-center justify-center">
+                            <span class="text-2xl">🍽️</span>
+                          </div>
+                        }
+                        
+                        <!-- Item Info -->
+                        <div class="flex-grow min-w-0">
+                          <h4 class="text-sm font-semibold text-white truncate">{{ item.name }}</h4>
+                          <p class="text-slate-400 text-xs line-clamp-1 mb-1">{{ item.description }}</p>
+                          <div class="flex items-center gap-2">
+                            <span class="text-amber-500 font-bold text-sm">S/{{ item.price }}</span>
+                            @if (item.stock !== undefined && item.stock === 0) {
+                              <span class="text-red-400 text-[10px]">❌ Agotado</span>
+                            } @else if (item.popular) {
+                              <span class="text-amber-400 text-[10px]">🔥 Popular</span>
+                            }
+                          </div>
+                        </div>
+                        
+                        <!-- Add/Remove Controls -->
+                        <div class="flex-shrink-0">
+                          @if (getItemQuantity(item.id) > 0) {
+                            <div class="flex items-center gap-2 bg-slate-800 rounded-lg p-1">
+                              <button (click)="removeMenuItemFromBooking(item.id)" class="w-7 h-7 rounded-md bg-slate-600 hover:bg-slate-500 text-white text-sm flex items-center justify-center font-bold">-</button>
+                              <span class="text-sm font-bold text-white w-6 text-center">{{ getItemQuantity(item.id) }}</span>
+                              <button (click)="addMenuItemToBooking(item)" class="w-7 h-7 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-900 text-sm flex items-center justify-center font-bold">+</button>
+                            </div>
+                          } @else {
+                            <button 
+                              (click)="addMenuItemToBooking(item)"
+                              [disabled]="item.stock === 0"
+                              [class]="item.stock === 0 ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-600 text-white'"
+                              class="px-4 py-2 rounded-lg font-medium text-xs transition-colors">
+                              {{ item.stock === 0 ? 'Agotado' : '+ Agregar' }}
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    }
+                  } @else {
+                    <!-- No Results Found -->
+                    <div class="text-center py-12">
+                      <div class="text-4xl mb-3">🔍</div>
+                      <h3 class="text-lg font-bold text-slate-300 mb-2">No se encontraron platos</h3>
+                      <p class="text-slate-400 mb-4 text-sm">Intenta con otros términos de búsqueda o selecciona otra categoría</p>
+                      <button 
+                        (click)="selectMenuCategory('all'); menuSearchQuery.set('')"
+                        class="px-4 py-2 bg-amber-500 text-slate-900 rounded-full font-medium hover:bg-amber-600 transition-colors text-sm">
+                        Ver todo el menú
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- RIGHT: Shopping Cart (1/3 width) -->
+            <div class="lg:col-span-1">
+              <div class="bg-slate-700 rounded-lg border-2 border-slate-600 sticky top-4">
+                <div class="p-4 border-b border-slate-600">
+                  <h3 class="text-lg font-bold text-amber-500 flex items-center gap-2">
+                    🛒 Tu Pre-orden
+                    @if (currentReservation().menuItems.length > 0) {
+                      <span class="text-xs bg-amber-500 text-slate-900 rounded-full px-2 py-0.5 font-bold">
+                        {{ currentReservation().menuItems.length }}
+                      </span>
+                    }
+                  </h3>
+                </div>
+                
+                @if (currentReservation().menuItems.length > 0) {
+                  <!-- Cart Items List -->
+                  <div class="p-4 space-y-3 max-h-[400px] overflow-y-auto">
+                    @for (orderItem of currentReservation().menuItems; track orderItem.item.id) {
+                      <div class="bg-slate-800 rounded-lg p-3 border border-slate-600">
+                        <div class="flex justify-between items-start mb-2">
+                          <h4 class="text-sm font-semibold text-white flex-grow pr-2">{{ orderItem.item.name }}</h4>
+                          <button 
+                            (click)="removeMenuItemFromBooking(orderItem.item.id)"
+                            class="text-red-400 hover:text-red-300 flex-shrink-0"
+                            title="Eliminar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                          </button>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                          <div class="flex items-center gap-2 bg-slate-700 rounded-lg p-1">
+                            <button 
+                              (click)="removeMenuItemFromBooking(orderItem.item.id)" 
+                              class="w-6 h-6 rounded-md bg-slate-600 hover:bg-slate-500 text-white text-xs flex items-center justify-center font-bold">
+                              -
+                            </button>
+                            <span class="text-xs font-bold text-white w-5 text-center">{{ orderItem.quantity }}</span>
+                            <button 
+                              (click)="addMenuItemToBooking(orderItem.item)" 
+                              class="w-6 h-6 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-900 text-xs flex items-center justify-center font-bold">
+                              +
+                            </button>
+                          </div>
+                          <div class="text-right">
+                            <div class="text-xs text-slate-400">S/{{ orderItem.item.price }} c/u</div>
+                            <div class="text-sm font-bold text-amber-500">S/{{ (orderItem.item.price * orderItem.quantity).toFixed(2) }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                  
+                  <!-- Cart Total -->
+                  <div class="p-4 border-t-2 border-slate-600 bg-gradient-to-br from-amber-500/10 to-amber-600/5">
+                    <div class="flex justify-between items-center mb-2">
+                      <span class="text-slate-300 text-sm">Subtotal:</span>
+                      <span class="text-white font-semibold">{{ menuTotal() | currency:'PEN':'symbol':'1.2-2' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-amber-500 font-bold text-lg">Total:</span>
+                      <span class="text-amber-500 font-bold text-2xl">{{ menuTotal() | currency:'PEN':'symbol':'1.2-2' }}</span>
+                    </div>
+                  </div>
+                } @else {
+                  <!-- Empty Cart State -->
+                  <div class="p-8 text-center">
+                    <div class="text-5xl mb-3 opacity-50">🛒</div>
+                    <p class="text-slate-400 text-sm mb-2">Tu carrito está vacío</p>
+                    <p class="text-slate-500 text-xs">Agrega platos del menú para pre-ordenar</p>
+                  </div>
+                }
+              </div>
+            </div>
           </div>
-          <div class="mt-8 flex justify-center gap-4">
-            <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
-            <button (click)="nextStep()" class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all">Continuar al Resumen</button>
+          
+          <div class="mt-6 flex justify-center gap-4">
+            <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">🠬 Atrás</button>
+            <button (click)="nextStep()" class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all">
+              Continuar al Resumen 🠮
+            </button>
           </div>
         </div>
       }
@@ -474,7 +773,7 @@
           </div>
 
           <!-- Important Notice for Presential Payment -->
-          @if (paymentType() === 'presencial') {
+          @if (paymentType() === 'presencial' && !paymentProcessing()) {
             <div class="bg-orange-900 border border-orange-500 rounded-lg p-6 mb-6">
               <h4 class="text-lg font-semibold text-orange-200 mb-2">⚠️ Importante - Pago Presencial</h4>
               <div class="text-orange-300 space-y-2">
@@ -486,9 +785,36 @@
             </div>
           }
 
+          <!-- Processing State for Presential Payment -->
+          @if (paymentProcessing()) {
+            <div class="bg-blue-900 p-6 rounded-lg text-center mb-6">
+              <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <h3 class="text-xl font-semibold text-blue-200 mb-2">Procesando Reserva...</h3>
+              <p class="text-blue-300">Por favor espere mientras confirmamos su reserva con pago presencial.</p>
+            </div>
+          }
+
+          <!-- Error State -->
+          @if (paymentError() && !paymentProcessing()) {
+            <div class="bg-red-900 p-6 rounded-lg mb-6">
+              <h3 class="text-xl font-semibold text-red-200 mb-2">❌ Error</h3>
+              <p class="text-red-300">{{ paymentError() }}</p>
+              <button 
+                (click)="clearPaymentError()" 
+                class="mt-4 bg-red-700 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors">
+                Intentar Nuevamente
+              </button>
+            </div>
+          }
+
           <div class="mt-8 flex justify-center gap-4">
-            <button (click)="prevStep()" class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all">Atrás</button>
-            @if (paymentType() === 'online') {
+            <button 
+              (click)="prevStep()" 
+              [disabled]="paymentProcessing()"
+              class="bg-slate-600 text-slate-100 font-bold py-3 px-8 rounded-full hover:bg-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+              Atrás
+            </button>
+            @if (paymentType() === 'online' && !paymentProcessing()) {
               <span class="text-slate-400 py-3 px-8">Procesando...</span>
             }
           </div>
@@ -498,6 +824,7 @@
       @case (7) {
         <div class="animate-fade-in">
           <h2 class="text-3xl font-bold text-slate-100 mb-6">💳 Detalles del Pago Online</h2>
+          <p class="text-slate-300 text-center mb-8">Ingresa los datos de tu tarjeta para completar el pago de forma segura</p>
           
           <!-- Payment Summary -->
           <div class="bg-slate-700 p-6 rounded-lg mb-6">
@@ -698,5 +1025,47 @@
     
     <h4 class="font-bold text-slate-100 text-base">5. Alergias y Restricciones Dietéticas</h4>
     <p>Es responsabilidad del cliente informar sobre cualquier alergia o restricción dietética en la sección de "Peticiones Especiales". Marakos Grill hará todo lo posible por acomodar sus necesidades, pero no se hace responsable de reacciones adversas si no se ha notificado previamente.</p>
+  </div>
+</app-modal>
+
+<!-- Modal de Confirmación de Salida -->
+<app-modal [isOpen]="isExitConfirmModalOpen()" title="¿Abandonar Reserva?" (closeModal)="cancelExit()">
+  <div class="space-y-6">
+    <!-- Icono de Advertencia -->
+    <div class="flex justify-center">
+      <div class="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Mensaje -->
+    <div class="text-center space-y-2">
+      <p class="text-slate-200 text-base font-medium">
+        Estás a punto de salir del proceso de reserva de mesa
+      </p>
+      <p class="text-slate-400 text-sm">
+        Si sales ahora, perderás todos los datos ingresados y tendrás que empezar de nuevo.
+      </p>
+    </div>
+
+    <!-- Botones -->
+    <div class="flex gap-3 justify-center pt-2">
+      <button
+        type="button"
+        (click)="cancelExit()"
+        class="px-6 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg font-medium transition-colors duration-200 min-w-[120px]"
+      >
+        Continuar Reserva
+      </button>
+      <button
+        type="button"
+        (click)="confirmExit()"
+        class="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-medium transition-colors duration-200 min-w-[120px]"
+      >
+        Salir
+      </button>
+    </div>
   </div>
 </app-modal>

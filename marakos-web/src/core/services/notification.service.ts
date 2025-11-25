@@ -3,6 +3,13 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
 import { environment } from '@/src/environments/environment';
 
+export interface OrderItem {
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+}
+
 export interface WhatsAppNotificationRequest {
   customerName: string;
   customerPhone: string;
@@ -17,6 +24,11 @@ export interface WhatsAppNotificationRequest {
   paymentStatus?: string;
   totalAmount?: number;
   reservationStatus?: string;
+  // Nuevos campos para email mejorado
+  reservationType?: string; // "MESA" o "EVENTO"
+  reservationId?: number; // ID de la reserva para QR
+  hasPreOrder?: boolean; // Indica si tiene pre-orden de comida
+  orderItems?: OrderItem[]; // Detalle de la pre-orden
 }
 
 export interface NotificationResponse {

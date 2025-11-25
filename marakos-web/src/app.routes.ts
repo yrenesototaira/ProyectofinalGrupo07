@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
+import { canDeactivateGuard } from './core/guards/can-deactivate.guard';
 
 export const APP_ROUTES: Routes = [
   {
@@ -21,11 +22,15 @@ export const APP_ROUTES: Routes = [
   },
   {
     path: 'booking/mesa',
-    loadComponent: () => import('./features/booking/booking.component').then(m => m.BookingComponent)
+    loadComponent: () => import('./features/booking/booking.component').then(m => m.BookingComponent),
+    canActivate: [authGuard],
+    canDeactivate: [canDeactivateGuard]
   },
   {
     path: 'booking/evento',
-    loadComponent: () => import('./features/event-planning/event-planning.component').then(m => m.EventPlanningComponent)
+    loadComponent: () => import('./features/event-planning/event-planning.component').then(m => m.EventPlanningComponent),
+    canActivate: [authGuard],
+    canDeactivate: [canDeactivateGuard]
   },
   {
     path: 'booking',

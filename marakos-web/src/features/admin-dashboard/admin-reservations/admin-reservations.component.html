@@ -38,17 +38,25 @@
               </span>
             </td>
             <td class="px-6 py-4 text-right">
-              @if(reservation.status === 'Confirmada') {
-                 <div class="flex justify-end gap-2">
-                    <!-- The edit route is reusable for admins -->
-                    <a [routerLink]="['/admin/reservations/edit', reservation.id]" class="px-3 py-1 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-xs font-medium transition-colors">
-                      Editar
-                    </a>
-                    <button (click)="requestCancellation(reservation.id!)" class="px-3 py-1 bg-rose-600 text-white rounded-md hover:bg-rose-700 text-xs font-medium transition-colors">
-                      Cancelar
-                    </button>
-                 </div>
-              }
+              <div class="flex justify-end gap-2">
+                <!-- Botón de descarga PDF disponible para todas las reservas -->
+                <button 
+                  (click)="downloadReservationPDF(reservation.id!)" 
+                  class="px-3 py-1 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 text-xs font-medium transition-colors"
+                  title="Descargar PDF">
+                  📄 PDF
+                </button>
+                
+                @if(reservation.status === 'Confirmada') {
+                  <!-- The edit route is reusable for admins -->
+                  <a [routerLink]="['/admin/reservations/edit', reservation.id]" class="px-3 py-1 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-xs font-medium transition-colors">
+                    Editar
+                  </a>
+                  <button (click)="requestCancellation(reservation.id!)" class="px-3 py-1 bg-rose-600 text-white rounded-md hover:bg-rose-700 text-xs font-medium transition-colors">
+                    Cancelar
+                  </button>
+                }
+              </div>
             </td>
           </tr>
         } @empty {
