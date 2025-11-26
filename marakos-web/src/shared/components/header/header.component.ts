@@ -42,13 +42,12 @@ export class HeaderComponent {
     const user = this.currentUser();
     if (!user) return '';
     
-    switch (user.tipoUsuario) {
-      case 'Empleado':
-        return 'Administrador';
-      case 'Cliente':
-        return 'Cliente';
-      default:
-        return user.tipoUsuario || 'Usuario';
+    // Si es empleado, mostrar su rol específico (Administrador, Mozo, Recepcionista)
+    if (user.tipoUsuario === 'Empleado' && user.rol) {
+      return user.rol;
     }
+    
+    // Para clientes u otros, mostrar el tipoUsuario
+    return user.tipoUsuario || 'Usuario';
   }
 }

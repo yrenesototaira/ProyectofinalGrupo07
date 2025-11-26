@@ -15,8 +15,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 export class LoginComponent {
   private authService = inject(AuthService);
 
-  email = 'cliente1@mail.com';
-  password = 'cliente1';
+  email = '';
+  password = '';
   errorMessage = signal<string | null>(null);
   isLoading = signal<boolean>(false);
   showPassword = signal(false);
@@ -44,31 +44,17 @@ export class LoginComponent {
           let errorMsg = 'Error de conexión. Verifica que el servidor esté funcionando.';
           
           if (err.error?.message) {
-            // Use the custom message from the auth service
             errorMsg = err.error.message;
           } else if (err.status === 401) {
-            errorMsg = 'Credenciales incorrectas. Usa las credenciales de desarrollo:\n• cliente1@mail.com / cliente1\n• admin@marakos.com / admin123';
+            errorMsg = 'Credenciales incorrectas. Por favor, verifica tu correo y contraseña.';
           } else if (err.status === 400) {
             errorMsg = 'Datos de login inválidos.';
           } else if (err.status === 0) {
-            errorMsg = 'No se puede conectar al servidor. Usando modo de desarrollo.';
+            errorMsg = 'No se puede conectar al servidor. Por favor, intenta más tarde.';
           }
           
           this.errorMessage.set(errorMsg);
         }
       });
-  }
-
-  // Métodos para probar con diferentes credenciales
-  tryAdminCredentials() {
-    this.email = 'admin@marakos.com';
-    this.password = 'admin123';
-    this.login();
-  }
-
-  tryClientCredentials() {
-    this.email = 'cliente1@mail.com';
-    this.password = 'cliente1';
-    this.login();
   }
 }
