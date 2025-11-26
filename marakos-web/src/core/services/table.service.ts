@@ -106,6 +106,23 @@ export class TableService {
   }
 
   /**
+   * Actualiza la disponibilidad de las mesas en la señal local
+   */
+  updateTablesAvailability(availability: { id: number; available: boolean }[]): void {
+    const availabilityMap = new Map(availability.map(item => [item.id, item.available]));
+    
+    this.tablesSignal.update(currentTables => {
+      return currentTables.map(table => {
+        const isAvailable = availabilityMap.get(table.id);
+        return {
+          ...table,
+          isAvailable: isAvailable !== undefined ? isAvailable : table.isAvailable
+        };
+      });
+    });
+  }
+
+  /**
    * Mapea los datos de la base de datos al modelo frontend
    */
   private mapDatabaseTablesToModel(dbTables: any[]): Table[] {

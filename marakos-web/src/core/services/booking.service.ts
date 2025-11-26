@@ -37,7 +37,9 @@ export class BookingService {
     return this.http.patch(`${environment.apiUrlReservation}/reservation/${id}/cancel`, {});
   }
 
-
+  getAvailableTables(date: string): Observable<any> {
+    return this.http.get<any>(`${environment.apiUrlReservation}/reservation/availability?date=${date}`, {});
+  }
 
 
 
