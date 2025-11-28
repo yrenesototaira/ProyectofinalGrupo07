@@ -1,0 +1,14 @@
+# Ignora archivos y carpetas innecesarios para el build de Docker
+build/
+gradle/
+gradlew
+gradlew.bat
+*.iml
+*.log
+*.tmp
+*.bak
+*.swp
+.idea/
+*.md
+src/test/
+
