@@ -11,10 +11,13 @@ export interface PaymentRequest {
   customerName: string;
   customerPhone: string;
   paymentMethod: string;
-  cardNumber: string;
-  cvv: string;
-  expirationMonth: string;
-  expirationYear: string;
+  // Campos opcionales para pago con token (Culqi.js)
+  culqiToken?: string;
+  // Campos opcionales para pago directo (deprecados - usar Culqi.js)
+  cardNumber?: string;
+  cvv?: string;
+  expirationMonth?: string;
+  expirationYear?: string;
 }
 
 export interface PaymentResponse {
@@ -42,9 +45,9 @@ export class PaymentService {
   private apiUrl = environment.apiUrlCulqi;
 
   /**
-   * Process payment using Culqi gateway
+   * Process payment using Culqi gateway with token from Culqi.js
    */
-  processPaymentWithCulqi(paymentData: PaymentRequest): Observable<PaymentResponse> {
+  processPayment(paymentData: PaymentRequest): Observable<PaymentResponse> {
     const headers = new HttpHeaders({
       'Content-Type': 'application/json'
     });
@@ -76,6 +79,14 @@ export class PaymentService {
           }
         })
       );
+  }
+
+  /**
+   * @deprecated Use processPayment() with culqiToken instead
+   * Process payment using Culqi gateway (legacy method with card details)
+   */
+  processPaymentWithCulqi(paymentData: PaymentRequest): Observable<PaymentResponse> {
+    return this.processPayment(paymentData);
   }
 
   /**

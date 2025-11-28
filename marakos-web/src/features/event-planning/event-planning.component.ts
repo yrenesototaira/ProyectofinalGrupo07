@@ -9,6 +9,7 @@ import { EventTypeService, EventType } from '../../core/services/event-type.serv
 import { MenuItem, AdditionalService } from '../../core/models/restaurant.model';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 import { CanComponentDeactivate } from '../../core/guards/can-deactivate.guard';
+import { TABLE_DISTRIBUTIONS, EVENT_SHIFTS, LINEN_COLORS, GUEST_LIMITS, DATE_CONFIG, PRICING_CONFIG } from '../../config/event-config';
 
 export interface EventShift {
   id: string;
@@ -23,8 +24,8 @@ export interface TableDistribution {
   id: string;
   name: string;
   description: string;
-  maxCapacity: number;
-  price: number;
+  icon: string;
+  imageUrl: string;
 }
 
 export interface LinenColor {
@@ -32,10 +33,12 @@ export interface LinenColor {
   name: string;
   hexColor: string;
   price: number;
+  imageUrl: string;
 }
 
 export interface EventPlanningReservation {
   // Step 1
+  documentType: 'DNI' | 'CARNET' | null;
   customerDocument: string;
   customerName: string;
   customerEmail: string;
@@ -98,30 +101,18 @@ export class EventPlanningComponent implements CanComponentDeactivate {
   isExitConfirmModalOpen = signal(false);
   private pendingNavigation: (() => void) | null = null;
 
+  // Variable temporal para el input de número de invitados
+  guestCountInput = signal<number>(10);
+  guestCountError = signal<string>('');
+
   // Event types from database
   eventTypes = this.eventTypeService.getEventTypesSignal();
 
-  eventShifts = signal<EventShift[]>([
-    { id: 'almuerzo', name: 'Almuerzo', timeRange: '12:00 - 16:00', startTime: '12:00', endTime: '16:00', price: 0 },
-    { id: 'tarde', name: 'Tarde', timeRange: '16:00 - 20:00', startTime: '16:00', endTime: '20:00', price: 50 },
-    { id: 'noche', name: 'Noche', timeRange: '20:00 - 00:00', startTime: '20:00', endTime: '00:00', price: 100 }
-  ]);
+  eventShifts = signal<EventShift[]>(EVENT_SHIFTS);
 
-  tableDistributions = signal<TableDistribution[]>([
-    { id: 'redondas', name: 'Mesas Redondas', description: 'Perfectas para conversación', maxCapacity: 8, price: 0 },
-    { id: 'rectangulares', name: 'Mesas Rectangulares', description: 'Ideales para eventos formales', maxCapacity: 10, price: 25 },
-    { id: 'imperial', name: 'Mesa Imperial', description: 'Una gran mesa para todos', maxCapacity: 50, price: 100 },
-    { id: 'cocktail', name: 'Estilo Cocktail', description: 'Mesas altas para socializar', maxCapacity: 6, price: 50 }
-  ]);
+  tableDistributions = signal<TableDistribution[]>(TABLE_DISTRIBUTIONS);
 
-  linenColors = signal<LinenColor[]>([
-    { id: 'blanco', name: 'Blanco Clásico', hexColor: '#FFFFFF', price: 0 },
-    { id: 'champagne', name: 'Champagne', hexColor: '#F7E7CE', price: 15 },
-    { id: 'burdeos', name: 'Burdeos', hexColor: '#800020', price: 20 },
-    { id: 'azul-marino', name: 'Azul Marino', hexColor: '#000080', price: 20 },
-    { id: 'dorado', name: 'Dorado', hexColor: '#FFD700', price: 30 },
-    { id: 'negro', name: 'Negro Elegante', hexColor: '#000000', price: 25 }
-  ]);
+  linenColors = signal<LinenColor[]>(LINEN_COLORS);
 
   // Use the same menu as booking/mesa
   menu = this.restaurantDataService.getMenu();
@@ -129,8 +120,12 @@ export class EventPlanningComponent implements CanComponentDeactivate {
   // Get services from the service instead of hardcoded data
   additionalServices = this.additionalServicesService.getServices();
 
+  // Variable temporal para validación de documento
+  documentError = signal<string>('');
+
   // Event planning reservation state simplificado
   eventReservation = signal<EventPlanningReservation>({
+    documentType: null,
     customerDocument: '',
     customerName: '',
     customerEmail: '',
@@ -163,9 +158,24 @@ export class EventPlanningComponent implements CanComponentDeactivate {
     effect(() => {
       const user = this.authService.currentUser();
       if (user && !this.eventReservation().customerName) {
+        const userDoc = user.dni || user.documento || '';
+        // Intentar detectar el tipo de documento basado en el formato
+        let docType: 'DNI' | 'CARNET' | null = null;
+        if (userDoc) {
+          // Si son 8 dígitos, probablemente es DNI
+          if (/^\d{8}$/.test(userDoc)) {
+            docType = 'DNI';
+          } 
+          // Si es alfanumérico de 9 caracteres, probablemente es carnet
+          else if (/^[A-Z0-9]{9}$/i.test(userDoc)) {
+            docType = 'CARNET';
+          }
+        }
+        
         this.eventReservation.update(reservation => ({
           ...reservation,
-          customerDocument: user.dni || user.documento || '',
+          documentType: docType,
+          customerDocument: userDoc,
           customerName: user.nombre + (user.apellido ? ' ' + user.apellido : ''),
           customerEmail: user.email,
           customerPhone: user.telefono || ''
@@ -206,11 +216,124 @@ export class EventPlanningComponent implements CanComponentDeactivate {
   }
 
   // Step 1 methods
+  selectDocumentType(type: 'DNI' | 'CARNET') {
+    this.eventReservation.update(res => ({
+      ...res,
+      documentType: type,
+      customerDocument: '' // Limpiar el documento al cambiar tipo
+    }));
+    this.documentError.set('');
+  }
+
+  validateDocument(value: string): boolean {
+    const docType = this.eventReservation().documentType;
+    
+    if (!docType) {
+      this.documentError.set('⚠️ Primero selecciona el tipo de documento');
+      return false;
+    }
+
+    if (!value || value.trim() === '') {
+      this.documentError.set('⚠️ El documento es obligatorio');
+      return false;
+    }
+
+    if (docType === 'DNI') {
+      // DNI peruano: exactamente 8 dígitos
+      const dniRegex = /^\d{8}$/;
+      if (!dniRegex.test(value)) {
+        this.documentError.set('⚠️ El DNI debe tener exactamente 8 dígitos');
+        return false;
+      }
+    } else if (docType === 'CARNET') {
+      // Carnet de extranjería: exactamente 9 caracteres alfanuméricos
+      const carnetRegex = /^[A-Z0-9]{9}$/i;
+      if (!carnetRegex.test(value)) {
+        this.documentError.set('⚠️ El carnet debe tener exactamente 9 caracteres alfanuméricos');
+        return false;
+      }
+    }
+
+    this.documentError.set('');
+    return true;
+  }
+
+  onDocumentInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+    const docType = this.eventReservation().documentType;
+    
+    if (!docType) {
+      this.documentError.set('⚠️ Primero selecciona el tipo de documento');
+      input.value = '';
+      this.eventReservation.update(res => ({
+        ...res,
+        customerDocument: ''
+      }));
+      return;
+    }
+
+    // Formatear según el tipo de documento
+    let formattedValue = '';
+    
+    if (docType === 'DNI') {
+      // Solo permitir números y limitar a 8 dígitos
+      formattedValue = value.replace(/\D/g, '').slice(0, 8);
+    } else if (docType === 'CARNET') {
+      // Permitir letras y números, convertir a mayúsculas, limitar a 9 caracteres
+      formattedValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 9);
+    }
+
+    // Si el valor formateado es diferente al ingresado, actualizar el input directamente
+    if (formattedValue !== value) {
+      input.value = formattedValue;
+    }
+
+    // Actualizar el valor formateado
+    this.eventReservation.update(res => ({
+      ...res,
+      customerDocument: formattedValue
+    }));
+
+    // Validar solo si tiene contenido
+    if (formattedValue) {
+      this.validateDocument(formattedValue);
+    } else {
+      this.documentError.set('');
+    }
+  }
+
+  onDocumentBlur() {
+    const value = this.eventReservation().customerDocument;
+    if (value) {
+      this.validateDocument(value);
+    }
+  }
+
   updateCustomerField(field: 'customerDocument' | 'customerName' | 'customerEmail' | 'customerPhone', value: string) {
     this.eventReservation.update(res => ({
       ...res,
       [field]: value
     }));
+  }
+
+  getEventTypeIcon(eventTypeName: string): string {
+    const name = eventTypeName.toLowerCase();
+    
+    if (name.includes('boda') || name.includes('matrimonio')) return '💒';
+    if (name.includes('cumpleaños') || name.includes('cumpleanos')) return '🎂';
+    if (name.includes('corporativo') || name.includes('empresa') || name.includes('negocio')) return '💼';
+    if (name.includes('graduación') || name.includes('graduacion')) return '🎓';
+    if (name.includes('baby shower') || name.includes('babyshower')) return '👶';
+    if (name.includes('aniversario')) return '💑';
+    if (name.includes('quinceañero') || name.includes('quinceanero') || name.includes('15')) return '👑';
+    if (name.includes('conferencia') || name.includes('seminario')) return '📊';
+    if (name.includes('fiesta') || name.includes('celebración') || name.includes('celebracion')) return '🎉';
+    if (name.includes('reunión') || name.includes('reunion')) return '🤝';
+    if (name.includes('navidad')) return '🎄';
+    if (name.includes('año nuevo')) return '🎆';
+    
+    return '🎊'; // Icono por defecto
   }
 
   selectEventType(eventType: EventType) {
@@ -242,8 +365,22 @@ export class EventPlanningComponent implements CanComponentDeactivate {
     }));
   }
 
-  updateGuestCount(count: number) {
-    if (count >= 10 && count <= 150) {
+  onGuestCountInput(value: string) {
+    const count = Number(value);
+    this.guestCountInput.set(count);
+    
+    // Validación en tiempo real sin actualizar el estado aún
+    if (isNaN(count) || value === '') {
+      this.guestCountError.set('');
+      return;
+    }
+    
+    if (count < GUEST_LIMITS.MIN) {
+      this.guestCountError.set(`⚠️ El mínimo es de ${GUEST_LIMITS.MIN} invitados`);
+    } else if (count > GUEST_LIMITS.MAX) {
+      this.guestCountError.set(`⚠️ El límite máximo es de ${GUEST_LIMITS.MAX} invitados`);
+    } else {
+      this.guestCountError.set('');
       this.eventReservation.update(res => ({
         ...res,
         numberOfGuests: count
@@ -251,16 +388,53 @@ export class EventPlanningComponent implements CanComponentDeactivate {
     }
   }
 
+  onGuestCountBlur() {
+    let count = this.guestCountInput();
+    
+    // Validar y corregir al salir del campo
+    if (isNaN(count) || count < GUEST_LIMITS.MIN) {
+      count = GUEST_LIMITS.MIN;
+      this.guestCountError.set('');
+    } else if (count > GUEST_LIMITS.MAX) {
+      count = GUEST_LIMITS.MAX;
+      this.guestCountError.set('');
+    }
+    
+    this.guestCountInput.set(count);
+    this.eventReservation.update(res => ({
+      ...res,
+      numberOfGuests: count
+    }));
+  }
+
+  updateGuestCount(count: number) {
+    // Validar que sea un número válido
+    if (isNaN(count) || count < GUEST_LIMITS.MIN) {
+      count = GUEST_LIMITS.MIN;
+    }
+    
+    if (count > GUEST_LIMITS.MAX) {
+      count = GUEST_LIMITS.MAX;
+    }
+    
+    this.guestCountInput.set(count);
+    this.guestCountError.set('');
+    this.eventReservation.update(res => ({
+      ...res,
+      numberOfGuests: count
+    }));
+  }
+
   increaseGuests() {
     const current = this.eventReservation().numberOfGuests;
-    if (current < 150) {
+    if (current < GUEST_LIMITS.MAX) {
       this.updateGuestCount(current + 1);
     }
   }
 
   decreaseGuests() {
     const current = this.eventReservation().numberOfGuests;
-    if (current > 10) {
+    if (current > GUEST_LIMITS.MIN) {
       this.updateGuestCount(current - 1);
     }
   }
@@ -400,12 +574,13 @@ export class EventPlanningComponent implements CanComponentDeactivate {
   // Validation methods
   canProceedFromStep1(): boolean {
     const res = this.eventReservation();
-    return !!(res.customerDocument && res.customerName && res.customerEmail && res.customerPhone && res.eventType && res.paymentMethod);
+    const hasValidDocument = res.documentType && res.customerDocument && this.documentError() === '';
+    return !!(hasValidDocument && res.customerName && res.customerEmail && res.customerPhone && res.eventType && res.paymentMethod);
   }
 
   canProceedFromStep2(): boolean {
     const res = this.eventReservation();
-    return !!(res.selectedDate && res.selectedShift && res.numberOfGuests >= 10);
+    return !!(res.selectedDate && res.selectedShift && res.numberOfGuests >= GUEST_LIMITS.MIN);
   }
 
   // Step 3 methods
@@ -574,16 +749,16 @@ export class EventPlanningComponent implements CanComponentDeactivate {
     // Shift price
     subtotal += res.selectedShift?.price || 0;
 
-    // Extra guests (after 50)
-    if (res.numberOfGuests > 50) {
-      subtotal += (res.numberOfGuests - 50) * 15;
+    // Extra guests (after threshold)
+    if (res.numberOfGuests > PRICING_CONFIG.EXTRA_GUEST_THRESHOLD) {
+      subtotal += (res.numberOfGuests - PRICING_CONFIG.EXTRA_GUEST_THRESHOLD) * PRICING_CONFIG.EXTRA_GUEST_PRICE;
     }
 
-    // Table distribution
-    subtotal += res.tableDistribution?.price || 0;
+    // Table distribution - No price (visual selection only)
+    // subtotal += 0;
 
-    // Linen color
-    subtotal += res.linenColor?.price || 0;
+    // Linen color - Free value-added service
+    // subtotal += 0;
 
     // Menu items
     subtotal += this.getMenuTotal();
@@ -595,7 +770,7 @@ export class EventPlanningComponent implements CanComponentDeactivate {
   }
 
   calculateTaxes(): number {
-    return Math.round(this.calculateSubtotal() * 0.18);
+    return Math.round(this.calculateSubtotal() * PRICING_CONFIG.TAX_RATE);
   }
 
   calculateTotal(): number {
@@ -627,20 +802,16 @@ export class EventPlanningComponent implements CanComponentDeactivate {
     const dates: string[] = [];
     const today = new Date();
     
-    // Generate next 60 days, with deterministic availability
-    for (let i = 0; i < 60; i++) {
+    // Generate next N days, all dates available for events
+    for (let i = 0; i < DATE_CONFIG.DAYS_AHEAD; i++) {
       const date = new Date(today);
-      date.setDate(today.getDate() + i + 1); // Start from tomorrow
+      date.setDate(today.getDate() + i + DATE_CONFIG.START_OFFSET);
       
-      // Use same logic as booking/mesa - deterministic availability
-      const isAvailable = (i + date.getDate()) % 3 !== 0; // Every 3rd date is unavailable
-      
-      if (isAvailable) {
-        const dateStr = date.getFullYear() + '-' + 
-                       String(date.getMonth() + 1).padStart(2, '0') + '-' + 
-                       String(date.getDate()).padStart(2, '0');
-        dates.push(dateStr);
-      }
+      // All dates are available for events
+      const dateStr = date.getFullYear() + '-' + 
+                     String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                     String(date.getDate()).padStart(2, '0');
+      dates.push(dateStr);
     }
     
     return dates;
