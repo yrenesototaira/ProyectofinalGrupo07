@@ -11,13 +11,37 @@
   @else if (reservation()?.id) {
     <div class="bg-slate-800 p-8 rounded-lg shadow-2xl">
       
+      <!-- Payment Pending (Payment Failed but Reservation Created) -->
+      @if (paymentPending()) {
+        <div class="mb-6 flex items-center justify-center gap-3">
+          <div class="bg-amber-500/10 p-3 rounded-full">
+            <svg class="w-10 h-10 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold text-slate-100">¡Reserva Confirmada!</h1>
+            <p class="text-slate-400 text-sm">Tu mesa ha sido reservada exitosamente</p>
+          </div>
+        </div>
+      }
+
       <!-- Presential Payment -->
-      @if (isPresentialPayment()) {
-        <h1 class="text-4xl font-extrabold text-orange-400 mb-4">🏪 ¡Reserva Confirmada - Pago Presencial!</h1>
-        <p class="text-slate-300 mb-8">Gracias por reservar con nosotros, {{ reservation()?.holderName }}. Presenta este código QR al llegar.</p>
+      @else if (isPresentialPayment()) {
+        <div class="mb-6 flex items-center justify-center gap-3">
+          <div class="bg-blue-500/10 p-3 rounded-full">
+            <svg class="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold text-slate-100">¡Reserva Confirmada!</h1>
+            <p class="text-slate-400 text-sm">Gracias por reservar con nosotros, {{ reservation()?.holderName }}</p>
+          </div>
+        </div>
       } 
 
-      <!-- Payment Failed but Reservation Created -->
+      <!-- Payment Failed but Reservation Created (Legacy) -->
       @else if (paymentFailed() && reservationCreated()) {
         <div class="mb-6 p-6 bg-amber-900 border-2 border-amber-600 rounded-lg">
           <h1 class="text-3xl font-extrabold text-amber-400 mb-4">⚠️ Reserva Creada - Pago Pendiente</h1>
@@ -47,53 +71,129 @@
         <p class="text-slate-300 mb-8">Gracias por reservar con nosotros, {{ reservation()?.holderName }}. Presenta este código QR al llegar.</p>
       }
 
-      <!-- QR Code -->
-      <div class="flex justify-center mb-8">
-        @if (qrCodeUrl()) {
-          <img [src]="qrCodeUrl()" alt="Código QR de la Reserva" class="bg-white p-2 rounded-lg" width="200" height="200">
-        } @else {
-          <div class="w-48 h-48 bg-slate-700 flex items-center justify-center rounded-lg">
-            <p class="text-sm text-slate-400">Generando código QR...</p>
-          </div>
-        }
-      </div>
-      
-      <!-- Reservation Details -->
-      <div class="text-left bg-slate-700 p-6 rounded-lg space-y-3">
-        <h3 class="text-xl font-bold border-b border-slate-600 pb-2 mb-3">Detalles de tu Reserva</h3>
-        <p><strong>ID de Reserva:</strong> <span class="font-mono text-amber-500"> {{ reservation()?.code }}</span></p>
-        <p><strong>Nombre:</strong> {{ reservation()?.holderName }}</p>
-        <p><strong>Fecha y Hora:</strong> {{ reservation()?.reservationDate }} a las {{ reservation()?.reservationTime }}</p>
-        <p><strong>Comensales:</strong> {{ reservation()?.peopleCount }}</p>                
-        <p><strong>Mesa:</strong> Mesa # {{ reservation()?.tables[0]?.tableId }}</p>
+      <!-- Reservation Details with QR -->
+      <div class="text-left bg-slate-700 p-6 rounded-lg mb-8">
+        <div class="flex flex-col lg:flex-row gap-6">
+          <!-- Left side: Reservation info -->
+          <div class="flex-1 space-y-3">
+            <h3 class="text-xl font-bold border-b border-slate-600 pb-2 mb-3">Detalles de tu Reserva</h3>
+            <p><strong>ID de Reserva:</strong> <span class="font-mono text-amber-500"> {{ reservation()?.code }}</span></p>
+            <p><strong>Nombre:</strong> {{ reservation()?.holderName }}</p>
+            <p><strong>Fecha y Hora:</strong> {{ reservation()?.reservationDate }} a las {{ reservation()?.reservationTime }}</p>
+            <p><strong>Comensales:</strong> {{ reservation()?.peopleCount }}</p>                
+            <p><strong>Mesa:</strong> Mesa # {{ reservation()?.tables[0]?.tableId }}</p>
 
-        @if (reservation()?.observation) {
-          <p><strong>Peticiones Especiales:</strong> {{ reservation()?.observation }}</p>
-        }
+            @if (reservation()?.observation) {
+              <p><strong>Peticiones Especiales:</strong> {{ reservation()?.observation }}</p>
+            }
 
-        <!-- Payment Status -->
-        @if (isPresentialPayment()) {
-          <div class="mt-4 p-4 bg-orange-900 rounded-lg">
-            <p class="text-orange-200"><strong>Estado del Pago:</strong> Pendiente de Pago Presencial</p>
-            <p class="text-orange-200"><strong>Monto a Pagar:</strong> {{ paymentAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
-            <p class="text-orange-200 text-sm mt-2">⏰ Pagar en el restaurante dentro de 24 horas</p>
+            <!-- Payment Status -->
+            @if (paymentPending()) {
+              <div class="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
+                  <p class="text-slate-200 font-semibold">Estado del Pago: <span class="text-amber-400">Pendiente</span></p>
+                </div>
+                <p class="text-slate-300"><strong>Monto a Pagar:</strong> <span class="text-amber-400">{{ paymentAmount() | currency:'PEN':'symbol':'1.2-2' }}</span></p>
+              </div>
+            } @else if (isPresentialPayment()) {
+          <div class="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+              <p class="text-slate-200 font-semibold">Estado del Pago: <span class="text-blue-400">Pendiente</span></p>
+            </div>
+            <p class="text-slate-300"><strong>Monto a Pagar:</strong> <span class="text-amber-400">{{ paymentAmount() | currency:'PEN':'symbol':'1.2-2' }}</span></p>
+            <div class="mt-3 flex items-center gap-2 text-sm text-slate-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span>Pagar en el restaurante dentro de 24 horas</span>
+            </div>
           </div>
         } @else if (paymentFailed() && reservationCreated()) {
-          <div class="mt-4 p-4 bg-red-900 rounded-lg">
-            <p class="text-red-200"><strong>Estado del Pago:</strong> Pendiente</p>
-            <p class="text-red-200 text-sm mt-2">Puedes pagar en el restaurante o intentar pagar en línea más tarde.</p>
+          <div class="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <p class="text-slate-200"><strong>Estado del Pago:</strong> <span class="text-amber-400">Pendiente</span></p>
+            <p class="text-slate-400 text-sm mt-2">Puedes pagar en el restaurante o intentar pagar en línea más tarde.</p>
           </div>
         } @else if (paymentSuccess()) {
-          <div class="mt-4 p-4 bg-green-900 rounded-lg">
-            <p class="text-green-200"><strong>Estado del Pago:</strong> Pagado ✅</p>
+          <div class="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+            <p class="text-slate-200"><strong>Estado del Pago:</strong> <span class="text-emerald-400">Pagado ✓</span></p>
             @if (reservation()?.payments[0]) {
-              <p class="text-green-200"><strong>Total Pagado:</strong> {{ reservation()?.payments[0]?.amount | currency:'PEN':'symbol':'1.2-2' }}</p>
+              <p class="text-slate-300"><strong>Total Pagado:</strong> <span class="text-emerald-400">{{ reservation()?.payments[0]?.amount | currency:'PEN':'symbol':'1.2-2' }}</span></p>
             }
           </div>
         } @else if (reservation()?.payments[0]?.paymentMethod) {
           <p><strong>Pago:</strong> {{ reservation()?.payments[0]?.paymentMethod }} (Total: {{ reservation()?.payments[0]?.amount | currency:'PEN':'symbol':'1.2-2' }})</p>
         }
+          </div>
+
+          <!-- Right side: QR Code -->
+          <div class="flex flex-col items-center justify-start lg:border-l lg:border-slate-600 lg:pl-6">
+            <h3 class="text-lg font-bold text-slate-200 mb-4">Código QR</h3>
+            @if (qrCodeUrl()) {
+              <img [src]="qrCodeUrl()" alt="Código QR de la Reserva" class="bg-white p-2 rounded-lg" width="180" height="180">
+            } @else {
+              <div class="w-44 h-44 bg-slate-600 flex items-center justify-center rounded-lg">
+                <p class="text-sm text-slate-400">Generando código QR...</p>
+              </div>
+            }
+            <p class="text-slate-400 text-xs text-center mt-3">Presenta este código al llegar</p>
+          </div>
+        </div>
       </div>
+
+      <!-- Payment Explanation (for pending payments) -->
+      @if (paymentPending()) {
+        <div class="bg-amber-500/10 border border-amber-500/30 p-5 rounded-lg mb-6">
+          <div class="flex items-start gap-3">
+            <div class="bg-amber-400/20 p-2 rounded-full">
+              <svg class="w-6 h-6 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="text-left flex-1">
+              <p class="text-amber-300 text-sm mb-3">El pago no pudo procesarse, pero tu reserva está confirmada.</p>
+              <div class="bg-slate-800/50 p-3 rounded-lg">
+                <p class="text-slate-300 text-xs leading-relaxed">
+                  <strong>¿Qué significa esto?</strong> Aunque el pago online no se completó, tu mesa está garantizada. Solo necesitas regularizar el pago antes de tu visita.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 24-Hour Payment Window -->
+        <div class="bg-slate-700/50 border border-slate-600 p-5 rounded-lg mb-6 text-left">
+          <div class="flex items-start gap-3 mb-3">
+            <svg class="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+              <h4 class="text-slate-200 font-semibold mb-2">Tienes 24 horas para completar el pago</h4>
+              <p class="text-slate-400 text-sm leading-relaxed mb-3">
+                (*)No garantizamos la pre orden de comida sin pago confirmado
+              </p>
+              <p class="text-slate-400 text-sm leading-relaxed mb-3">
+                Puedes regularizar tu pago de las siguientes maneras:
+              </p>
+              <ul class="space-y-2 text-slate-300 text-sm">
+                <li class="flex items-start gap-2">
+                  <svg class="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span><strong>Por teléfono o WhatsApp:</strong> Contacta al restaurante para coordinar el pago</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <svg class="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span><strong>Directamente en el local:</strong> Puedes acercarte y pagar de manera presencial</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      }
 
       <!-- Action Buttons -->
       <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
@@ -134,17 +234,60 @@
 
       <!-- Additional Info for Presential Payment -->
       @if (isPresentialPayment()) {
-        <div class="mt-6 p-4 bg-orange-800 border border-orange-500 rounded-lg text-left">
-          <h4 class="font-semibold text-orange-200 mb-2">📋 Instrucciones para el Pago Presencial:</h4>
-          <ul class="text-orange-300 text-sm space-y-1">
-            <li>• <strong>Plazo:</strong> Tienes 24 horas desde ahora para pagar en el restaurante</li>
-            <li>• <strong>Qué llevar:</strong> Tu documento de identidad y este código QR</li>
-            <li>• <strong>Formas de pago aceptadas:</strong> Efectivo, tarjeta de crédito/débito</li>
-            <li>• <strong>Ubicación:</strong> Marakos Grill - Av. Principal 123, Lima</li>
-            <li>• <strong>Horarios de atención:</strong> Lunes a Domingo de 12:00 PM a 11:00 PM</li>
-          </ul>
-          <div class="mt-3 p-3 bg-red-900 border-2 border-red-500 rounded-md">
-            <p class="text-red-100 text-base font-bold">⚠️ IMPORTANTE: Si no pagas en 24 horas, tu reserva se cancelará automáticamente</p>
+        <div class="mt-6 space-y-4">
+          <!-- Instructions Card -->
+          <div class="p-5 bg-slate-700/50 border border-slate-600 rounded-xl text-left">
+            <div class="flex items-center gap-2 mb-3">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <h4 class="font-semibold text-slate-200">Instrucciones para el Pago</h4>
+            </div>
+            <ul class="text-slate-300 text-sm space-y-2">
+              <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <span><strong class="text-slate-200">Plazo:</strong> 24 horas para completar el pago</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <span><strong class="text-slate-200">Qué llevar:</strong> Documento de identidad + este código QR</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <span><strong class="text-slate-200">Formas de pago:</strong> Efectivo, tarjetas, billeteras digitales</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <span><strong class="text-slate-200">Ubicación:</strong> Miguel Grau 795, Chiclayo - Pimentel</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <span><strong class="text-slate-200">Horario:</strong> Lun - Dom de 10:00 AM a 11:00 PM</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Important Notice -->
+          <div class="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <div>
+                <p class="text-amber-300 font-medium text-sm">Recordatorio Importante</p>
+                <p class="text-slate-300 text-sm mt-1">Si no completas el pago en 24 horas, tu reserva será cancelada automáticamente.</p>
+              </div>
+            </div>
           </div>
         </div>
       }

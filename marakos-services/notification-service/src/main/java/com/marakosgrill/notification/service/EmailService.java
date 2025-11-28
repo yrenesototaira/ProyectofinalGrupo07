@@ -18,7 +18,11 @@ public class EmailService {
 
     private static final String COMPANY_NAME = "Marakos Grill";
     private static final String RESERVATION_EMAIL_TEMPLATE = "templates/reservation_confirmation_email.html";
+    private static final String PENDING_PAYMENT_EMAIL_TEMPLATE = "templates/email-pending-payment.html";
     private static final String RESERVATION_EMAIL_SUBJECT = "Confirmación de Reserva - Marakos Grill";
+    private static final String PENDING_PAYMENT_EMAIL_SUBJECT = "Reserva Confirmada - Pago Pendiente - Marakos Grill";
+    private static final String RESTAURANT_PHONE = "+51 999 999 999";
+    private static final String RESTAURANT_EMAIL = "reservas@marakosgrill.pe";
 
     private final JavaMailSender mailSender;
 
@@ -30,9 +34,25 @@ public class EmailService {
             log.info("📧 INICIO EmailService.sendReservationConfirmationEmail");
             log.info("📋 Enviando email de confirmación para reserva: {}", data.getReservationCode());
             log.info("📮 Email destino: {}, Cliente: {}", data.getCustomerEmail(), data.getCustomerName());
+            log.info("💳 Estado de pago: {}", data.getPaymentStatus());
 
-            String htmlBody = loadReservationConfirmationTemplate(data);
-            sendEmailHtml(data.getCustomerEmail(), RESERVATION_EMAIL_SUBJECT, htmlBody);
+            // Determinar si usar plantilla de pago pendiente
+            boolean isPendingPaymentFromFailedOnline = "PENDIENTE_PAGO_ONLINE".equalsIgnoreCase(data.getPaymentStatus());
+            
+            String htmlBody;
+            String subject;
+            
+            if (isPendingPaymentFromFailedOnline) {
+                log.info("📧 Usando plantilla de pago pendiente (fallo de pago online)");
+                htmlBody = loadPendingPaymentTemplate(data);
+                subject = PENDING_PAYMENT_EMAIL_SUBJECT;
+            } else {
+                log.info("📧 Usando plantilla de confirmación estándar");
+                htmlBody = loadReservationConfirmationTemplate(data);
+                subject = RESERVATION_EMAIL_SUBJECT;
+            }
+            
+            sendEmailHtml(data.getCustomerEmail(), subject, htmlBody);
 
             log.info("✅ Email enviado exitosamente para reserva: {}", data.getReservationCode());
             return true;
@@ -163,6 +183,45 @@ public class EmailService {
         } catch (Exception e) {
             log.error("Error loading reservation confirmation email template: {}", e.getMessage(), e);
             throw new RuntimeException("Error loading reservation confirmation email template", e);
+        }
+    }
+
+    /**
+     * Carga la plantilla de email para pago pendiente (cuando falla el pago online)
+     */
+    private String loadPendingPaymentTemplate(ReservationNotificationData data) {
+        try {
+            ClassPathResource resource = new ClassPathResource(PENDING_PAYMENT_EMAIL_TEMPLATE);
+            String template = Files.readString(resource.getFile().toPath());
+            
+            // Generar URL del código QR
+            String qrData = String.format("{\"reservationId\":%d,\"code\":\"%s\",\"customerName\":\"%s\",\"date\":\"%s\",\"time\":\"%s\"}",
+                    data.getReservationId() != null ? data.getReservationId() : 0,
+                    data.getReservationCode(),
+                    data.getCustomerName(),
+                    data.getReservationDate(),
+                    data.getReservationTime());
+            String qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + 
+                          java.net.URLEncoder.encode(qrData, "UTF-8");
+            
+            // Determinar número de mesa
+            String tableNumber = data.getTableInfo() != null ? 
+                               data.getTableInfo().replace("Mesa ", "") : "Por asignar";
+            
+            return template
+                    .replace("{{RESERVATION_CODE}}", data.getReservationCode())
+                    .replace("{{CUSTOMER_NAME}}", data.getCustomerName())
+                    .replace("{{RESERVATION_DATE}}", data.getReservationDate().toString())
+                    .replace("{{RESERVATION_TIME}}", data.getReservationTime())
+                    .replace("{{GUEST_COUNT}}", String.valueOf(data.getGuestCount()))
+                    .replace("{{TABLE_NUMBER}}", tableNumber)
+                    .replace("{{TOTAL_AMOUNT}}", String.format("%.2f", data.getTotalAmount()))
+                    .replace("{{QR_CODE_URL}}", qrUrl)
+                    .replace("{{RESTAURANT_PHONE}}", RESTAURANT_PHONE)
+                    .replace("{{RESTAURANT_EMAIL}}", RESTAURANT_EMAIL);
+        } catch (Exception e) {
+            log.error("Error loading pending payment email template: {}", e.getMessage(), e);
+            throw new RuntimeException("Error loading pending payment email template", e);
         }
     }
 }

@@ -26,110 +26,149 @@
       <!-- Step 1: Customer Details, Event Type, Payment Method -->
       @case (1) {
         <div class="animate-fade-in">
-          <h2 class="text-3xl font-bold text-slate-100 mb-6 text-center">
+          <h2 class="text-2xl font-bold text-slate-100 mb-3 text-center">
             🎉 Reservar Evento Marakos Grill
           </h2>
-          <p class="text-slate-300 text-center mb-8">Planifica tu evento perfecto con nosotros</p>
+          <p class="text-slate-300 text-center mb-6 text-sm">Planifica tu evento perfecto con nosotros</p>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Current User Info -->
-            <div>
-              <h3 class="text-xl font-semibold text-amber-500 mb-4">� Usuario</h3>
-              <div class="bg-slate-700 rounded-lg p-6">
-                <div class="space-y-4">
-                  <div class="flex justify-between">
-                    <span class="text-slate-400">Nombre:</span>
-                    <span class="font-semibold">{{ (currentUser()?.nombre && currentUser()?.apellido) ? (currentUser()?.nombre + ' ' + currentUser()?.apellido) : currentUser()?.nombre || 'Usuario' }}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-slate-400">Email:</span>
-                    <span class="font-semibold">{{ currentUser()?.email || 'usuario@marakos.com' }}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-slate-400">Tipo:</span>
-                    <span class="font-semibold">{{ currentUser()?.tipoUsuario || 'Cliente' }}</span>
-                  </div>
-                </div>
-                <div class="mt-4 p-3 bg-blue-900 rounded-lg">
-                  <p class="text-blue-200 text-sm">
-                    💡 Puedes hacer la reserva para otra persona modificando los datos del titular
-                  </p>
-                </div>
+          <!-- Compact User Info Banner -->
+          <div class="bg-slate-700/50 rounded-lg p-3 mb-6 border border-slate-600">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-sm">
+              <div class="flex items-center gap-3 flex-wrap">
+                <span class="text-slate-300">👤 <span class="font-medium">{{ (currentUser()?.nombre && currentUser()?.apellido) ? (currentUser()?.nombre + ' ' + currentUser()?.apellido) : currentUser()?.nombre || 'Usuario' }}</span></span>
+                <span class="text-slate-500 hidden md:inline">|</span>
+                <span class="text-slate-400">✉️ {{ currentUser()?.email || 'usuario@marakos.com' }}</span>
+              </div>
+              <span class="text-amber-500 font-medium">{{ currentUser()?.tipoUsuario || 'Cliente' }}</span>
+            </div>
+          </div>
+
+          <!-- Titular Form - Compact Grid -->
+          <div class="bg-slate-700/30 rounded-lg p-5 mb-6 border border-slate-600">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-semibold text-amber-500">✏️ Datos del Titular</h3>
+              <span class="text-xs text-slate-400">💡 Puede ser otra persona</span>
+            </div>
+            
+            <!-- Tipo de Documento -->
+            <div class="mb-4">
+              <label class="block text-slate-300 text-xs font-medium mb-2">Tipo de Documento *</label>
+              <div class="flex gap-3">
+                <button 
+                  type="button"
+                  (click)="selectDocumentType('DNI')"
+                  class="flex-1 px-4 py-2 rounded-lg border transition-all duration-200 text-sm font-medium"
+                  [class.bg-amber-500]="eventReservation().documentType === 'DNI'"
+                  [class.border-amber-500]="eventReservation().documentType === 'DNI'"
+                  [class.text-slate-900]="eventReservation().documentType === 'DNI'"
+                  [class.border-slate-600]="eventReservation().documentType !== 'DNI'"
+                  [class.text-slate-300]="eventReservation().documentType !== 'DNI'"
+                  [class.hover:border-amber-400]="eventReservation().documentType !== 'DNI'"
+                  [class.hover:bg-slate-700/50]="eventReservation().documentType !== 'DNI'">
+                  🆔 DNI
+                </button>
+                <button 
+                  type="button"
+                  (click)="selectDocumentType('CARNET')"
+                  class="flex-1 px-4 py-2 rounded-lg border transition-all duration-200 text-sm font-medium"
+                  [class.bg-amber-500]="eventReservation().documentType === 'CARNET'"
+                  [class.border-amber-500]="eventReservation().documentType === 'CARNET'"
+                  [class.text-slate-900]="eventReservation().documentType === 'CARNET'"
+                  [class.border-slate-600]="eventReservation().documentType !== 'CARNET'"
+                  [class.text-slate-300]="eventReservation().documentType !== 'CARNET'"
+                  [class.hover:border-amber-400]="eventReservation().documentType !== 'CARNET'"
+                  [class.hover:bg-slate-700/50]="eventReservation().documentType !== 'CARNET'">
+                  🌍 Carnet de Extranjería
+                </button>
               </div>
             </div>
 
-            <!-- Event Holder Details -->
-            <div>
-              <h3 class="text-xl font-semibold text-amber-500 mb-4">✏️ Datos del Titular</h3>
-              <div class="space-y-4">
-                <div>
-                  <label for="customerDocument" class="block text-sm font-medium text-slate-300 mb-2">Documento de Identidad *</label>
-                  <input 
-                    type="text" 
-                    id="customerDocument" 
-                    [ngModel]="eventReservation().customerDocument" 
-                    (ngModelChange)="updateCustomerField('customerDocument', $event)"
-                    placeholder="Ingresa el documento de identidad"
-                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label for="customerDocument" class="block text-slate-300 text-xs font-medium mb-1">
+                  Número de Documento *
+                  @if(eventReservation().documentType === 'DNI') {
+                    <span class="text-slate-400 text-xs">(8 dígitos)</span>
+                  }
+                  @if(eventReservation().documentType === 'CARNET') {
+                    <span class="text-slate-400 text-xs">(9 caracteres)</span>
+                  }
+                </label>
+                <input 
+                  type="text" 
+                  id="customerDocument" 
+                  [value]="eventReservation().customerDocument" 
+                  (input)="onDocumentInput($event)"
+                  (blur)="onDocumentBlur()"
+                  [placeholder]="eventReservation().documentType === 'DNI' ? '12345678' : 'ABC123456'"
+                  [disabled]="!eventReservation().documentType"
+                  [class.border-red-500]="documentError()"
+                  class="w-full bg-slate-700 border border-slate-600 text-slate-100 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                @if(documentError()) {
+                  <p class="text-red-400 text-xs mt-1">{{ documentError() }}</p>
+                }
+              </div>
 
-                <div>
-                  <label for="customerName" class="block text-sm font-medium text-slate-300 mb-2">Nombre Completo *</label>
-                  <input 
-                    type="text" 
-                    id="customerName" 
-                    [ngModel]="eventReservation().customerName" 
-                    (ngModelChange)="updateCustomerField('customerName', $event)"
-                    placeholder="Ingresa el nombre completo"
-                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-                </div>
-                
-                <div>
-                  <label for="customerEmail" class="block text-sm font-medium text-slate-300 mb-2">Email *</label>
-                  <input 
-                    type="email" 
-                    id="customerEmail" 
-                    [ngModel]="eventReservation().customerEmail" 
-                    (ngModelChange)="updateCustomerField('customerEmail', $event)"
-                    placeholder="ejemplo@correo.com"
-                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-                </div>
-                
-                <div>
-                  <label for="customerPhone" class="block text-sm font-medium text-slate-300 mb-2">Teléfono *</label>
-                  <input 
-                    type="tel" 
-                    id="customerPhone" 
-                    [ngModel]="eventReservation().customerPhone" 
-                    (ngModelChange)="updateCustomerField('customerPhone', $event)"
-                    placeholder="+51 999 888 777"
-                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-                </div>
+              <div>
+                <label for="customerName" class="block text-slate-300 text-xs font-medium mb-1">Nombre Completo *</label>
+                <input 
+                  type="text" 
+                  id="customerName" 
+                  [ngModel]="eventReservation().customerName" 
+                  (ngModelChange)="updateCustomerField('customerName', $event)"
+                  placeholder="Juan Pérez"
+                  class="w-full bg-slate-700 border border-slate-600 text-slate-100 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
+              </div>
+              
+              <div>
+                <label for="customerEmail" class="block text-slate-300 text-xs font-medium mb-1">Email *</label>
+                <input 
+                  type="email" 
+                  id="customerEmail" 
+                  [ngModel]="eventReservation().customerEmail" 
+                  (ngModelChange)="updateCustomerField('customerEmail', $event)"
+                  placeholder="correo@ejemplo.com"
+                  class="w-full bg-slate-700 border border-slate-600 text-slate-100 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
+              </div>
+              
+              <div>
+                <label for="customerPhone" class="block text-slate-300 text-xs font-medium mb-1">Teléfono *</label>
+                <input 
+                  type="tel" 
+                  id="customerPhone" 
+                  [ngModel]="eventReservation().customerPhone" 
+                  (ngModelChange)="updateCustomerField('customerPhone', $event)"
+                  placeholder="+51 999 888 777"
+                  class="w-full bg-slate-700 border border-slate-600 text-slate-100 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
               </div>
             </div>
           </div>
           
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-            <!-- Event Type Selection -->
-            <div>
-              <h3 class="text-xl font-semibold text-amber-500 mb-4">🎊 Tipo de Evento</h3>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <!-- Event Type Selection - More Compact -->
+            <div class="bg-slate-700/30 rounded-lg p-5 border border-slate-600">
+              <h3 class="text-lg font-semibold text-amber-500 mb-3">🎊 Tipo de Evento</h3>
               <div class="space-y-2">
                 @for(eventType of eventTypes(); track eventType.idTipoEvento) {
                   <button 
                     (click)="selectEventType(eventType)"
-                    class="w-full p-3 rounded-lg border-2 transition-all duration-200 text-left flex items-center justify-between"
+                    class="w-full p-2.5 rounded-lg border transition-all duration-200 text-left flex items-center justify-between"
                     [class.bg-amber-500]="eventReservation().eventType?.idTipoEvento === eventType.idTipoEvento"
                     [class.border-amber-500]="eventReservation().eventType?.idTipoEvento === eventType.idTipoEvento"
                     [class.text-slate-900]="eventReservation().eventType?.idTipoEvento === eventType.idTipoEvento"
                     [class.border-slate-600]="eventReservation().eventType?.idTipoEvento !== eventType.idTipoEvento"
                     [class.text-slate-300]="eventReservation().eventType?.idTipoEvento !== eventType.idTipoEvento"
-                    [class.hover:border-amber-400]="eventReservation().eventType?.idTipoEvento !== eventType.idTipoEvento">
-                    <div class="flex-1">
-                      <div class="font-semibold">{{ eventType.nombre }}</div>
-                      <div class="text-xs opacity-75 mt-0.5">{{ eventType.descripcion }}</div>
+                    [class.hover:border-amber-400]="eventReservation().eventType?.idTipoEvento !== eventType.idTipoEvento"
+                    [class.hover:bg-slate-700]="eventReservation().eventType?.idTipoEvento !== eventType.idTipoEvento">
+                    <div class="flex items-center gap-2.5 flex-1">
+                      <span class="text-2xl flex-shrink-0">{{ getEventTypeIcon(eventType.nombre) }}</span>
+                      <div class="flex-1">
+                        <div class="font-semibold text-sm">{{ eventType.nombre }}</div>
+                        <div class="text-xs opacity-75">{{ eventType.descripcion }}</div>
+                      </div>
                     </div>
                     @if(eventReservation().eventType?.idTipoEvento === eventType.idTipoEvento) {
-                      <svg class="w-5 h-5 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                      <svg class="w-4 h-4 ml-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                       </svg>
                     }
@@ -138,48 +177,50 @@
               </div>
             </div>
 
-            <!-- Payment Method -->
-            <div>
-              <h3 class="text-xl font-semibold text-amber-500 mb-4">💳 Método de Pago</h3>
-              <div class="grid grid-cols-2 gap-4">
+            <!-- Payment Method - More Compact -->
+            <div class="bg-slate-700/30 rounded-lg p-5 border border-slate-600">
+              <h3 class="text-lg font-semibold text-amber-500 mb-3">💳 Método de Pago</h3>
+              <div class="grid grid-cols-2 gap-3">
                 <button 
                   (click)="selectPaymentMethod('online')"
-                  class="p-4 rounded-lg border-2 transition-all duration-300"
+                  class="p-3 rounded-lg border transition-all duration-200 hover:scale-105"
                   [class.bg-amber-500]="eventReservation().paymentMethod === 'online'"
                   [class.border-amber-500]="eventReservation().paymentMethod === 'online'"
                   [class.text-slate-900]="eventReservation().paymentMethod === 'online'"
                   [class.border-slate-600]="eventReservation().paymentMethod !== 'online'"
-                  [class.text-slate-300]="eventReservation().paymentMethod !== 'online'">
+                  [class.text-slate-300]="eventReservation().paymentMethod !== 'online'"
+                  [class.hover:border-amber-400]="eventReservation().paymentMethod !== 'online'">
                   <div class="text-center">
-                    <div class="text-2xl mb-2">💳</div>
-                    <div class="font-semibold">Online</div>
-                    <div class="text-xs opacity-75">Pago con tarjeta</div>
+                    <div class="text-xl mb-1">💳</div>
+                    <div class="font-semibold text-sm">Online</div>
+                    <div class="text-xs opacity-75">Tarjeta</div>
                   </div>
                 </button>
                 
                 <button 
                   (click)="selectPaymentMethod('presencial')"
-                  class="p-4 rounded-lg border-2 transition-all duration-300"
+                  class="p-3 rounded-lg border transition-all duration-200 hover:scale-105"
                   [class.bg-amber-500]="eventReservation().paymentMethod === 'presencial'"
                   [class.border-amber-500]="eventReservation().paymentMethod === 'presencial'"
                   [class.text-slate-900]="eventReservation().paymentMethod === 'presencial'"
                   [class.border-slate-600]="eventReservation().paymentMethod !== 'presencial'"
-                  [class.text-slate-300]="eventReservation().paymentMethod !== 'presencial'">
+                  [class.text-slate-300]="eventReservation().paymentMethod !== 'presencial'"
+                  [class.hover:border-amber-400]="eventReservation().paymentMethod !== 'presencial'">
                   <div class="text-center">
-                    <div class="text-2xl mb-2">🏪</div>
-                    <div class="font-semibold">Presencial</div>
-                    <div class="text-xs opacity-75">Pago en local</div>
+                    <div class="text-xl mb-1">🏪</div>
+                    <div class="font-semibold text-sm">Presencial</div>
+                    <div class="text-xs opacity-75">En local</div>
                   </div>
                 </button>
               </div>
             </div>
           </div>
 
-          <div class="mt-8 text-center">
+          <div class="mt-6 text-center">
             <button 
               (click)="nextStep()" 
               [disabled]="!canProceedFromStep1()"
-              class="bg-amber-500 text-slate-900 font-bold py-3 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400">
+              class="bg-amber-500 text-slate-900 font-bold py-2.5 px-8 rounded-full hover:bg-amber-400 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400 text-sm">
               Continuar 🠮
             </button>
           </div>
@@ -245,24 +286,30 @@
                 <div class="flex items-center gap-4">
                   <button 
                     (click)="updateGuestCount(eventReservation().numberOfGuests - 5)"
-                    [disabled]="eventReservation().numberOfGuests <= 5"
-                    class="w-10 h-10 rounded-full bg-slate-600 hover:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    [disabled]="eventReservation().numberOfGuests <= 10"
+                    class="w-10 h-10 rounded-full bg-slate-600 hover:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                     -
                   </button>
                   <div class="flex-1 text-center">
                     <input 
                       type="number" 
-                      min="1" 
+                      min="10" 
                       max="100"
                       [value]="eventReservation().numberOfGuests"
-                      (input)="updateGuestCount(Number($any($event.target).value))"
-                      class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 text-center text-xl font-bold focus:ring-amber-500 focus:border-amber-500">
-                    <div class="text-sm text-slate-400 mt-1">personas (máx. 100)</div>
+                      (input)="onGuestCountInput($any($event.target).value)"
+                      (blur)="onGuestCountBlur()"
+                      class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 text-center text-xl font-bold focus:ring-amber-500 focus:border-amber-500 transition-all"
+                      [class.border-red-500]="guestCountError()">
+                    @if(guestCountError()) {
+                      <div class="text-xs text-red-400 mt-1 font-semibold animate-pulse">{{ guestCountError() }}</div>
+                    } @else {
+                      <div class="text-sm text-slate-400 mt-1">personas (mín. 10, máx. 100)</div>
+                    }
                   </div>
                   <button 
                     (click)="updateGuestCount(eventReservation().numberOfGuests + 5)"
                     [disabled]="eventReservation().numberOfGuests >= 100"
-                    class="w-10 h-10 rounded-full bg-slate-600 hover:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="w-10 h-10 rounded-full bg-slate-600 hover:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                     +
                   </button>
                 </div>
@@ -321,34 +368,58 @@
             <!-- Table Distribution -->
             <div>
               <h3 class="text-xl font-semibold text-amber-500 mb-4">Distribución de Mesas</h3>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <p class="text-slate-300 text-sm mb-4">Selecciona cómo te gustaría que estén distribuidas las mesas en tu evento</p>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 @for(distribution of tableDistributions(); track distribution.id) {
                   <button 
                     (click)="selectTableDistribution(distribution)"
-                    [disabled]="distribution.maxCapacity < eventReservation().numberOfGuests"
-                    class="p-4 rounded-lg border-2 transition-all duration-300 text-left relative"
-                    [class.bg-amber-500]="eventReservation().tableDistribution?.id === distribution.id"
+                    class="rounded-lg border-2 transition-all duration-300 text-left hover:scale-[1.02] overflow-hidden relative group"
                     [class.border-amber-500]="eventReservation().tableDistribution?.id === distribution.id"
-                    [class.text-slate-900]="eventReservation().tableDistribution?.id === distribution.id"
-                    [class.border-slate-600]="eventReservation().tableDistribution?.id !== distribution.id && distribution.maxCapacity >= eventReservation().numberOfGuests"
-                    [class.text-slate-300]="eventReservation().tableDistribution?.id !== distribution.id && distribution.maxCapacity >= eventReservation().numberOfGuests"
-                    [class.border-red-500]="distribution.maxCapacity < eventReservation().numberOfGuests"
-                    [class.bg-red-900]="distribution.maxCapacity < eventReservation().numberOfGuests"
-                    [class.text-red-300]="distribution.maxCapacity < eventReservation().numberOfGuests"
-                    [class.opacity-50]="distribution.maxCapacity < eventReservation().numberOfGuests"
-                    [class.cursor-not-allowed]="distribution.maxCapacity < eventReservation().numberOfGuests"
-                    [class.hover:border-amber-400]="eventReservation().tableDistribution?.id !== distribution.id && distribution.maxCapacity >= eventReservation().numberOfGuests">
-                    <div class="font-semibold">{{ distribution.name }}</div>
-                    <div class="text-sm opacity-75 mb-2">{{ distribution.description }}</div>
-                    <div class="flex justify-between items-center">
-                      <span class="text-sm">Máx. {{ distribution.maxCapacity }} personas</span>
-                      <span class="font-bold">S/ {{ distribution.price }}</span>
+                    [class.ring-2]="eventReservation().tableDistribution?.id === distribution.id"
+                    [class.ring-amber-400]="eventReservation().tableDistribution?.id === distribution.id"
+                    [class.border-slate-600]="eventReservation().tableDistribution?.id !== distribution.id"
+                    [class.hover:border-amber-400]="eventReservation().tableDistribution?.id !== distribution.id">
+                    
+                    <!-- Imagen de fondo -->
+                    <div class="relative h-32 overflow-hidden">
+                      <img 
+                        [src]="distribution.imageUrl" 
+                        [alt]="distribution.name"
+                        class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        [class.opacity-40]="eventReservation().tableDistribution?.id !== distribution.id"
+                        [class.opacity-60]="eventReservation().tableDistribution?.id === distribution.id">
+                      <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent"></div>
+                      
+                      <!-- Checkmark badge -->
+                      @if(eventReservation().tableDistribution?.id === distribution.id) {
+                        <div class="absolute top-2 right-2 bg-amber-500 text-slate-900 rounded-full p-1.5 shadow-lg">
+                          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                          </svg>
+                        </div>
+                      }
+                      
+                      <!-- Icono -->
+                      <div class="absolute bottom-2 left-2 text-3xl">{{ distribution.icon }}</div>
                     </div>
-                    @if(distribution.maxCapacity < eventReservation().numberOfGuests) {
-                      <div class="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
-                        Insuficiente
+                    
+                    <!-- Contenido -->
+                    <div class="p-4"
+                         [class.bg-amber-500]="eventReservation().tableDistribution?.id === distribution.id"
+                         [class.bg-slate-700]="eventReservation().tableDistribution?.id !== distribution.id">
+                      <div class="font-semibold text-lg mb-1"
+                           [class.text-slate-900]="eventReservation().tableDistribution?.id === distribution.id"
+                           [class.text-slate-100]="eventReservation().tableDistribution?.id !== distribution.id">
+                        {{ distribution.name }}
                       </div>
-                    }
+                      <div class="text-sm"
+                           [class.text-slate-900]="eventReservation().tableDistribution?.id === distribution.id"
+                           [class.text-slate-300]="eventReservation().tableDistribution?.id !== distribution.id"
+                           [class.opacity-90]="eventReservation().tableDistribution?.id === distribution.id"
+                           [class.opacity-80]="eventReservation().tableDistribution?.id !== distribution.id">
+                        {{ distribution.description }}
+                      </div>
+                    </div>
                   </button>
                 }
               </div>
@@ -357,20 +428,58 @@
             <!-- Linen Color -->
             <div>
               <h3 class="text-xl font-semibold text-amber-500 mb-4">🎨 Color de Mantelería</h3>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <p class="text-slate-300 text-sm mb-4">Elige el color de la mantelería para tu evento <span class="text-green-400 font-semibold">✨ ¡Gratis!</span></p>
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                 @for(color of linenColors(); track color.id) {
                   <button 
                     (click)="selectLinenColor(color)"
-                    class="p-4 rounded-lg border-2 transition-all duration-300"
+                    class="rounded-lg border-2 transition-all duration-300 overflow-hidden hover:scale-105 relative group"
                     [class.border-amber-500]="eventReservation().linenColor?.id === color.id"
+                    [class.ring-2]="eventReservation().linenColor?.id === color.id"
+                    [class.ring-amber-400]="eventReservation().linenColor?.id === color.id"
                     [class.border-slate-600]="eventReservation().linenColor?.id !== color.id"
-                    [class.ring-4]="eventReservation().linenColor?.id === color.id"
-                    [class.ring-amber-400]="eventReservation().linenColor?.id === color.id">
-                    <div class="text-center">
-                      <div class="w-16 h-16 rounded-full mx-auto mb-2 border-2 border-slate-400" 
+                    [class.hover:border-amber-400]="eventReservation().linenColor?.id !== color.id">
+                    
+                    <!-- Imagen de la mesa con mantelería -->
+                    <div class="relative h-24 overflow-hidden">
+                      <img 
+                        [src]="color.imageUrl" 
+                        [alt]="color.name"
+                        class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
+                      <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+                      
+                      <!-- Free badge -->
+                      <div class="absolute top-1 left-1 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
+                        FREE
+                      </div>
+                      
+                      <!-- Checkmark badge -->
+                      @if(eventReservation().linenColor?.id === color.id) {
+                        <div class="absolute top-1 right-1 bg-amber-500 text-slate-900 rounded-full p-1 shadow-lg">
+                          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                          </svg>
+                        </div>
+                      }
+                      
+                      <!-- Círculo de color -->
+                      <div class="absolute bottom-1 right-1 w-8 h-8 rounded-full border-2 border-white shadow-lg" 
                            [style.background-color]="color.hexColor"></div>
-                      <div class="font-semibold text-slate-100">{{ color.name }}</div>
-                      <div class="text-sm font-bold text-amber-400">S/ {{ color.price }}</div>
+                    </div>
+                    
+                    <!-- Contenido -->
+                    <div class="p-2.5 bg-slate-700 text-center"
+                         [class.bg-amber-500]="eventReservation().linenColor?.id === color.id">
+                      <div class="font-semibold text-sm"
+                           [class.text-slate-900]="eventReservation().linenColor?.id === color.id"
+                           [class.text-slate-100]="eventReservation().linenColor?.id !== color.id">
+                        {{ color.name }}
+                      </div>
+                      <div class="text-xs mt-0.5"
+                           [class.text-slate-800]="eventReservation().linenColor?.id === color.id"
+                           [class.text-green-400]="eventReservation().linenColor?.id !== color.id">
+                        Sin costo adicional
+                      </div>
                     </div>
                   </button>
                 }
