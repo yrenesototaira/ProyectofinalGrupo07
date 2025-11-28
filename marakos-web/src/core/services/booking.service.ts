@@ -23,6 +23,14 @@ export class BookingService {
     return this.http.get<ReservationEdit>(`${environment.apiUrlReservation}/reservation/${id}`);
   }
 
+  getReservationsForCurrentAdmin(date: string, status: string): Observable<any[]> {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) {
+      return new Observable(observer => observer.next([]));
+    }
+    return this.http.get<any[]>(`${environment.apiUrlReservation}/reservation/date/${date}/status/${status}`);
+  }
+
   confirmReservation(resevationData: any): Observable<any> {
     console.log('🌐 BOOKING SERVICE: Enviando petición HTTP a:', `${environment.apiUrlReservation}/reservation`);
     console.log('📦 BOOKING SERVICE: Datos de reserva:', resevationData);
@@ -35,6 +43,18 @@ export class BookingService {
 
   cancelReservation(id: string): Observable<any> {
     return this.http.patch(`${environment.apiUrlReservation}/reservation/${id}/cancel`, {});
+  }
+
+  checkinReservation(id: string): Observable<any> {
+    return this.http.patch(`${environment.apiUrlReservation}/reservation/${id}/checkin`, {});
+  }
+
+  checkoutReservation(id: string): Observable<any> {
+    return this.http.patch(`${environment.apiUrlReservation}/reservation/${id}/checkout`, {});
+  }
+
+  paidReservation(id: string): Observable<any> {
+    return this.http.patch(`${environment.apiUrlReservation}/reservation/${id}/paid`, {});
   }
 
   getAvailableTables(date: string): Observable<any> {
@@ -58,7 +78,7 @@ export class BookingService {
     paymentMethod: null,
     specialRequests: '',
     termsAccepted: false,
-    status: 'Confirmado',
+    status: 'CONFIRMADO',
     paymentStatus: undefined,
   };
 
@@ -80,7 +100,7 @@ export class BookingService {
       paymentMethod: 'Tarjeta',
       specialRequests: 'Window seat if possible.',
       termsAccepted: true,
-      status: 'Confirmado',
+      status: 'CONFIRMADO',
       paymentStatus: 'Pagado'
     }
   ]);
@@ -165,7 +185,7 @@ export class BookingService {
         ...state, 
         id: reservationId,
         userId: this.authService.currentUser()?.idUsuario ?? null,
-        status: 'Confirmado',
+        status: 'CONFIRMADO',
         paymentStatus: state.totalCost > 0 ? 'Pagado' : undefined
     }));
     const newReservation = this.reservationState();
@@ -185,11 +205,9 @@ export class BookingService {
     return this.allReservationsState().find(r => r.id === id);
   }
 
-
-
   processRefund(id: string) {
     this.allReservationsState.update(reservations => 
-      reservations.map(r => r.id === id ? { ...r, status: 'Cancelado', paymentStatus: 'Reembolsado' } : r)
+      reservations.map(r => r.id === id ? { ...r, status: 'CANCELADO', paymentStatus: 'Reembolsado' } : r)
     );
   }
 
