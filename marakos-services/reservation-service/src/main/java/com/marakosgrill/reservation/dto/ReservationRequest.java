@@ -22,6 +22,8 @@ public class ReservationRequest {
     private LocalTime reservationTime;
     @NotNull
     private Integer peopleCount;
+    @NotNull
+    private String status;
     @NotBlank
     private String paymentMethod;
     @NotBlank

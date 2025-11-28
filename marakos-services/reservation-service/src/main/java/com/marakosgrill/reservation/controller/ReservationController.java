@@ -34,9 +34,10 @@ public class ReservationController {
         return ResponseEntity.ok(reservationService.findReservationsByCustomer(customerId));
     }
 
-    @GetMapping("/date/{date}")
-    public ResponseEntity<List<ReservationResponse>> getReservationsByDate(@PathVariable LocalDate date) {
-        return ResponseEntity.ok(reservationService.findReservationsByDate(date));
+    @GetMapping("/date/{date}/status/{status}")
+    public ResponseEntity<List<ReservationResponse>> getReservationsByDateAndStatus(@PathVariable LocalDate date,
+                                                                                    @PathVariable String status) {
+        return ResponseEntity.ok(reservationService.findReservationsByDateAndStatus(date, status));
     }
 
     @GetMapping("/table-availability")
@@ -67,5 +68,20 @@ public class ReservationController {
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<ReservationResponse> cancelReservation(@PathVariable Integer id) {
         return ResponseEntity.ok(reservationService.cancelReservation(id));
+    }
+
+    @PatchMapping("/{id}/checkin")
+    public ResponseEntity<ReservationResponse> checkinReservation(@PathVariable Integer id) {
+        return ResponseEntity.ok(reservationService.checkinReservation(id));
+    }
+
+    @PatchMapping("/{id}/checkout")
+    public ResponseEntity<ReservationResponse> checkoutReservation(@PathVariable Integer id) {
+        return ResponseEntity.ok(reservationService.checkoutReservation(id));
+    }
+
+    @PatchMapping("/{id}/paid")
+    public ResponseEntity<ReservationResponse> paidReservation(@PathVariable Integer id) {
+        return ResponseEntity.ok(reservationService.paidReservation(id));
     }
 }
