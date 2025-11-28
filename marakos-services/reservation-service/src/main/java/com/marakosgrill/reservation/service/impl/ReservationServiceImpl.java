@@ -28,6 +28,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final ReservationEventRepository reservationEventRepository;
     private final TransactionRepository transactionRepository;
     private final NotificationService notificationService;
+    private final TableRepository tableRepository;
 
     @Override
     @Transactional
@@ -56,7 +57,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .reservationDate(request.getReservationDate())
                 .reservationTime(request.getReservationTime())
                 .peopleCount(request.getPeopleCount())
-                .status(RESERVATION_STATUS_PENDING)
+                .status(request.getStatus())
                 .paymentMethod(request.getPaymentMethod())
                 .reservationType(request.getReservationType())
                 .eventType(request.getEventTypeId() != null ? EventType.builder().id(request.getEventTypeId()).build() : null)
@@ -263,18 +264,25 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     public List<ReservationResponse> findReservationsByCustomer(Integer customerId) {
-        return reservationRepository.findAll().stream()
-                .filter(r -> r.getCustomerId().equals(customerId))
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        List<Reservation> reservations = reservationRepository.findByCustomerId(customerId);
+        return reservations.stream()
+                .map(this::toBasicResponse)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     @Override
-    public List<ReservationResponse> findReservationsByDate(LocalDate date) {
-        return reservationRepository.findAll().stream()
-                .filter(r -> r.getReservationDate().equals(date))
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public List<ReservationResponse> findReservationsByDateAndStatus(LocalDate date, String status) {
+        if ("ALL".equalsIgnoreCase(status)) {
+            List<Reservation> reservations = reservationRepository.findByReservationDate(date);
+            return reservations.stream()
+                    .map(this::toBasicResponse)
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        List<Reservation> reservations = reservationRepository.findByReservationDateAndStatus(date, status);
+        return reservations.stream()
+                .map(this::toBasicResponse)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     @Override
@@ -306,15 +314,13 @@ public class ReservationServiceImpl implements ReservationService {
             {"13:00:00", "Tarde"}, {"14:00:00", "Tarde"}, {"15:00:00", "Tarde"}, {"16:00:00", "Tarde"}, {"17:00:00", "Tarde"}, {"18:00:00", "Tarde"},
             {"19:00:00", "Noche"}, {"20:00:00", "Noche"}, {"21:00:00", "Noche"}, {"22:00:00", "Noche"}, {"23:00:00", "Noche"}
         };
-        // Definir mesas fijas
-        int[] tableIds = {1,2,3,4,5,6,7,8};
-        String[] tableNames = {"MESA-01","MESA-02","MESA-03","MESA-04","MESA-05","MESA-06","MESA-07","MESA-08"};
 
-        List<ReservationTable> reservationTables = reservationTableRepository.findAll().stream()
-                .filter(rt -> rt.getReservation().getReservationDate().equals(date)
-                        && Boolean.TRUE.equals(rt.getActive())
-                        && !RESERVATION_STATUS_CANCELED.equals(rt.getReservation().getStatus()))
-                .toList();
+        // Obtener mesas activas desde la base de datos
+        List<TableEntity> activeTables = tableRepository.findByActiveTrue();
+
+        // Consulta optimizada de mesas reservadas
+        List<ReservationTable> reservationTables = reservationTableRepository.findByReservation_ReservationDateAndActiveTrueAndReservation_StatusNot(
+                date, RESERVATION_STATUS_CANCELED);
 
         List<ScheduleAvailabilityResponse> result = new java.util.ArrayList<>();
         for (String[] schedule : schedules) {
@@ -322,9 +328,9 @@ public class ReservationServiceImpl implements ReservationService {
             String shift = schedule[1];
             List<TableAvailabilityResponse> tables = new java.util.ArrayList<>();
             int reservedtables = 0;
-            for (int i = 0; i < tableIds.length; i++) {
-                int tableId = tableIds[i];
-                String tableName = tableNames[i];
+            for (TableEntity table : activeTables) {
+                int tableId = table.getId();
+                String tableName = table.getCode();
 
                 boolean isReserved = reservationTables.stream().anyMatch(rt ->
                         rt.getTableId() == tableId &&
@@ -333,22 +339,38 @@ public class ReservationServiceImpl implements ReservationService {
                 if (isReserved) reservedtables++;
                 tables.add(new TableAvailabilityResponse(tableId, tableName, !isReserved));
             }
-            boolean scheduleAvailable = reservedtables < tableIds.length;
+            boolean scheduleAvailable = reservedtables < activeTables.size();
             result.add(new ScheduleAvailabilityResponse(time, shift, scheduleAvailable, tables));
         }
         return result;
     }
 
+    // Método para mapear solo los datos básicos de la reserva
+    private ReservationResponse toBasicResponse(Reservation reservation) {
+        return ReservationResponse.builder()
+                .id(reservation.getId())
+                .code(reservation.getCode())
+                .customerId(reservation.getCustomerId())
+                .reservationDate(reservation.getReservationDate())
+                .reservationTime(reservation.getReservationTime())
+                .peopleCount(reservation.getPeopleCount())
+                .status(reservation.getStatus())
+                .reservationType(reservation.getReservationType())
+                .holderName(reservation.getHolderName())
+                .holderPhone(reservation.getHolderPhone())
+                .createdAt(reservation.getCreatedAt())
+                .active(reservation.getActive())
+                .build();
+    }
+
     private ReservationResponse toResponse(Reservation reservation) {
-        List<ReservationTableResponse> tables = reservationTableRepository.findAll().stream()
-                .filter(rt -> rt.getReservation().getId().equals(reservation.getId()))
+        List<ReservationTableResponse> tables = reservationTableRepository.findByReservation_Id(reservation.getId()).stream()
                 .map(rt -> ReservationTableResponse.builder()
                         .id(rt.getId())
                         .tableId(rt.getTableId())
                         .build())
-                .collect(Collectors.toList());
-        List<ReservationProductResponse> products = reservationProductRepository.findAll().stream()
-                .filter(rp -> rp.getReservation().getId().equals(reservation.getId()))
+                .collect(java.util.stream.Collectors.toList());
+        List<ReservationProductResponse> products = reservationProductRepository.findByReservation_Id(reservation.getId()).stream()
                 .map(rp -> ReservationProductResponse.builder()
                         .id(rp.getId())
                         .productId(rp.getProductId())
@@ -356,9 +378,8 @@ public class ReservationServiceImpl implements ReservationService {
                         .subtotal(rp.getSubtotal())
                         .observation(rp.getObservation())
                         .build())
-                .collect(Collectors.toList());
-        List<ReservationEventResponse> events = reservationEventRepository.findAll().stream()
-                .filter(re -> re.getReservation().getId().equals(reservation.getId()))
+                .collect(java.util.stream.Collectors.toList());
+        List<ReservationEventResponse> events = reservationEventRepository.findByReservation_Id(reservation.getId()).stream()
                 .map(re -> ReservationEventResponse.builder()
                         .id(re.getId())
                         .serviceId(re.getServiceId())
@@ -366,9 +387,8 @@ public class ReservationServiceImpl implements ReservationService {
                         .subtotal(re.getSubtotal())
                         .observation(re.getObservation())
                         .build())
-                .collect(Collectors.toList());
-        List<PaymentResponse> payments = transactionRepository.findAll().stream()
-                .filter(t -> t.getReservation().getId().equals(reservation.getId()))
+                .collect(java.util.stream.Collectors.toList());
+        List<PaymentResponse> payments = transactionRepository.findByReservation_Id(reservation.getId()).stream()
                 .map(t -> PaymentResponse.builder()
                         .id(t.getId())
                         .paymentDate(t.getPaymentDate())
@@ -378,7 +398,7 @@ public class ReservationServiceImpl implements ReservationService {
                         .externalTransactionId(t.getExternalTransactionId())
                         .createdBy(t.getCreatedBy())
                         .build())
-                .collect(Collectors.toList());
+                .collect(java.util.stream.Collectors.toList());
         return ReservationResponse.builder()
                 .id(reservation.getId())
                 .code(reservation.getCode())
@@ -390,7 +410,6 @@ public class ReservationServiceImpl implements ReservationService {
                 .paymentMethod(reservation.getPaymentMethod())
                 .reservationType(reservation.getReservationType())
                 .eventTypeId(reservation.getEventType() != null ? reservation.getEventType().getId() : null)
-                //.eventShift(reservation.getEventShift().toString())
                 .eventShift(String.valueOf(reservation.getEventShift()))
                 .tableDistributionType(reservation.getTableDistributionType())
                 .tableClothColor(reservation.getTableClothColor())
@@ -609,30 +628,76 @@ public class ReservationServiceImpl implements ReservationService {
     public ReservationResponse cancelReservation(Integer id) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reserva no encontrada"));
-        if ("CANCELADO".equalsIgnoreCase(reservation.getStatus())) {
+        if (RESERVATION_STATUS_CANCELED.equalsIgnoreCase(reservation.getStatus())) {
             throw new RuntimeException("La reserva ya está cancelada");
         }
-        reservation.setStatus("CANCELADO");
+        reservation.setStatus(RESERVATION_STATUS_CANCELED);
         reservation.setCancellationDate(java.time.LocalDateTime.now());
         reservation = reservationRepository.save(reservation);
 
         // Registrar notificación de cancelación
-        notificationService.createNotification(
-                NotificationRequest.builder()
-                        .reservationId(reservation.getId())
-                        .notificationType("CANCELLATION")
-                        .channel("EMAIL")
-                        .message(RESERVATION_CANCELLED_MESSAGE + reservation.getCode())
-                        .status(NOTIFICATION_STATUS_PENDING)
-                        .sentDate(null)
-                        .createdBy(DEFAULT_CREATED_BY_USER_ID)
-                        .build()
-        );
+        registerReservationNotification(reservation, "CANCELLATION", RESERVATION_CANCELLED_MESSAGE + reservation.getCode());
 
         // Nota: Notificación de cancelación por WhatsApp será enviada desde el frontend
         log.info("📱 NOTA: Notificación de cancelación WhatsApp será enviada desde el frontend para reserva: {}", reservation.getCode());
         
         return toResponse(reservation);
+    }
+
+    @Override
+    @Transactional
+    public ReservationResponse checkinReservation(Integer id) {
+        Reservation reservation = reservationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reservation not found"));
+        if (RESERVATION_STATUS_CHECK_IN.equalsIgnoreCase(reservation.getStatus())) {
+            throw new RuntimeException("La reserva ya está en CHECK-IN");
+        }
+        reservation.setStatus(RESERVATION_STATUS_CHECK_IN);
+        reservation.setUpdatedAt(java.time.LocalDateTime.now());
+        reservationRepository.save(reservation);
+        registerReservationNotification(reservation, RESERVATION_STATUS_CHECK_IN, RESERVATION_CHECK_IN_MESSAGE + reservation.getCode());
+        return toResponse(reservation);
+    }
+
+    @Override
+    @Transactional
+    public ReservationResponse checkoutReservation(Integer id) {
+        Reservation reservation = reservationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reservation not found"));
+        if (RESERVATION_STATUS_CHECK_OUT.equalsIgnoreCase(reservation.getStatus())) {
+            throw new RuntimeException("La reserva ya está en CHECK-OUT");
+        }
+        reservation.setStatus(RESERVATION_STATUS_CHECK_OUT);
+        reservation.setUpdatedAt(java.time.LocalDateTime.now());
+        reservationRepository.save(reservation);
+        registerReservationNotification(reservation, RESERVATION_STATUS_CHECK_OUT, RESERVATION_CHECK_OUT_MESSAGE + reservation.getCode());
+        return toResponse(reservation);
+    }
+
+    @Override
+    @Transactional
+    public ReservationResponse paidReservation(Integer id) {
+        Reservation reservation = reservationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reservation not found"));
+        reservation.setStatus(RESERVATION_STATUS_PAID);
+        reservation.setUpdatedAt(java.time.LocalDateTime.now());
+        reservationRepository.save(reservation);
+        registerReservationNotification(reservation, RESERVATION_STATUS_PAID, RESERVATION_PAID_MESSAGE + reservation.getCode());
+        return toResponse(reservation);
+    }
+
+    private void registerReservationNotification(Reservation reservation, String status, String message) {
+        notificationService.createNotification(
+                NotificationRequest.builder()
+                        .reservationId(reservation.getId())
+                        .notificationType(status)
+                        .channel("EMAIL")
+                        .message(message)
+                        .status(NOTIFICATION_STATUS_PENDING)
+                        .sentDate(null)
+                        .createdBy(DEFAULT_CREATED_BY_USER_ID)
+                        .build()
+        );
     }
 
     private String generateReservationCode(LocalDate reservationDate) {

@@ -21,9 +21,19 @@ public class constant {
     public static final String RESERVATION_CREATED_MESSAGE = "Su reserva se ha creado correctamente. Código de reserva: ";
     public static final String RESERVATION_UPDATED_MESSAGE = "Su reserva ha sido actualizada. Código de reserva: ";
     public static final String RESERVATION_CANCELLED_MESSAGE = "Su reserva ha sido cancelada. Código de reserva: ";
+    public static final String RESERVATION_CHECK_IN_MESSAGE = "Ha realizado el check-in de su reserva. Código de reserva: ";
+    public static final String RESERVATION_CHECK_OUT_MESSAGE = "Ha realizado el check-out de su reserva. Código de reserva: ";
+    public static final String RESERVATION_NO_SHOW_MESSAGE = "No se ha presentado a su reserva. Código de reserva: ";
+    public static final String RESERVATION_COMPLETED_MESSAGE = "Su reserva ha sido completada. Código de reserva: ";
+    public static final String RESERVATION_PAID_MESSAGE = "El pago de su reserva ha sido procesado. Código de reserva: ";
 
     public static final String RESERVATION_STATUS_PENDING= "PENDIENTE";
     public static final String RESERVATION_STATUS_CANCELED= "CANCELADO";
+    public static final String RESERVATION_STATUS_COMPLETED= "COMPLETADO";
+    public static final String RESERVATION_STATUS_NO_SHOW= "NO_PRESENTADO";
+    public static final String RESERVATION_STATUS_CHECK_IN= "CHECK_IN";
+    public static final String RESERVATION_STATUS_CHECK_OUT= "CHECK_OUT";
+    public static final String RESERVATION_STATUS_PAID= "PAGADO";
 
     public static final String NOTIFICATION_STATUS_PENDING= "PENDIENTE";
     public static final String NOTIFICATION_STATUS_SENT= "ENVIADO";
