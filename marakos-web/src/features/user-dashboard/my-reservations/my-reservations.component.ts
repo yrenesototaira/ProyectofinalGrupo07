@@ -58,11 +58,15 @@ export class MyReservationsComponent implements OnInit {
     const baseClasses = 'border rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4';
     switch (status) {
       case 'CONFIRMADO':
-        return `${baseClasses} bg-sky-500/10 border-sky-500/20`;
+        return `${baseClasses} bg-sky-500/10 border-sky-500/20 text-slate-400`;
       case 'PENDIENTE':
         return `${baseClasses} bg-slate-700/50 border-slate-700 text-slate-400`;
       case 'CANCELADO':
         return `${baseClasses} bg-rose-500/10 border-rose-500/20 text-slate-400`;
+      case 'PENDIENTE_PAGO':
+        return `${baseClasses} bg-yellow-500/10 border-yellow-500/20 text-slate-400`;
+      case 'PAGADO':
+        return `${baseClasses} bg-green-500/10 border-green-500/20 text-slate-400`;
       default:
         return baseClasses;
     }
@@ -77,6 +81,10 @@ export class MyReservationsComponent implements OnInit {
         return `${baseClasses} bg-slate-600 text-slate-200`;
       case 'CANCELADO':
         return `${baseClasses} bg-rose-400/20 text-rose-300`;
+      case 'PENDIENTE_PAGO':
+        return `${baseClasses} bg-yellow-400/20 text-yellow-300`;
+      case 'PAGADO':
+        return `${baseClasses} bg-green-400/20 text-green-300`;
       default:
         return baseClasses;
     }

@@ -435,7 +435,7 @@ export class BookingComponent implements CanComponentDeactivate {
       reservationDate: this.selectedDate(),
       reservationTime: this.selectedTime(),
       peopleCount: this.guests(),
-      status: 'PENDIENTE',
+      status: 'PENDIENTE_PAGO',
       paymentMethod: 'Digital',
       reservationType: 'MESA',
       eventTypeId: null,
@@ -482,17 +482,39 @@ export class BookingComponent implements CanComponentDeactivate {
             console.log('💳 FRONTEND: Pago procesado exitosamente:', paymentResponse);
             console.log('📱 FRONTEND: Reserva y pago completados - WhatsApp debería haber sido enviado para reserva ID:', reservationResponse.id);
             this.paymentProcessing.set(false);
-            
-            // Marcar reserva como completada para permitir navegación
-            this.reservationCompleted.set(true);
-            
-            // Navigate to confirmation page with payment success details
-            this.router.navigate(['/confirmation', reservationResponse.id], {
-              queryParams: {
-                transactionId: paymentResponse.culqiChargeId,
-                amount: paymentResponse.amount,
-                status: paymentResponse.status,
-                paymentSuccess: 'true'
+
+            // Actualizar reserva con estado PAGADO
+            this.bookingService.paidReservation(reservationResponse.id).subscribe({
+              next: () => {
+                console.log('✅ FRONTEND: Estado de la reserva actualizado a PAGADO');
+
+                // Marcar reserva como completada para permitir navegación
+                this.reservationCompleted.set(true);
+
+                // Navigate to confirmation page with payment success details
+                this.router.navigate(['/confirmation', reservationResponse.id], {
+                  queryParams: {
+                    transactionId: paymentResponse.culqiChargeId,
+                    amount: paymentResponse.amount,
+                    status: paymentResponse.status,
+                    paymentSuccess: 'true'
+                  }
+                });
+              },
+              error: (err) => {
+                console.error('❌ FRONTEND: Error al actualizar el estado de la reserva:', err);
+                // Marcar reserva como completada de todas formas porque el pago fue exitoso
+                this.reservationCompleted.set(true);
+                // Navegar a la página de confirmación indicando el fallo en la actualización de estado
+                this.router.navigate(['/confirmation', reservationResponse.id], {
+                  queryParams: {
+                    transactionId: paymentResponse.culqiChargeId,
+                    amount: paymentResponse.amount,
+                    status: `PAGO EXITOSO, PERO ${paymentResponse.status}`,
+                    paymentSuccess: 'true',
+                    statusUpdateFailed: 'true'
+                  }
+                });
               }
             });
           },
@@ -542,7 +564,7 @@ export class BookingComponent implements CanComponentDeactivate {
       reservationDate: this.selectedDate(),
       reservationTime: this.selectedTime(),
       peopleCount: this.guests(),
-      status: 'PENDIENTE',  // AUITAR ESTE CAMPO
+      status: 'CONFIRMADO',
       paymentMethod: 'Digital',
       reservationType: 'MESA',
       eventTypeId: null,
@@ -617,7 +639,7 @@ export class BookingComponent implements CanComponentDeactivate {
       reservationDate: this.selectedDate(),
       reservationTime: this.selectedTime(),
       peopleCount: this.guests(),
-      status: 'PENDIENTE',
+      status: 'PENDIENTE_PAGO',
       paymentMethod: 'Presencial',
       reservationType: 'MESA',
       eventTypeId: null,
