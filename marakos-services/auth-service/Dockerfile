@@ -1,11 +1,40 @@
 # Dockerfile para auth-service
-FROM eclipse-temurin:17-jdk-alpine
+
+# ---------- Stage 1: Build ----------
+FROM gradle:8.12.1-jdk17 AS build
+WORKDIR /workspace
+
+# Copiar archivos de configuración para cachear dependencias
+COPY build.gradle settings.gradle gradlew gradlew.bat ./
+COPY gradle gradle
+
+# Pre-resolver dependencias (mejor cache)
+RUN ./gradlew --version && ./gradlew dependencies || true
+
+# Copiar el código fuente
+COPY src src
+
+# Construir el JAR de Spring Boot
+RUN ./gradlew clean bootJar --no-daemon
+
+# ---------- Stage 2: Runtime ----------
+FROM eclipse-temurin:17-jre-alpine AS runtime
+
+# Seguridad: usuario no root
+RUN addgroup -S app && adduser -S app -G app
+USER app
+
 WORKDIR /app
-COPY gradlew .
-COPY gradle ./gradle
-COPY . .
-RUN chmod +x gradlew
-RUN ./gradlew build --no-daemon
-COPY build/libs/*.jar app.jar
+
+# Copiar el JAR construido
+COPY --from=build /workspace/build/libs/*.jar app.jar
+
+# Variables (Render puede inyectar PORT)
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75"
+ENV SPRING_PROFILES_ACTIVE=prod
+ENV PORT=8080
+
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# Run
+ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar app.jar"]
