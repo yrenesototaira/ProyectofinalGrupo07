@@ -8,6 +8,9 @@ WORKDIR /workspace
 COPY build.gradle settings.gradle gradlew gradlew.bat ./
 COPY gradle gradle
 
+# Asegurar permisos y convertir finales de línea si es necesario
+RUN chmod +x ./gradlew
+
 # Pre-resolver dependencias (mejor cache)
 RUN ./gradlew --version && ./gradlew dependencies || true
 
