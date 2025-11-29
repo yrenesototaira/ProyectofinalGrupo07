@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -22,24 +22,43 @@ export class AdminReservationsComponent {
   // State
   isCancelModalOpen = signal(false);
   reservationToCancelId = signal<string | null>(null);
+
+  isCheckinModalOpen = signal(false);
+  reservationToCheckinId = signal<string | null>(null);
+
+  isCheckoutModalOpen = signal(false);
+  reservationToCheckoutId = signal<string | null>(null);
   
   // Filters
-  filterDate = signal('');
-  filterStatus = signal<'all' | Reservation['status']>('all');
+  filterDate = signal(new Date().toISOString().split('T')[0]); // Default to today
+  filterStatus = signal<'ALL' | 'PENDIENTE' | 'CONFIRMADO' | 'CANCELADO' | 'PENDIENTE_PAGO' | 'PAGADO' | 'CHECKED_IN' | 'CHECKED_OUT'>('ALL');
 
   // Data
-  private allReservations = this.bookingService.allReservations;
+  private reservations = signal<Reservation[]>([]);
+  filteredReservations = this.reservations.asReadonly();
   
-  filteredReservations = computed(() => {
-    let reservations = this.allReservations();
-    if (this.filterDate()) {
-      reservations = reservations.filter(r => r.date === this.filterDate());
+  constructor() {
+    effect(() => {
+      this.loadReservations();
+    });
+  }
+
+  loadReservations() {
+    const date = this.filterDate();
+    const status = this.filterStatus();
+    
+    if (date) {
+      this.bookingService.getReservationsForCurrentAdmin(date, status).subscribe({
+        next: (data) => {
+          this.reservations.set(data as Reservation[]);
+        },
+        error: (err) => {
+          console.error('Error fetching reservations:', err);
+          this.reservations.set([]);
+        }
+      });
     }
-    if (this.filterStatus() !== 'all') {
-      reservations = reservations.filter(r => r.status === this.filterStatus());
-    }
-    return reservations;
-  });
+  }
 
   requestCancellation(id: string) {
     this.reservationToCancelId.set(id);
@@ -47,8 +66,12 @@ export class AdminReservationsComponent {
   }
 
   confirmCancellation() {
-    if (this.reservationToCancelId()) {
-      this.bookingService.cancelReservation(this.reservationToCancelId()!);
+    const reservationId = this.reservationToCancelId();
+    if (reservationId) {
+      this.bookingService.cancelReservation(reservationId).subscribe({
+        next: () => this.loadReservations(),
+        error: (err) => console.error('Error canceling reservation:', err)
+      });
     }
     this.closeCancelModal();
   }
@@ -58,15 +81,65 @@ export class AdminReservationsComponent {
     this.reservationToCancelId.set(null);
   }
 
+  requestCheckin(id: string) {
+    this.reservationToCheckinId.set(id);
+    this.isCheckinModalOpen.set(true);
+  }
+
+  confirmCheckin() {
+    const reservationId = this.reservationToCheckinId();
+    if (reservationId) {
+      this.bookingService.checkinReservation(reservationId).subscribe({
+        next: () => this.loadReservations(),
+        error: (err) => console.error('Error checking in reservation:', err)
+      });
+    }
+    this.closeCheckinModal();
+  }
+
+  closeCheckinModal() {
+    this.isCheckinModalOpen.set(false);
+    this.reservationToCheckinId.set(null);
+  }
+
+  requestCheckout(id: string) {
+    this.reservationToCheckoutId.set(id);
+    this.isCheckoutModalOpen.set(true);
+  }
+
+  confirmCheckout() {
+    const reservationId = this.reservationToCheckoutId();
+    if (reservationId) {
+      this.bookingService.checkoutReservation(reservationId).subscribe({
+        next: () => this.loadReservations(),
+        error: (err) => console.error('Error checking out reservation:', err)
+      });
+    }
+    this.closeCheckoutModal();
+  }
+
+  closeCheckoutModal() {
+    this.isCheckoutModalOpen.set(false);
+    this.reservationToCheckoutId.set(null);
+  }
+
   getStatusBadgeClass(status: Reservation['status']): string {
     const baseClasses = 'font-bold px-3 py-1 text-xs rounded-full';
     switch (status) {
-      case 'Pendiente':
+      case 'PENDIENTE':
         return `${baseClasses} bg-sky-400/20 text-sky-300`;
-      case 'Confirmado':
+      case 'CONFIRMADO':
         return `${baseClasses} bg-slate-600 text-slate-200`;
-      case 'Cancelado':
+      case 'CANCELADO':
         return `${baseClasses} bg-rose-400/20 text-rose-300`;
+      case 'PENDIENTE_PAGO':
+        return `${baseClasses} bg-yellow-400/20 text-yellow-300`;
+      case 'PAGADO':
+        return `${baseClasses} bg-green-400/20 text-green-300`;
+      case 'CHECKED_IN':
+        return `${baseClasses} bg-green-400/20 text-green-300`;
+      case 'CHECKED_OUT':
+        return `${baseClasses} bg-blue-400/20 text-blue-300`;
       default:
         return baseClasses;
     }

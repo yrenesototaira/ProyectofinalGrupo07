@@ -4,10 +4,14 @@
     <div class="flex gap-4">
       <input type="date" [(ngModel)]="filterDate" class="bg-slate-700 border-slate-600 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
       <select [(ngModel)]="filterStatus" class="bg-slate-700 border-slate-600 text-slate-100 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500">
-        <option value="all">Todos los Estados</option>
-        <option value="Confirmada">Confirmada</option>
-        <option value="Completada">Completada</option>
-        <option value="Cancelada">Cancelada</option>
+        <option value="ALL">Todos los Estados</option>
+        <option value="PENDIENTE">Pendiente</option>
+        <option value="CONFIRMADO">Confirmado</option>
+        <option value="CANCELADO">Cancelado</option>
+        <option value="PENDIENTE_PAGO">Pendiente Pago</option>
+        <option value="PAGADO">Pagado</option>
+        <option value="CHECKED_IN">Checked-in</option>
+        <option value="CHECKED_OUT">Checked-out</option>
       </select>
     </div>
   </div>
@@ -27,11 +31,11 @@
         @for (reservation of filteredReservations(); track reservation.id) {
           <tr class="border-b border-slate-700/50 hover:bg-slate-800/40 transition-colors">
             <td class="px-6 py-4">
-              <div class="font-medium text-slate-200">{{ reservation.customerName }}</div>
-              <div class="text-slate-400">{{ reservation.customerEmail }}</div>
+              <div class="font-medium text-slate-200">{{ reservation.holderName }}</div>
+              <div class="text-slate-400">{{ reservation.holderEmail }}</div>
             </td>
-            <td class="px-6 py-4">{{ reservation.date }} @ {{ reservation.time }}</td>
-            <td class="px-6 py-4">{{ reservation.guests }}</td>
+            <td class="px-6 py-4">{{ reservation.reservationDate }} @ {{ reservation.reservationTime }}</td>
+            <td class="px-6 py-4">{{ reservation.peopleCount }}</td>
             <td class="px-6 py-4">
               <span [class]="getStatusBadgeClass(reservation.status)">
                 {{ reservation.status }}
@@ -39,7 +43,6 @@
             </td>
             <td class="px-6 py-4 text-right">
               <div class="flex justify-end gap-2">
-                <!-- Botón de descarga PDF disponible para todas las reservas -->
                 <button 
                   (click)="downloadReservationPDF(reservation.id!)" 
                   class="px-3 py-1 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 text-xs font-medium transition-colors"
@@ -47,13 +50,20 @@
                   📄 PDF
                 </button>
                 
-                @if(reservation.status === 'Confirmada') {
-                  <!-- The edit route is reusable for admins -->
+                @if(reservation.status === 'CONFIRMADO') {
+                  <button (click)="requestCheckin(reservation.id!)" class="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-xs font-medium transition-colors">
+                    Check-in
+                  </button>
                   <a [routerLink]="['/admin/reservations/edit', reservation.id]" class="px-3 py-1 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-xs font-medium transition-colors">
                     Editar
                   </a>
                   <button (click)="requestCancellation(reservation.id!)" class="px-3 py-1 bg-rose-600 text-white rounded-md hover:bg-rose-700 text-xs font-medium transition-colors">
                     Cancelar
+                  </button>
+                }
+                @if(reservation.status === 'CHECK_IN') {
+                  <button (click)="requestCheckout(reservation.id!)" class="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs font-medium transition-colors">
+                    Check-out
                   </button>
                 }
               </div>
@@ -78,4 +88,22 @@
   confirmButtonText="Sí, Cancelar Reserva"
   (confirm)="confirmCancellation()"
   (close)="closeCancelModal()">
+</app-confirmation-modal>
+
+<app-confirmation-modal
+  [isOpen]="isCheckinModalOpen()"
+  title="Confirmar Check-in"
+  message="¿Estás seguro de que quieres hacer check-in para esta reserva?"
+  confirmButtonText="Sí, Hacer Check-in"
+  (confirm)="confirmCheckin()"
+  (close)="closeCheckinModal()">
+</app-confirmation-modal>
+
+<app-confirmation-modal
+  [isOpen]="isCheckoutModalOpen()"
+  title="Confirmar Check-out"
+  message="¿Estás seguro de que quieres hacer check-out para esta reserva?"
+  confirmButtonText="Sí, Hacer Check-out"
+  (confirm)="confirmCheckout()"
+  (close)="closeCheckoutModal()">
 </app-confirmation-modal>

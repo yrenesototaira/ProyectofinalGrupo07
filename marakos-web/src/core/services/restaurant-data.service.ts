@@ -56,7 +56,7 @@ export class RestaurantDataService {
   getAvailableTimesForDate(date: string, guests: number): { time: string; label: string; available: boolean }[] {
     // Mock data - simulate available time slots based on date and guests
     const allTimes = [
-      { time: '16:00', label: '04:00 PM' },      
+      { time: '16:00', label: '04:00 PM' },
       { time: '17:00', label: '05:00 PM' },
       { time: '18:00', label: '06:00 PM' },
       { time: '19:00', label: '07:00 PM' },

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva Confirmada - Pago Pendiente</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e293b;
+            color: #e2e8f0;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #1e293b;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-radius: 12px 12px 0 0;
+        }
+        .header-icon-text {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .header-icon {
+            background-color: rgba(251, 191, 36, 0.1);
+            padding: 12px;
+            border-radius: 50%;
+            display: inline-flex;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .header p {
+            color: #fef3c7;
+            margin: 5px 0 0 0;
+            font-size: 14px;
+        }
+        .content {
+            background-color: #334155;
+            padding: 30px;
+            border-radius: 0 0 12px 12px;
+        }
+        .details-qr-container {
+            display: table;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        .details-section {
+            display: table-cell;
+            width: 65%;
+            padding-right: 20px;
+            vertical-align: top;
+        }
+        .qr-section {
+            display: table-cell;
+            width: 35%;
+            text-align: center;
+            border-left: 2px solid #475569;
+            padding-left: 20px;
+            vertical-align: top;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #f1f5f9;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #475569;
+        }
+        .detail-row {
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #cbd5e1;
+        }
+        .detail-value {
+            color: #e2e8f0;
+        }
+        .reservation-code {
+            color: #fbbf24;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        .payment-status-box {
+            background-color: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #fbbf24;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .qr-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #cbd5e1;
+            margin-bottom: 15px;
+        }
+        .qr-code-img {
+            background-color: #ffffff;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 180px;
+            height: auto;
+        }
+        .qr-instruction {
+            color: #94a3b8;
+            font-size: 12px;
+            margin-top: 12px;
+        }
+        .alert-box {
+            background-color: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .alert-content {
+            display: flex;
+            gap: 15px;
+        }
+        .alert-icon {
+            background-color: rgba(251, 146, 60, 0.2);
+            padding: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .alert-text {
+            flex: 1;
+        }
+        .alert-text p {
+            margin: 0 0 10px 0;
+            color: #fcd34d;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .info-box {
+            background-color: rgba(71, 85, 105, 0.5);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .info-box p {
+            margin: 0;
+            color: #cbd5e1;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .info-box strong {
+            color: #f1f5f9;
+        }
+        .payment-info-box {
+            background-color: rgba(71, 85, 105, 0.5);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .payment-info-header {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .clock-icon {
+            color: #60a5fa;
+            flex-shrink: 0;
+        }
+        .payment-info-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
+        .payment-info-text {
+            color: #94a3b8;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        .payment-options {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .payment-options li {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            color: #cbd5e1;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .check-icon {
+            color: #34d399;
+            flex-shrink: 0;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+        .footer a {
+            color: #fbbf24;
+            text-decoration: none;
+        }
+        
+        /* Mobile responsive */
+        @media only screen and (max-width: 600px) {
+            .details-qr-container {
+                display: block;
+            }
+            .details-section,
+            .qr-section {
+                display: block;
+                width: 100%;
+                padding: 0;
+                border: none;
+            }
+            .qr-section {
+                margin-top: 20px;
+                padding-top: 20px;
+                border-top: 2px solid #475569;
+            }
+            .header-icon-text {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-icon-text">
+                <div class="header-icon">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2">
+                        <path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>¡Reserva Confirmada!</h1>
+                    <p>Tu mesa ha sido reservada exitosamente</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Details and QR Code Container -->
+            <div class="details-qr-container">
+                <!-- Left: Reservation Details -->
+                <div class="details-section">
+                    <h2 class="section-title">Detalles de tu Reserva</h2>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">ID de Reserva:</span>
+                        <span class="reservation-code">{{RESERVATION_CODE}}</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Nombre:</span>
+                        <span class="detail-value">{{CUSTOMER_NAME}}</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Fecha y Hora:</span>
+                        <span class="detail-value">{{RESERVATION_DATE}} a las {{RESERVATION_TIME}}</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Comensales:</span>
+                        <span class="detail-value">{{GUEST_COUNT}}</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Mesa:</span>
+                        <span class="detail-value">Mesa # {{TABLE_NUMBER}}</span>
+                    </div>
+                    
+                    <!-- Payment Status -->
+                    <div class="payment-status-box">
+                        <div class="status-header">
+                            <div class="pulse-dot"></div>
+                            <strong class="detail-label">Estado del Pago: <span style="color: #fbbf24;">Pendiente</span></strong>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Monto a Pagar:</span>
+                            <span style="color: #fbbf24; font-weight: bold;">S/ {{TOTAL_AMOUNT}}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: QR Code -->
+                <div class="qr-section">
+                    <h3 class="qr-title">Código QR</h3>
+                    <img src="{{QR_CODE_URL}}" alt="Código QR de la Reserva" class="qr-code-img" width="180" height="180"/>
+                    <p class="qr-instruction">Presenta este código al llegar</p>
+                </div>
+            </div>
+
+            <!-- Payment Explanation Alert -->
+            <div class="alert-box">
+                <div class="alert-content">
+                    <div class="alert-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2">
+                            <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div class="alert-text">
+                        <p>El pago no pudo procesarse, pero tu reserva está confirmada.</p>
+                        <div class="info-box">
+                            <p><strong>¿Qué significa esto?</strong> Aunque el pago online no se completó, tu mesa está garantizada. Solo necesitas regularizar el pago antes de tu visita.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Instructions -->
+            <div class="payment-info-box">
+                <div class="payment-info-header">
+                    <div class="clock-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="payment-info-title">Tienes 24 horas para completar el pago</h3>
+                        <p class="payment-info-text">(*)No garantizamos la pre orden de comida sin pago confirmado</p>
+                        <p class="payment-info-text">Puedes regularizar tu pago de las siguientes maneras:</p>
+                        <ul class="payment-options">
+                            <li>
+                                <span class="check-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </span>
+                                <span><strong>Por teléfono o WhatsApp:</strong> Contacta al restaurante para coordinar el pago</span>
+                            </li>
+                            <li>
+                                <span class="check-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </span>
+                                <span><strong>Directamente en el local:</strong> Puedes acercarte y pagar de manera presencial</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Marakos Grill - Restaurante</p>
+            <p>📞 Teléfono: <a href="tel:{{RESTAURANT_PHONE}}">{{RESTAURANT_PHONE}}</a></p>
+            <p>📧 Email: <a href="mailto:{{RESTAURANT_EMAIL}}">{{RESTAURANT_EMAIL}}</a></p>
+            <p style="margin-top: 15px; color: #64748b;">Este es un correo automático, por favor no respondas a este mensaje.</p>
+        </div>
+    </div>
+</body>
+</html>

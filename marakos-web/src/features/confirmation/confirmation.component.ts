@@ -29,6 +29,7 @@ export class ConfirmationComponent implements OnInit, AfterViewInit {
   paymentSuccess = signal<boolean>(false);
   paymentError = signal<string | null>(null);
   reservationCreated = signal<boolean>(false);
+  paymentPending = signal<boolean>(false);
   
   // Presential payment signals
   isPresentialPayment = signal<boolean>(false);
@@ -43,6 +44,7 @@ export class ConfirmationComponent implements OnInit, AfterViewInit {
     this.paymentSuccess.set(queryParams['paymentSuccess'] === 'true');
     this.paymentError.set(queryParams['paymentError'] || null);
     this.reservationCreated.set(queryParams['reservationCreated'] === 'true');
+    this.paymentPending.set(queryParams['paymentPending'] === 'true');
     
     // Handle presential payment
     this.isPresentialPayment.set(queryParams['paymentType'] === 'presencial');

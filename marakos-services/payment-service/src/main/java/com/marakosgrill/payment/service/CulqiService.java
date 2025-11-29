@@ -39,7 +39,7 @@ public class CulqiService {
         
         return webClient.post()
                 .uri("/v2/tokens")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + publicKey)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + secretKey)
                 .bodyValue(tokenRequest)
                 .retrieve()
                 .bodyToMono(CulqiTokenResponse.class)
@@ -52,6 +52,8 @@ public class CulqiService {
      */
     public Mono<CulqiChargeResponse> processCharge(CulqiChargeRequest chargeRequest) {
         log.info("Processing Culqi charge for amount: {} {}", chargeRequest.getAmount(), chargeRequest.getCurrencyCode());
+        log.info("Charge request details - sourceId: {}, email: {}, orderId: {}, clientDetails: {}", 
+                chargeRequest.getSourceId(), chargeRequest.getEmail(), chargeRequest.getOrderId(), chargeRequest.getClientDetails());
         
         return webClient.post()
                 .uri("/v2/charges")
@@ -64,33 +66,29 @@ public class CulqiService {
     }
     
     /**
-     * Complete payment process: Create token and process charge
+     * Process payment with token from Culqi.js (frontend)
+     * Expects culqiToken to be provided in the request
      */
     public Mono<PaymentResponse> processPayment(PaymentRequest paymentRequest) {
-        log.info("Starting complete payment process for reservation: {}", paymentRequest.getReservationId());
+        log.info("Processing payment for reservation: {} with token from Culqi.js", paymentRequest.getReservationId());
         
-        // Step 1: Create token request
-        CulqiTokenRequest tokenRequest = CulqiTokenRequest.builder()
-                .cardNumber(paymentRequest.getCardNumber())
-                .cvv(paymentRequest.getCvv())
-                .expirationMonth(paymentRequest.getExpirationMonth())
-                .expirationYear(paymentRequest.getExpirationYear())
+        if (paymentRequest.getCulqiToken() == null || paymentRequest.getCulqiToken().isEmpty()) {
+            log.error("Culqi token is missing in payment request");
+            return Mono.just(createErrorResponse(paymentRequest, 
+                new IllegalArgumentException("Token de Culqi no proporcionado. El token debe generarse desde el frontend usando Culqi.js")));
+        }
+        
+        // Create charge request using the token from frontend (minimal required fields only)
+        CulqiChargeRequest chargeRequest = CulqiChargeRequest.builder()
+                .amount(convertToIntCents(paymentRequest.getAmount()))
+                .currencyCode("PEN")
+                .sourceId(paymentRequest.getCulqiToken())
                 .email(paymentRequest.getCustomerEmail())
+                .description("Reserva #" + paymentRequest.getReservationId())
+                // Remove client_details and order_id to test with minimal required fields
                 .build();
         
-        return createToken(tokenRequest)
-                .flatMap(tokenResponse -> {
-                    // Step 2: Create charge request using the token
-                    CulqiChargeRequest chargeRequest = CulqiChargeRequest.builder()
-                            .amount(convertToIntCents(paymentRequest.getAmount()))
-                            .currencyCode("PEN")
-                            .sourceId(tokenResponse.getId())
-                            .email(paymentRequest.getCustomerEmail())
-                            .description("Reserva #" + paymentRequest.getReservationId())
-                            .build();
-                    
-                    return processCharge(chargeRequest);
-                })
+        return processCharge(chargeRequest)
                 .map(chargeResponse -> mapToPaymentResponse(paymentRequest, chargeResponse))
                 .doOnSuccess(response -> log.info("Payment completed successfully: {}", response.getCulqiChargeId()))
                 .onErrorResume(error -> {

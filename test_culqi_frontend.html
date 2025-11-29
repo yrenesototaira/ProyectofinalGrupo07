@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago con Culqi - Marakos Grill</title>
+    <script src="https://checkout.culqi.com/js/v4"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #00a19b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #008c87;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍴 Pago de Reserva - Marakos Grill</h1>
+        
+        <div class="info message" style="display: block;">
+            <strong>Información:</strong> Use tarjeta de prueba Visa: 4111 1111 1111 1111, CVV: 123, Fecha: 12/2026
+        </div>
+
+        <form id="payment-form">
+            <div class="form-group">
+                <label for="reservationId">ID de Reserva:</label>
+                <input type="number" id="reservationId" value="1001" required>
+            </div>
+
+            <div class="form-group">
+                <label for="amount">Monto (PEN):</label>
+                <input type="number" id="amount" value="150.00" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label for="customerName">Nombre Completo:</label>
+                <input type="text" id="customerName" value="Juan Perez" required>
+            </div>
+
+            <div class="form-group">
+                <label for="customerEmail">Email:</label>
+                <input type="email" id="customerEmail" value="test@culqi.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="customerPhone">Teléfono:</label>
+                <input type="tel" id="customerPhone" value="987654321" required>
+            </div>
+
+            <button type="submit" id="pay-button">💳 Pagar con Culqi</button>
+        </form>
+
+        <div id="result-message" class="message"></div>
+    </div>
+
+    <script>
+        // Configurar Culqi con tu clave pública
+        Culqi.publicKey = 'pk_test_iKnf1lmmOdlUHuLu'; // Reemplaza con tu clave pública real
+
+        const form = document.getElementById('payment-form');
+        const payButton = document.getElementById('pay-button');
+        const resultMessage = document.getElementById('result-message');
+
+        // Configurar Culqi
+        Culqi.settings({
+            title: 'Marakos Grill',
+            currency: 'PEN',
+            description: 'Pago de Reserva',
+            amount: 0 // Se actualizará dinámicamente
+        });
+
+        // Manejar el envío del formulario
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const amount = parseFloat(document.getElementById('amount').value);
+            
+            // Actualizar configuración de Culqi con el monto
+            Culqi.settings({
+                amount: Math.round(amount * 100) // Culqi usa centavos
+            });
+
+            // Abrir el checkout de Culqi
+            Culqi.open();
+        });
+
+        // Callback cuando Culqi genera el token exitosamente
+        function culqi() {
+            if (Culqi.token) {
+                const token = Culqi.token.id;
+                console.log('Token generado:', token);
+                
+                showMessage('Token generado exitosamente. Procesando pago...', 'info');
+                payButton.disabled = true;
+
+                // Preparar datos del pago
+                const paymentData = {
+                    reservationId: parseInt(document.getElementById('reservationId').value),
+                    paymentMethod: 'CULQI_CARD',
+                    amount: parseFloat(document.getElementById('amount').value),
+                    customerName: document.getElementById('customerName').value,
+                    customerEmail: document.getElementById('customerEmail').value,
+                    customerPhone: document.getElementById('customerPhone').value,
+                    culqiToken: token
+                };
+
+                // Enviar al backend
+                processPayment(paymentData);
+            } else if (Culqi.error) {
+                console.error('Error Culqi:', Culqi.error);
+                showMessage('Error: ' + Culqi.error.user_message, 'error');
+            }
+        }
+
+        // Procesar el pago en el backend
+        async function processPayment(paymentData) {
+            try {
+                const response = await fetch('http://localhost:8084/api/payment/culqi', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(paymentData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.status === 'COMPLETED') {
+                    showMessage(
+                        `✅ Pago exitoso!<br>
+                        ID de Transacción: ${result.transactionId}<br>
+                        Cargo Culqi: ${result.culqiChargeId}<br>
+                        Monto: S/. ${result.amount}<br>
+                        Referencia: ${result.referenceCode || 'N/A'}`,
+                        'success'
+                    );
+                } else {
+                    showMessage(
+                        `❌ Pago fallido: ${result.errorMessage || 'Error desconocido'}`,
+                        'error'
+                    );
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error al procesar el pago: ' + error.message, 'error');
+            } finally {
+                payButton.disabled = false;
+            }
+        }
+
+        // Mostrar mensajes
+        function showMessage(message, type) {
+            resultMessage.innerHTML = message;
+            resultMessage.className = 'message ' + type;
+            resultMessage.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
