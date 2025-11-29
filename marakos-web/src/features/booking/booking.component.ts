@@ -14,6 +14,16 @@ import { Table, MenuItem } from '../../core/models/restaurant.model';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 import { CanComponentDeactivate } from '../../core/guards/can-deactivate.guard';
 
+// Declaración global de Culqi para TypeScript
+declare global {
+  interface Window {
+    Culqi: any;
+    culqi: () => void;
+  }
+}
+
+const Culqi = window.Culqi;
+
 @Component({
   selector: 'app-booking',
   imports: [CommonModule, FormsModule, ModalComponent, CurrencyPipe],
@@ -98,36 +108,18 @@ export class BookingComponent implements CanComponentDeactivate {
   // Payment Type Selection
   paymentType = signal<'online'|'presencial'|null>(null);
   
-  // Step 6 signals - Payment
-  paymentMethod = signal<'Tarjeta'|'Efectivo'|null>(null);
-  cardNumber = signal('');
-  expirationMonth = signal('');
-  expirationYear = signal('');
-  cvv = signal('');
+  // Step 6 signals - Payment (usando Culqi.js - no se almacenan datos de tarjeta)
   paymentProcessing = signal(false);
   paymentError = signal<string | null>(null);
+  culqiToken = signal<string | null>(null);
+  private pendingReservationData: any = null;
   
   currentReservation = this.bookingService.currentReservation;
   menuTotal = this.bookingService.menuTotal;
   currentUser = this.authService.currentUser;
-
-  // Helper data for dropdowns
-  months = [
-    { value: '01', label: '01 - Enero' },
-    { value: '02', label: '02 - Febrero' },
-    { value: '03', label: '03 - Marzo' },
-    { value: '04', label: '04 - Abril' },
-    { value: '05', label: '05 - Mayo' },
-    { value: '06', label: '06 - Junio' },
-    { value: '07', label: '07 - Julio' },
-    { value: '08', label: '08 - Agosto' },
-    { value: '09', label: '09 - Septiembre' },
-    { value: '10', label: '10 - Octubre' },
-    { value: '11', label: '11 - Noviembre' },
-    { value: '12', label: '12 - Diciembre' }
-  ];
-
-  years: string[] = [];
+  
+  // Clave pública de Culqi (debe estar en environment en producción)
+  private readonly CULQI_PUBLIC_KEY = 'pk_test_iKnf1lmmOdlUHuLu';
 
   constructor() {
     // Detectar tipo de reserva desde la URL actual
@@ -142,7 +134,7 @@ export class BookingComponent implements CanComponentDeactivate {
     
     this.generateAvailableDates();
     this.bookingService.resetBooking();
-    this.generateYears();
+    this.initializeCulqi();
     
     // Load tables from database
     this.tableService.loadTables().subscribe();
@@ -159,24 +151,20 @@ export class BookingComponent implements CanComponentDeactivate {
         this.customerPhone.set(user.telefono || '');
       }
     });
-    
-    // Update available times when date or guests change
+
     effect(() => {
-      const date = this.selectedDate();
-      const guests = this.guests();
-      if (date) {
-        const times = this.restaurantDataService.getAvailableTimesForDate(date, guests);
-        this.availableTimes.set(times);
-        
-        // Auto-select first available time if no time is selected
-        if (!this.selectedTime() && times.some(t => t.available)) {
-          const firstAvailable = times.find(t => t.available);
-          if (firstAvailable) {
-            this.selectedTime.set(firstAvailable.time);
-          }
+      const time = this.selectedTime();
+      const availability = this.availabilityData();
+      
+      if (time && availability.length > 0) {
+        const selectedSlot = availability.find(slot => slot.time === time);
+        if (selectedSlot && selectedSlot.tables) {
+          this.tableService.updateTablesAvailability(selectedSlot.tables);
         }
       }
     });
+    
+
     
     effect(() => {
       const user = this.currentUser();
@@ -331,97 +319,211 @@ export class BookingComponent implements CanComponentDeactivate {
       // For presential payment, finalize reservation without payment processing
       this.finalizeReservationPresencial();
     } else {
-      // For online payment, go to payment details step (step 7)
-      this.nextStep();
+      // For online payment, open Culqi modal immediately
+      this.openCulqiCheckout();
     }
   }
 
-  processPayment() {
-    if(!this.paymentMethod()) return;
-    this.bookingService.setPaymentMethod(this.paymentMethod()!);
-    // Fake payment processing
-    this.finalizeReservation();
-  }
-
-  // Payment-related methods
-  private generateYears() {
-    const currentYear = new Date().getFullYear();
-    this.years = [];
-    for (let i = 0; i <= 10; i++) {
-      this.years.push((currentYear + i).toString());
+  // Inicializar Culqi.js
+  initializeCulqi() {
+    if (typeof window !== 'undefined' && Culqi) {
+      Culqi.publicKey = this.CULQI_PUBLIC_KEY;
+      
+      // Configurar Culqi con información básica
+      Culqi.settings({
+        title: 'Marakos Grill',
+        currency: 'PEN',
+        description: 'Pago de Reserva',
+        amount: 0 // Se actualizará dinámicamente
+      });
+      
+      // Definir callback global para Culqi
+      window.culqi = () => {
+        if (Culqi.token) {
+          // Token generado exitosamente
+          const token = Culqi.token.id;
+          console.log('✅ Token Culqi generado:', token);
+          
+          // Cerrar el modal de Culqi inmediatamente
+          Culqi.close();
+          
+          this.culqiToken.set(token);
+          this.processCulqiPayment(token);
+        } else if (Culqi.error) {
+          // Error al generar el token
+          console.error('❌ Error Culqi:', Culqi.error);
+          
+          // Cerrar el modal de Culqi
+          Culqi.close();
+          
+          this.paymentError.set(Culqi.error.user_message || 'Error al procesar el pago');
+          this.paymentProcessing.set(false);
+        }
+      };
+      
+      console.log('✅ Culqi.js inicializado correctamente');
+    } else {
+      console.error('❌ Culqi.js no está disponible');
     }
   }
 
-  updateCardNumber(value: string) {
-    // Format card number with spaces
-    const formatted = this.paymentService.formatCardNumber(value);
-    this.cardNumber.set(formatted);
-  }
-
-  isCardNumberValid(): boolean {
-    return this.paymentService.validateCardNumber(this.cardNumber());
-  }
-
-  getCardType(): string {
-    if (!this.cardNumber()) return '';
-    return this.paymentService.getCardType(this.cardNumber());
-  }
-
-  isCvvValid(): boolean {
-    if (!this.cvv()) return false;
-    return this.paymentService.validateCVV(this.cvv(), this.getCardType());
-  }
-
-  isExpirationValid(): boolean {
-    if (!this.expirationMonth() || !this.expirationYear()) return false;
-    return this.paymentService.validateExpirationDate(this.expirationMonth(), this.expirationYear());
-  }
-
-  isPaymentFormValid(): boolean {
-    return this.isCardNumberValid() && 
-           this.isCvvValid() && 
-           this.isExpirationValid() &&
-           !!this.customerName() &&
-           !!this.customerEmail() &&
-           !!this.customerPhone();
-  }
-
-  clearPaymentError() {
-    this.paymentError.set(null);
-  }
-
-  processPaymentWithCulqi() {
-    if (!this.isPaymentFormValid()) {
-      this.paymentError.set('Por favor complete todos los campos correctamente.');
+  // Abrir el modal de Culqi para pago
+  openCulqiCheckout() {
+    if (!this.customerName() || !this.customerEmail() || !this.customerPhone()) {
+      this.paymentError.set('Por favor complete todos los datos del cliente.');
       return;
     }
 
-    console.log('💳 FRONTEND: Iniciando proceso de pago con Culqi');
+    console.log('💳 FRONTEND: Abriendo modal de Culqi');
+    this.paymentError.set(null);
+
+    // Actualizar configuración de Culqi con el monto actual
+    Culqi.settings({
+      title: 'Marakos Grill',
+      currency: 'PEN',
+      description: `Reserva - Mesa #${this.selectedTable()?.number || 'TBD'}`,
+      amount: Math.round(this.menuTotal() * 100) // Culqi usa centavos
+    });
+
+    // Abrir el checkout de Culqi (no mostrar loading aquí, solo cuando se procesa)
+    Culqi.open();
+  }
+
+  // Store reservation ID for payment failure scenario
+  private pendingReservationId = signal<number | null>(null);
+
+  // Procesar el pago con el token de Culqi
+  processCulqiPayment(token: string) {
+    console.log('💳 FRONTEND: Procesando pago con token Culqi');
+    
+    // Mostrar loading mientras se procesa
+    this.paymentProcessing.set(true);
+    this.paymentError.set(null);
+    
     console.log('📱 FRONTEND: Datos del cliente para notificación WhatsApp:', {
       customerName: this.customerName(),
       customerPhone: this.customerPhone(),
       customerEmail: this.customerEmail()
     });
 
-    this.paymentProcessing.set(true);
-    this.paymentError.set(null);
+    // Preparar datos de la reserva
+    const products = this.currentReservation().menuItems.map(item => ({
+      productId: item.item.id,
+      quantity: item.quantity,
+      subtotal: item.item.price * item.quantity,
+      observation: null
+    }));
 
-    // Prepare payment request
-    const paymentRequest: PaymentRequest = {
-      reservationId: 0, // Will be set after reservation creation
-      amount: this.menuTotal(),
-      customerEmail: this.customerEmail(),
-      customerName: this.customerName(),
-      customerPhone: this.customerPhone(),
-      paymentMethod: 'Tarjeta', // Set as card payment
-      cardNumber: this.cardNumber().replace(/\s/g, ''), // Remove spaces
-      cvv: this.cvv(),
-      expirationMonth: this.expirationMonth(),
-      expirationYear: this.expirationYear()
+    const reservationData = {
+      customerId: this.currentUser()?.idPersona ?? null,
+      reservationDate: this.selectedDate(),
+      reservationTime: this.selectedTime(),
+      peopleCount: this.guests(),
+      status: 'PENDIENTE',
+      paymentMethod: 'Digital',
+      reservationType: 'MESA',
+      eventTypeId: null,
+      eventShift: null,
+      tableDistributionType: null,
+      tableClothColor: null,
+      holderDocument: this.customerDocument(),
+      holderPhone: this.customerPhone(),
+      holderName: this.customerName(),
+      holderEmail: this.customerEmail(),
+      observation: this.currentReservation().specialRequests,
+      employeeId: null,
+      createdBy: this.currentUser()?.idUsuario ?? null,
+      tables: [
+        { tableId: this.currentReservation().table?.id }
+      ],
+      products: products,
+      events: null,
+      payments: []
     };
 
-    // First create the reservation, then process payment
-    this.createReservationAndProcessPayment(paymentRequest);
+    // Crear reserva primero
+    console.log('🚀 FRONTEND: Enviando datos de reserva:', reservationData);
+    this.bookingService.confirmReservation(reservationData).subscribe({
+      next: (reservationResponse) => {
+        console.log('✅ FRONTEND: Reserva creada:', reservationResponse);
+        
+        // Store reservation ID for payment failure scenario
+        this.pendingReservationId.set(reservationResponse.id);
+        
+        // Preparar solicitud de pago con token
+        const paymentRequest: PaymentRequest = {
+          reservationId: reservationResponse.id,
+          amount: this.menuTotal(),
+          customerEmail: this.customerEmail(),
+          customerName: this.customerName(),
+          customerPhone: this.customerPhone(),
+          paymentMethod: 'CULQI_CARD',
+          culqiToken: token // Token generado por Culqi.js
+        };
+
+        // Procesar pago en el backend
+        this.paymentService.processPayment(paymentRequest).subscribe({
+          next: (paymentResponse: PaymentResponse) => {
+            console.log('💳 FRONTEND: Pago procesado exitosamente:', paymentResponse);
+            this.paymentProcessing.set(false);
+            
+            // Enviar notificación WhatsApp + Email con estado PAGADO
+            this.sendWhatsAppNotification(reservationResponse, 'Digital');
+            
+            // Marcar reserva como completada
+            this.reservationCompleted.set(true);
+            
+            // Navegar a página de confirmación
+            this.router.navigate(['/confirmation', reservationResponse.id], {
+              queryParams: {
+                transactionId: paymentResponse.culqiChargeId,
+                amount: paymentResponse.amount,
+                status: paymentResponse.status,
+                paymentSuccess: 'true'
+              }
+            });
+          },
+          error: (error) => {
+            console.error('❌ Pago fallido pero reserva creada:', error);
+            this.paymentProcessing.set(false);
+            
+            // Enviar notificación WhatsApp + Email con estado PENDIENTE (pago fallido)
+            this.sendPendingPaymentNotification(reservationResponse);
+            
+            this.paymentError.set('No se pudo procesar el pago con tu tarjeta. Comunicate con tu entidad bancaria.');
+            // Don't navigate yet - show error modal with option to view reservation
+          }
+        });
+      },
+      error: (error) => {
+        console.error('❌ Error creando reserva:', error);
+        this.paymentProcessing.set(false);
+        this.paymentError.set('Error al crear la reserva. Por favor intente nuevamente.');
+        this.pendingReservationId.set(null);
+      }
+    });
+  }
+
+  // Navigate to confirmation page with pending payment status
+  navigateToConfirmationWithPendingPayment() {
+    const reservationId = this.pendingReservationId();
+    if (reservationId) {
+      // Marcar reserva como completada para permitir navegación
+      this.reservationCompleted.set(true);
+      
+      // Navegar a confirmación con estado de pago pendiente
+      this.router.navigate(['/confirmation', reservationId], {
+        queryParams: {
+          paymentStatus: 'PENDIENTE',
+          amount: this.menuTotal(),
+          paymentPending: 'true'
+        }
+      });
+    }
+  }
+
+  clearPaymentError() {
+    this.paymentError.set(null);
   }
 
   private createReservationAndProcessPayment(paymentRequest: PaymentRequest) {
@@ -439,7 +541,7 @@ export class BookingComponent implements CanComponentDeactivate {
       reservationDate: this.selectedDate(),
       reservationTime: this.selectedTime(),
       peopleCount: this.guests(),
-      status: 'PENDIENTE',
+      status: 'PENDIENTE_PAGO',
       paymentMethod: 'Digital',
       reservationType: 'MESA',
       eventTypeId: null,
@@ -486,17 +588,39 @@ export class BookingComponent implements CanComponentDeactivate {
             console.log('💳 FRONTEND: Pago procesado exitosamente:', paymentResponse);
             console.log('📱 FRONTEND: Reserva y pago completados - WhatsApp debería haber sido enviado para reserva ID:', reservationResponse.id);
             this.paymentProcessing.set(false);
-            
-            // Marcar reserva como completada para permitir navegación
-            this.reservationCompleted.set(true);
-            
-            // Navigate to confirmation page with payment success details
-            this.router.navigate(['/confirmation', reservationResponse.id], {
-              queryParams: {
-                transactionId: paymentResponse.culqiChargeId,
-                amount: paymentResponse.amount,
-                status: paymentResponse.status,
-                paymentSuccess: 'true'
+
+            // Actualizar reserva con estado PAGADO
+            this.bookingService.paidReservation(reservationResponse.id).subscribe({
+              next: () => {
+                console.log('✅ FRONTEND: Estado de la reserva actualizado a PAGADO');
+
+                // Marcar reserva como completada para permitir navegación
+                this.reservationCompleted.set(true);
+
+                // Navigate to confirmation page with payment success details
+                this.router.navigate(['/confirmation', reservationResponse.id], {
+                  queryParams: {
+                    transactionId: paymentResponse.culqiChargeId,
+                    amount: paymentResponse.amount,
+                    status: paymentResponse.status,
+                    paymentSuccess: 'true'
+                  }
+                });
+              },
+              error: (err) => {
+                console.error('❌ FRONTEND: Error al actualizar el estado de la reserva:', err);
+                // Marcar reserva como completada de todas formas porque el pago fue exitoso
+                this.reservationCompleted.set(true);
+                // Navegar a la página de confirmación indicando el fallo en la actualización de estado
+                this.router.navigate(['/confirmation', reservationResponse.id], {
+                  queryParams: {
+                    transactionId: paymentResponse.culqiChargeId,
+                    amount: paymentResponse.amount,
+                    status: `PAGO EXITOSO, PERO ${paymentResponse.status}`,
+                    paymentSuccess: 'true',
+                    statusUpdateFailed: 'true'
+                  }
+                });
               }
             });
           },
@@ -546,7 +670,7 @@ export class BookingComponent implements CanComponentDeactivate {
       reservationDate: this.selectedDate(),
       reservationTime: this.selectedTime(),
       peopleCount: this.guests(),
-      status: 'PENDIENTE',  // AUITAR ESTE CAMPO
+      status: 'CONFIRMADO',
       paymentMethod: 'Digital',
       reservationType: 'MESA',
       eventTypeId: null,
@@ -570,7 +694,7 @@ export class BookingComponent implements CanComponentDeactivate {
       // ],
       events: null,
       payments: [ 
-        { paymentDate: paymentDate, paymentMethod: this.paymentMethod(), amount: this.menuTotal(), status: 'PAGADO', externalTransactionId: null, createdBy: this.currentUser()?.idUsuario ?? null }
+        { paymentDate: paymentDate, paymentMethod: 'Presencial', amount: this.menuTotal(), status: 'PAGADO', externalTransactionId: null, createdBy: this.currentUser()?.idUsuario ?? null }
       ]
     };
 
@@ -588,7 +712,7 @@ export class BookingComponent implements CanComponentDeactivate {
           console.log('📱 FRONTEND finalizeReservation: Código de reserva para WhatsApp:', response.code || response.reservationCode || 'NO_CODE');
           
           // Enviar notificación WhatsApp
-          this.sendWhatsAppNotification(response, this.paymentMethod() || 'Digital');
+          this.sendWhatsAppNotification(response, 'Presencial');
           
           // Marcar reserva como completada para permitir navegación
           this.reservationCompleted.set(true);
@@ -621,7 +745,7 @@ export class BookingComponent implements CanComponentDeactivate {
       reservationDate: this.selectedDate(),
       reservationTime: this.selectedTime(),
       peopleCount: this.guests(),
-      status: 'PENDIENTE',
+      status: 'PENDIENTE_PAGO',
       paymentMethod: 'Presencial',
       reservationType: 'MESA',
       eventTypeId: null,
@@ -730,6 +854,8 @@ export class BookingComponent implements CanComponentDeactivate {
     return this.selectedDate() === dateStr;
   }
 
+  availabilityData = signal<any[]>([]);
+
   selectCalendarDate(day: number | null) {
     if (!day || !this.isDateAvailable(day)) return;
     
@@ -738,6 +864,32 @@ export class BookingComponent implements CanComponentDeactivate {
     const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     
     this.selectedDate.set(dateStr);
+
+    this.bookingService.getAvailableTables(dateStr).subscribe({
+      next: (availability) => {
+        this.availabilityData.set(availability);
+        const formattedTimes = availability.map(slot => ({
+          time: slot.time,
+          label: slot.time.substring(0, 5), // "08:00:00" -> "08:00"
+          available: slot.available
+        }));
+        this.availableTimes.set(formattedTimes);
+
+        // Auto-select first available time
+        if (formattedTimes.some(t => t.available)) {
+          const firstAvailable = formattedTimes.find(t => t.available);
+          if (firstAvailable) {
+            this.selectedTime.set(firstAvailable.time);
+          }
+        } else {
+          this.selectedTime.set(''); // No available times
+        }
+      },
+      error: (error) => {
+        console.error('Error fetching available times:', error);
+        this.availableTimes.set([]); // Clear times on error
+      }
+      });
   }
 
   previousMonth() {
@@ -820,6 +972,61 @@ export class BookingComponent implements CanComponentDeactivate {
       'Interior': '🏠'
     };
     return icons[location] || '📍';
+  }
+
+  /**
+   * Envía notificación de pago pendiente cuando falla el pago online
+   */
+  private sendPendingPaymentNotification(reservationResponse: any): void {
+    try {
+      console.log('📱 FRONTEND: Enviando notificación de pago pendiente');
+      
+      // Detectar si tiene pre-orden de comida
+      const hasPreOrder = this.currentReservation().menuItems.length > 0 && this.menuTotal() > 0;
+      
+      // Preparar items de la orden
+      const orderItems = this.currentReservation().menuItems.map(item => ({
+        productName: item.item.name,
+        quantity: item.quantity,
+        unitPrice: item.item.price,
+        subtotal: item.item.price * item.quantity
+      }));
+      
+      // Preparar datos para la notificación con estado PENDIENTE_PAGO_ONLINE
+      const notificationData: WhatsAppNotificationRequest = {
+        customerName: this.customerName(),
+        customerPhone: this.notificationService.formatPhoneNumber(this.customerPhone()),
+        customerEmail: this.customerEmail() || 'no-disponible@marakos.pe',
+        reservationCode: reservationResponse.code || reservationResponse.reservationCode || `RES-${reservationResponse.id}`,
+        reservationDate: this.selectedDate(),
+        reservationTime: this.selectedTime(),
+        guestCount: this.guests(),
+        tableInfo: `Mesa ${this.selectedTable()?.number || 'por asignar'}`,
+        specialRequests: 'Sin observaciones especiales',
+        paymentType: 'online_failed',  // Nuevo tipo para identificar pago online fallido
+        paymentStatus: 'PENDIENTE_PAGO_ONLINE',  // Estado específico para pago online fallido
+        totalAmount: this.menuTotal(),
+        reservationStatus: 'CONFIRMADA',
+        reservationType: this.reservationType(),
+        reservationId: reservationResponse.id,
+        hasPreOrder: hasPreOrder,
+        orderItems: hasPreOrder ? orderItems : []
+      };
+
+      console.log('📱 FRONTEND: Enviando notificación de pago pendiente:', notificationData);
+
+      // Enviar notificación
+      this.notificationService.sendReservationConfirmation(notificationData).subscribe({
+        next: (response) => {
+          console.log('✅ FRONTEND: Notificación de pago pendiente enviada exitosamente:', response);
+        },
+        error: (error) => {
+          console.error('❌ FRONTEND: Error enviando notificación de pago pendiente:', error);
+        }
+      });
+    } catch (error) {
+      console.error('❌ FRONTEND: Error preparando notificación de pago pendiente:', error);
+    }
   }
 
   /**

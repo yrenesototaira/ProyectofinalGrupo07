@@ -45,6 +45,6 @@ export interface Reservation {
   paymentMethod: 'Tarjeta' | 'Efectivo' | null;
   specialRequests: string;
   termsAccepted: boolean;
-  status: 'Pendiente' | 'Confirmado' | 'Cancelado' | 'Chequeado' | 'Atendido';
+  status: 'PENDIENTE' | 'CONFIRMADO' | 'CANCELADO' | 'PENDIENTE_PAGO' | 'PAGADO' | 'CHECKED_IN' | 'CHECKED_OUT';
   paymentStatus?: 'Pagado' | 'Reembolsado';
 }
