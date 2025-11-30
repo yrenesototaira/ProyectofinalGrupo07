@@ -349,7 +349,7 @@ export class PdfService {
     pdf.text('HORARIOS DE ATENCION', pageWidth / 2 + 10, footerY + 8, { align: 'center' });
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9);
-    pdf.text('Lunes a Domingo: 12:00 PM - 11:00 PM', pageWidth / 2 + 10, footerY + 13, { align: 'center' });
+    pdf.text('Lunes a Domingo: 08:00 AM - 11:00 PM', pageWidth / 2 + 10, footerY + 13, { align: 'center' });
 
     // Descargar PDF
     const fileName = `reserva-${data.code}-${data.holderName.replace(/\s+/g, '-')}.pdf`;

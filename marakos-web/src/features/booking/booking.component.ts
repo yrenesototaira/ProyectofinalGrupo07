@@ -64,6 +64,7 @@ export class BookingComponent implements CanComponentDeactivate {
   currentCalendarYear = signal(new Date().getFullYear());
   availableDates = signal<string[]>([]);
   availableTimes = signal<{ time: string; label: string; available: boolean }[]>([]);
+  loadingAvailability = signal(false);
   
   // Step 3 signals - Table Selection
   tables = this.tableService.getTablesSignal();
@@ -655,6 +656,10 @@ export class BookingComponent implements CanComponentDeactivate {
   }
 
   finalizeReservation() {
+    // Activar indicador de procesamiento
+    this.paymentProcessing.set(true);
+    this.paymentError.set(null);
+    
     const products = this.currentReservation().menuItems.map(item => ({
       productId: item.item.id,
       quantity: item.quantity,
@@ -714,6 +719,9 @@ export class BookingComponent implements CanComponentDeactivate {
           // Enviar notificación WhatsApp
           this.sendWhatsAppNotification(response, 'Presencial');
           
+          // Desactivar indicador de procesamiento
+          this.paymentProcessing.set(false);
+          
           // Marcar reserva como completada para permitir navegación
           this.reservationCompleted.set(true);
           
@@ -721,7 +729,9 @@ export class BookingComponent implements CanComponentDeactivate {
         },
         error: (error) => {
           console.error('❌ FRONTEND finalizeReservation: Error confirmando reserva:', error);
-          // Handle error, maybe show a message to the user
+          // Desactivar indicador de procesamiento y mostrar error
+          this.paymentProcessing.set(false);
+          this.paymentError.set('Error confirmando la reserva. Intente nuevamente.');
         }
       }
     );
@@ -864,6 +874,9 @@ export class BookingComponent implements CanComponentDeactivate {
     const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     
     this.selectedDate.set(dateStr);
+    this.loadingAvailability.set(true);
+    this.availableTimes.set([]);
+    this.selectedTime.set('');
 
     this.bookingService.getAvailableTables(dateStr).subscribe({
       next: (availability) => {
@@ -874,6 +887,7 @@ export class BookingComponent implements CanComponentDeactivate {
           available: slot.available
         }));
         this.availableTimes.set(formattedTimes);
+        this.loadingAvailability.set(false);
 
         // Auto-select first available time
         if (formattedTimes.some(t => t.available)) {
@@ -888,6 +902,7 @@ export class BookingComponent implements CanComponentDeactivate {
       error: (error) => {
         console.error('Error fetching available times:', error);
         this.availableTimes.set([]); // Clear times on error
+        this.loadingAvailability.set(false);
       }
       });
   }

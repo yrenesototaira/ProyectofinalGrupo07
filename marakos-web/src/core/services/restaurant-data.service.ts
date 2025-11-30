@@ -100,10 +100,7 @@ export class RestaurantDataService {
       
       // Skip Mondays (restaurant closed)
       if (date.getDay() !== 1) {
-        // Simulate some dates being fully booked (10% chance)
-        if (Math.random() > 0.1) {
-          dates.push(date.toISOString().split('T')[0]);
-        }
+        dates.push(date.toISOString().split('T')[0]);
       }
     }
     

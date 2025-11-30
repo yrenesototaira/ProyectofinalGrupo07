@@ -122,7 +122,7 @@
               <p class="text-slate-300"><strong>Total Pagado:</strong> <span class="text-emerald-400">{{ reservation()?.payments[0]?.amount | currency:'PEN':'symbol':'1.2-2' }}</span></p>
             }
           </div>
-        } @else if (reservation()?.payments[0]?.paymentMethod) {
+        } @else if (reservation()?.payments[0]?.paymentMethod && reservation()?.payments[0]?.amount > 0) {
           <p><strong>Pago:</strong> {{ reservation()?.payments[0]?.paymentMethod }} (Total: {{ reservation()?.payments[0]?.amount | currency:'PEN':'symbol':'1.2-2' }})</p>
         }
           </div>
