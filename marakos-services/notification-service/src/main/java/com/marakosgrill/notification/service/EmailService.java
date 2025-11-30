@@ -166,12 +166,18 @@ public class EmailService {
             // Título según tipo de reserva
             String reservationTypeTitle = isEvent ? "Reserva de Evento" : "Reserva de Mesa";
             
+            // Formatear información de la mesa
+            String tableInfo = data.getTableInfo() != null && !data.getTableInfo().isEmpty() 
+                             ? data.getTableInfo() 
+                             : "Por asignar";
+            
             return template
                     .replace("${customerName}", data.getCustomerName())
                     .replace("${reservationCode}", data.getReservationCode())
                     .replace("${reservationDate}", data.getReservationDate().toString())
                     .replace("${reservationTime}", data.getReservationTime())
                     .replace("${peopleCount}", String.valueOf(data.getGuestCount()))
+                    .replace("${tableInfo}", tableInfo)
                     .replace("${customerEmail}", data.getCustomerEmail())
                     .replace("${customerPhone}", data.getCustomerPhone())
                     .replace("${companyName}", COMPANY_NAME)

@@ -20,6 +20,8 @@ export class ForgotPasswordComponent {
   confirmPassword = '';
   errorMessage = signal<string | null>(null);
   successMessage = signal<string | null>(null);
+  isLoadingSendCode = signal(false);
+  isLoadingReset = signal(false);
   
   // Validación de contraseña
   showPassword = signal(false);
@@ -69,12 +71,15 @@ export class ForgotPasswordComponent {
 
   sendRecoveryEmail() {
     this.errorMessage.set(null);
+    this.isLoadingSendCode.set(true);
     this.authService.forgotPassword(this.email).subscribe({
       next: () => {
+        this.isLoadingSendCode.set(false);
         this.step.set('enterCode');
         this.successMessage.set('Se ha enviado un código de verificación a tu correo.');
       },
       error: (err) => {
+        this.isLoadingSendCode.set(false);
         this.errorMessage.set(err.error?.message || 'Ocurrió un error al enviar el correo. Por favor, inténtalo de nuevo.');
       }
     });
@@ -89,6 +94,7 @@ export class ForgotPasswordComponent {
       return;
     }
     this.errorMessage.set(null);
+    this.isLoadingReset.set(true);
 
     const data = {
       email: this.email,
@@ -98,11 +104,13 @@ export class ForgotPasswordComponent {
 
     this.authService.resetPassword(data).subscribe({
       next: () => {
+        this.isLoadingReset.set(false);
         this.step.set('success');
         this.successMessage.set('¡Tu contraseña ha sido restablecida con éxito!');
         setTimeout(() => this.router.navigate(['/login']), 3000);
       },
       error: (err) => {
+        this.isLoadingReset.set(false);
         this.errorMessage.set(err.error?.message || 'El código de verificación es incorrecto o ha expirado. Por favor, inténtalo de nuevo.');
         this.step.set('error');
       }

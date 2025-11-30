@@ -30,6 +30,12 @@ public class WhatsAppService {
 
     @Value("${whatsapp.message.template.confirmation}")
     private String confirmationTemplate;
+    
+    @Value("${whatsapp.message.template.paymentpending:}")
+    private String paymentPendingTemplate;
+    
+    @Value("${whatsapp.message.template.sinpreorden:}")
+    private String sinPreordenTemplate;
 
     /**
      * Envía notificación de confirmación de reserva
@@ -188,9 +194,24 @@ public class WhatsAppService {
             payload.put("to", formattedPhone);
             payload.put("type", "template");
             
+            // Seleccionar template según reglas de negocio:
+            // 1) Si el pago online falló -> usar paymentPendingTemplate
+            // 2) Si no hay pre-orden de menú -> usar sinPreordenTemplate
+            // 3) Por defecto -> confirmationTemplate
+            String templateName = confirmationTemplate;
+            if (data.getPaymentStatus() != null && "PENDIENTE_PAGO_ONLINE".equalsIgnoreCase(data.getPaymentStatus())) {
+                if (paymentPendingTemplate != null && !paymentPendingTemplate.isBlank()) {
+                    templateName = paymentPendingTemplate;
+                }
+            } else if (Boolean.FALSE.equals(data.getHasPreOrder())) {
+                if (sinPreordenTemplate != null && !sinPreordenTemplate.isBlank()) {
+                    templateName = sinPreordenTemplate;
+                }
+            }
+
             // Template con parámetros
             Map<String, Object> template = new HashMap<>();
-            template.put("name", confirmationTemplate);
+            template.put("name", templateName);
             
             Map<String, String> language = new HashMap<>();
             language.put("code", "es"); // Español para el template personalizado
@@ -240,6 +261,7 @@ public class WhatsAppService {
             log.info("   - Código: {}", data.getReservationCode());
             log.info("   - Fecha: {}", data.getReservationDate());
             log.info("   - Hora: {}", data.getReservationTime());
+            log.info("📋 Usando template: '{}'", templateName);
             log.info("📋 JSON completo: {}", objectMapper.writeValueAsString(payload));
 
             // Headers
@@ -325,7 +347,7 @@ public class WhatsAppService {
         message.append("📞 Teléfono: (01) 234-5678\n\n");
         
         message.append("🕐 *HORARIOS DE ATENCIÓN:*\n");
-        message.append("Lunes a Domingo: 12:00 PM - 11:00 PM\n\n");
+        message.append("Lunes a Domingo: 08:00 AM - 11:00 PM\n\n");
         
         message.append("✨ *¡Te esperamos!* ✨\n");
         message.append("Si tienes alguna consulta, no dudes en contactarnos.\n\n");
