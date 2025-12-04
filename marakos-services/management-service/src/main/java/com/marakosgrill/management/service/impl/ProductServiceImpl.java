@@ -73,6 +73,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProductPublicDTO> findAllPublic() {
         return productRepository.findAll().stream()
             .filter(p -> Boolean.TRUE.equals(p.getActive()))
