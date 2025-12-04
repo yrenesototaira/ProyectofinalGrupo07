@@ -90,4 +90,9 @@ public class ReservationController {
                                                                         @RequestBody UpdateStatusRequest request) {
         return ResponseEntity.ok(reservationService.updateReservationStatus(id, request.getStatus()));
     }
+
+    @GetMapping("/event-shifts/availability")
+    public ResponseEntity<EventShiftAvailabilityResponse> getEventShiftAvailability(@RequestParam LocalDate date) {
+        return ResponseEntity.ok(reservationService.getEventShiftAvailability(date));
+    }
 }
