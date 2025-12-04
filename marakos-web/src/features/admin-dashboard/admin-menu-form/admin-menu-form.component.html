@@ -1,73 +1,121 @@
 <div>
-  <a routerLink="/admin/menu" class="inline-flex items-center gap-2 text-amber-500 hover:text-amber-400 mb-6">
+  <a routerLink="/admin/menu" class="inline-flex items-center gap-2 text-emerald-500 hover:text-emerald-400 mb-6">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-    Volver a la Lista del Menú
+    Volver a la Lista de Menús
   </a>
 
   <h1 class="text-3xl font-bold text-slate-100 mb-6">
     @if(isEditMode()) {
-      <span>Editar Plato del Menú</span>
+      <span>Editar Menú</span>
     } @else {
-      <span>Crear Nuevo Plato</span>
+      <span>Crear Nuevo Menú</span>
     }
   </h1>
 
-  <form (ngSubmit)="saveItem()" #menuForm="ngForm" class="space-y-6 max-w-lg">
+  <form [formGroup]="productForm" (ngSubmit)="saveProduct()" class="space-y-4 max-w-2xl">
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="name" class="block text-sm font-medium text-slate-300 mb-2">Nombre del Producto</label>
+        <input type="text" id="name" formControlName="name"
+               class="w-full bg-slate-800 border-slate-700 text-slate-100 rounded-md p-2 focus:ring-emerald-500 focus:border-emerald-500">
+        @if (productForm.get('name')?.invalid && productForm.get('name')?.touched) {
+          <p class="text-xs text-rose-400 mt-1">El nombre es requerido.</p>
+        }
+      </div>
+      <div>
+        <label for="code" class="block text-sm font-medium text-slate-300 mb-2">Código (SKU)</label>
+        <input type="text" id="code" formControlName="code"
+               class="w-full bg-slate-800 border-slate-700 text-slate-100 rounded-md p-2 focus:ring-emerald-500 focus:border-emerald-500">
+        @if (productForm.get('code')?.invalid && productForm.get('code')?.touched) {
+          <p class="text-xs text-rose-400 mt-1">El código es requerido.</p>
+        }
+      </div>
+    </div>
+    
     <div>
-      <label for="name" class="block text-sm font-medium text-slate-300 mb-2">Nombre del Plato</label>
-      <input type="text" id="name" name="name" [(ngModel)]="name" required
-             class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+      <label for="description" class="block text-sm font-medium text-slate-300 mb-2">Descripción</label>
+      <textarea id="description" formControlName="description" rows="3"
+                class="w-full bg-slate-800 border-slate-700 text-slate-100 rounded-md p-2 focus:ring-emerald-500 focus:border-emerald-500"></textarea>
     </div>
 
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="categoryId" class="block text-sm font-medium text-slate-300 mb-2">Categoría</label>
+        <select id="categoryId" formControlName="categoryId"
+                class="w-full bg-slate-800 border-slate-700 text-slate-100 rounded-md p-2 focus:ring-emerald-500 focus:border-emerald-500">
+          <option [ngValue]="null" disabled>Selecciona una categoría</option>
+          @for(cat of categories(); track cat.id) {
+            <option [value]="cat.id">{{ cat.name }}</option>
+          }
+        </select>
+         @if (productForm.get('categoryId')?.invalid && productForm.get('categoryId')?.touched) {
+          <p class="text-xs text-rose-400 mt-1">La categoría es requerida.</p>
+        }
+      </div>
+      <div>
+        <label for="price" class="block text-sm font-medium text-slate-300 mb-2">Precio (S/)</label>
+        <input type="number" id="price" formControlName="price"
+                class="w-full bg-slate-800 border-slate-700 text-slate-100 rounded-md p-2 focus:ring-emerald-500 focus:border-emerald-500">
+        @if (productForm.get('price')?.invalid && productForm.get('price')?.touched) {
+          <p class="text-xs text-rose-400 mt-1">El precio debe ser mayor a 0.</p>
+        }
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+       <div>
+        <label for="stock" class="block text-sm font-medium text-slate-300 mb-2">Stock</label>
+        <input type="number" id="stock" formControlName="stock"
+                class="w-full bg-slate-800 border-slate-700 text-slate-100 rounded-md p-2 focus:ring-emerald-500 focus:border-emerald-500">
+        @if (productForm.get('stock')?.invalid && productForm.get('stock')?.touched) {
+          <p class="text-xs text-rose-400 mt-1">El stock es requerido.</p>
+        }
+      </div>
+      <div>
+        <label for="status" class="block text-sm font-medium text-slate-300 mb-2">Disponibilidad</label>
+        <select id="status" formControlName="status"
+                class="w-full bg-slate-800 border-slate-700 text-slate-100 rounded-md p-2 focus:ring-emerald-500 focus:border-emerald-500">
+          <option value="DISPONIBLE">Disponible</option>
+          <option value="NO_DISPONIBLE">No Disponible</option>
+        </select>
+      </div>
+    </div>
+    
     <div>
-      <label for="imageUrl" class="block text-sm font-medium text-slate-300 mb-2">URL de la Imagen</label>
-      <input type="url" id="imageUrl" name="imageUrl" [(ngModel)]="imageUrl"
-             class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"
+      <label for="pictureUrl" class="block text-sm font-medium text-slate-300 mb-2">URL de la Imagen</label>
+      <input type="url" id="pictureUrl" formControlName="pictureUrl"
+             class="w-full bg-slate-800 border-slate-700 text-slate-100 rounded-md p-2 focus:ring-emerald-500 focus:border-emerald-500"
              placeholder="https://ejemplo.com/imagen.jpg">
-      @if (imageUrl()) {
+      @if (productForm.get('pictureUrl')?.value) {
         <div class="mt-4">
           <p class="text-sm text-slate-400 mb-2">Vista Previa:</p>
-          <img [src]="imageUrl()" alt="Vista previa del plato" class="rounded-lg max-h-48 w-auto">
+          <img [src]="productForm.get('pictureUrl')?.value" alt="Vista previa del producto" class="rounded-lg max-h-48 w-auto">
         </div>
       }
     </div>
 
-    <div>
-      <label for="description" class="block text-sm font-medium text-slate-300 mb-2">Descripción</label>
-      <textarea id="description" name="description" [(ngModel)]="description" rows="3"
-                class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500"></textarea>
-    </div>
-    <div class="grid grid-cols-2 gap-6">
-        <div>
-            <label for="price" class="block text-sm font-medium text-slate-300 mb-2">Precio</label>
-            <input type="number" id="price" name="price" [(ngModel)]="price" required min="0" step="0.01"
-                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-        </div>
-        <div>
-            <label for="category" class="block text-sm font-medium text-slate-300 mb-2">Categoría</label>
-            <select id="category" name="category" [(ngModel)]="category"
-                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
-                @for(cat of categories; track cat) {
-                    <option [value]="cat">{{ cat }}</option>
-                }
-            </select>
-        </div>
+    <div class="pt-2">
+      <label class="flex items-center gap-3 text-slate-300 cursor-pointer">
+        <input type="checkbox" formControlName="active" class="h-4 w-4 rounded bg-slate-700 border-slate-600 text-emerald-500 focus:ring-emerald-500" />
+        <span>El menú está activo y visible para los clientes.</span>
+      </label>
     </div>
     
     @if (feedbackMessage()) {
-      <p class="text-sm animate-fade-in" [class.text-emerald-400]="feedbackMessage()?.type === 'success'" [class.text-rose-400]="feedbackMessage()?.type === 'error'">
+      <p class="text-sm animate-fade-in py-2" [class.text-emerald-400]="feedbackMessage()?.type === 'success'" [class.text-rose-400]="feedbackMessage()?.type === 'error'">
         {{ feedbackMessage()?.text }}
       </p>
     }
 
     <div class="flex justify-end gap-4 pt-4">
       <a routerLink="/admin/menu" class="px-6 py-2 bg-slate-600 text-slate-100 rounded-md hover:bg-slate-500 font-medium transition-colors">Cancelar</a>
-      <button type="submit" [disabled]="!menuForm.form.valid"
-              class="px-6 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 font-medium transition-colors disabled:bg-slate-500 disabled:cursor-not-allowed">
+      <button type="submit" [disabled]="productForm.invalid"
+              class="px-6 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-500 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
         @if(isEditMode()) {
           <span>Guardar Cambios</span>
         } @else {
-          <span>Crear Plato</span>
+          <span>Crear Menú</span>
         }
       </button>
     </div>
