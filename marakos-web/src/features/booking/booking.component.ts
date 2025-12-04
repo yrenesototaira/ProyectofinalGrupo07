@@ -49,7 +49,9 @@ export class BookingComponent implements CanComponentDeactivate {
   private reservationCompleted = signal(false);
   
   // Step 1 signals - Customer Details
+  documentType = signal<'DNI' | 'CEX' | null>(null);
   customerDocument = signal('');
+  documentError = signal<string>('');
   customerName = signal('');
   customerEmail = signal('');
   customerPhone = signal('');
@@ -222,7 +224,33 @@ export class BookingComponent implements CanComponentDeactivate {
 
   // Step 1 - Customer Details Methods
   canProceedFromStep1(): boolean {
-    return !!(this.customerDocument() && this.customerName() && this.customerEmail() && this.customerPhone());
+    const docType = this.documentType();
+    const docValue = this.customerDocument();
+    
+    // Check document type is selected
+    if (!docType) {
+      return false;
+    }
+    
+    // Check document value exists
+    if (!docValue || docValue.trim() === '') {
+      return false;
+    }
+    
+    // Validate document format without modifying signals
+    let isDocValid = false;
+    if (docType === 'DNI') {
+      isDocValid = /^\d{8}$/.test(docValue);
+    } else if (docType === 'CEX') {
+      isDocValid = /^[A-Za-z0-9]{9}$/.test(docValue);
+    }
+    
+    if (!isDocValid) {
+      return false;
+    }
+    
+    // Check other required fields
+    return !!(this.customerName() && this.customerEmail() && this.customerPhone());
   }
 
   // Step 2 - Date & Time Methods
@@ -307,6 +335,89 @@ export class BookingComponent implements CanComponentDeactivate {
       name: this.customerName(),
       email: this.customerEmail()
     });
+  }
+
+  // Document type and validation methods
+  selectDocumentType(type: 'DNI' | 'CEX'): void {
+    this.documentType.set(type);
+    this.customerDocument.set('');
+    this.documentError.set('');
+  }
+
+  validateDocument(value: string): boolean {
+    const docType = this.documentType();
+    
+    if (!docType) {
+      this.documentError.set('Debe seleccionar un tipo de documento');
+      return false;
+    }
+
+    if (!value || value.trim() === '') {
+      this.documentError.set('El documento es requerido');
+      return false;
+    }
+
+    if (docType === 'DNI') {
+      // DNI: exactly 8 numeric digits
+      const dniRegex = /^\d{8}$/;
+      if (!dniRegex.test(value)) {
+        this.documentError.set('DNI debe tener exactamente 8 dígitos');
+        return false;
+      }
+    } else if (docType === 'CEX') {
+      // CEX (Carnet de Extranjería): exactly 9 alphanumeric characters
+      const cexRegex = /^[A-Za-z0-9]{9}$/;
+      if (!cexRegex.test(value)) {
+        this.documentError.set('CEX debe tener exactamente 9 caracteres alfanuméricos');
+        return false;
+      }
+    }
+
+    this.documentError.set('');
+    return true;
+  }
+
+  onDocumentInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    let value = input.value;
+    const docType = this.documentType();
+
+    if (!docType) return;
+
+    if (docType === 'DNI') {
+      // DNI: Only allow numbers, max 8 digits
+      value = value.replace(/\D/g, '');
+      if (value.length > 8) {
+        value = value.substring(0, 8);
+      }
+    } else if (docType === 'CEX') {
+      // CEX: Allow alphanumeric, max 9 characters
+      value = value.replace(/[^A-Za-z0-9]/g, '');
+      if (value.length > 9) {
+        value = value.substring(0, 9);
+      }
+      // Convert to uppercase for consistency
+      value = value.toUpperCase();
+    }
+
+    input.value = value;
+    this.customerDocument.set(value);
+    
+    // Clear error while typing if document becomes valid
+    if (value.length > 0) {
+      if (docType === 'DNI' && value.length === 8) {
+        this.validateDocument(value);
+      } else if (docType === 'CEX' && value.length === 9) {
+        this.validateDocument(value);
+      }
+    }
+  }
+
+  onDocumentBlur(): void {
+    const value = this.customerDocument();
+    if (value) {
+      this.validateDocument(value);
+    }
   }
   
   updateSpecialRequests(event: Event) {

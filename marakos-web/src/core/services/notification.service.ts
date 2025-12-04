@@ -10,6 +10,14 @@ export interface OrderItem {
   subtotal: number;
 }
 
+export interface AdditionalServiceItem {
+  serviceId: number;
+  serviceName: string;
+  quantity: number;
+  subtotal: number;
+  observation?: string | null;
+}
+
 export interface WhatsAppNotificationRequest {
   customerName: string;
   customerPhone: string;
@@ -29,6 +37,12 @@ export interface WhatsAppNotificationRequest {
   reservationId?: number; // ID de la reserva para QR
   hasPreOrder?: boolean; // Indica si tiene pre-orden de comida
   orderItems?: OrderItem[]; // Detalle de la pre-orden
+  // Campos específicos de eventos
+  eventType?: string;
+  eventShift?: string;
+  tableDistribution?: string;
+  linenColor?: string;
+  additionalServices?: AdditionalServiceItem[];
 }
 
 export interface NotificationResponse {

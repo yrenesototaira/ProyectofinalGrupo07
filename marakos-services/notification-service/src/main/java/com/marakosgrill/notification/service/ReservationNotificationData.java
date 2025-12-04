@@ -29,6 +29,13 @@ public class ReservationNotificationData {
     private Boolean hasPreOrder; // Indica si tiene pre-orden de comida
     private List<OrderItem> orderItems; // Detalle de la pre-orden
     
+    // Campos específicos de eventos
+    private String eventType; // Tipo de evento (Boda, Cumpleaños, etc.)
+    private String eventShift; // Turno del evento (Mañana, Tarde, Noche) con precio
+    private String tableDistribution; // Distribución de mesas con precio
+    private String linenColor; // Color de mantelería con precio
+    private List<AdditionalServiceItem> additionalServices; // Servicios adicionales contratados
+    
     @Data
     @Builder
     @NoArgsConstructor
@@ -38,5 +45,17 @@ public class ReservationNotificationData {
         private Integer quantity;
         private Double unitPrice;
         private Double subtotal;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AdditionalServiceItem {
+        private Long serviceId;
+        private String serviceName;
+        private Integer quantity;
+        private Double subtotal;
+        private String observation;
     }
 }

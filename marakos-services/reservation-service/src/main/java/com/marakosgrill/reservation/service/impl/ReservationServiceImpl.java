@@ -758,4 +758,43 @@ public class ReservationServiceImpl implements ReservationService {
             default: return null;
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EventShiftAvailabilityResponse getEventShiftAvailability(LocalDate date) {
+        log.info("🔍 Verificando disponibilidad de turnos para eventos en fecha: {}", date);
+        
+        // Obtener todas las reservas de eventos para la fecha específica
+        // excluyendo estados CHECK_OUT y CANCELADO
+        List<Reservation> eventReservations = reservationRepository.findAll().stream()
+            .filter(r -> "EVENTO".equalsIgnoreCase(r.getReservationType()))
+            .filter(r -> r.getReservationDate() != null && r.getReservationDate().equals(date))
+            .filter(r -> r.getStatus() != null 
+                && !"CHECK_OUT".equalsIgnoreCase(r.getStatus()) 
+                && !"CANCELADO".equalsIgnoreCase(r.getStatus()))
+            .collect(Collectors.toList());
+        
+        log.info("📊 Reservas activas de eventos encontradas: {}", eventReservations.size());
+        
+        // Extraer los turnos ocupados
+        List<Integer> occupiedShifts = eventReservations.stream()
+            .map(Reservation::getEventShift)
+            .filter(shift -> shift != null)
+            .distinct()
+            .collect(Collectors.toList());
+        
+        log.info("🚫 Turnos ocupados: {}", occupiedShifts);
+        
+        // Determinar turnos disponibles (1: Mañana, 2: Tarde, 3: Noche)
+        List<Integer> availableShifts = List.of(1, 2, 3).stream()
+            .filter(shift -> !occupiedShifts.contains(shift))
+            .collect(Collectors.toList());
+        
+        log.info("✅ Turnos disponibles: {}", availableShifts);
+        
+        return EventShiftAvailabilityResponse.builder()
+            .availableShifts(availableShifts)
+            .occupiedShifts(occupiedShifts)
+            .build();
+    }
 }
