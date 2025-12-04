@@ -9,6 +9,7 @@ import { EventTypeService, EventType } from '../../core/services/event-type.serv
 import { MenuService } from '../../core/services/menu.service';
 import { BookingService } from '../../core/services/booking.service';
 import { PaymentService } from '../../core/services/payment.service';
+import { NotificationService, WhatsAppNotificationRequest } from '../../core/services/notification.service';
 import { MenuItem, AdditionalService } from '../../core/models/restaurant.model';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 import { CanComponentDeactivate } from '../../core/guards/can-deactivate.guard';
@@ -31,6 +32,8 @@ export interface EventShift {
   startTime: string;
   endTime: string;
   price: number;
+  available?: boolean;
+  occupied?: boolean;
 }
 
 export interface TableDistribution {
@@ -102,6 +105,7 @@ export class EventPlanningComponent implements CanComponentDeactivate {
   private menuService = inject(MenuService);
   private bookingService = inject(BookingService);
   private paymentService = inject(PaymentService);
+  private notificationService = inject(NotificationService);
 
   // Component state
   step = signal(1);
@@ -124,7 +128,10 @@ export class EventPlanningComponent implements CanComponentDeactivate {
   // Event types from database
   eventTypes = this.eventTypeService.getEventTypesSignal();
 
-  eventShifts = signal<EventShift[]>(EVENT_SHIFTS);
+  eventShifts = signal<EventShift[]>([]);
+  availableShifts = signal<number[]>([]);
+  occupiedShifts = signal<number[]>([]);
+  loadingShifts = signal<boolean>(false);
 
   tableDistributions = signal<TableDistribution[]>(TABLE_DISTRIBUTIONS);
 
@@ -546,6 +553,13 @@ export class EventPlanningComponent implements CanComponentDeactivate {
                 console.log('✅ Estado de reserva de evento actualizado a PAGADO_PARCIAL');
                 this.paymentProcessing.set(false);
                 
+                console.log('📧 EVENTO: Preparando para enviar notificación...');
+                console.log('📧 EVENTO: reservationResponse.id =', reservationResponse.id);
+                console.log('📧 EVENTO: reservationResponse.code =', reservationResponse.code);
+                
+                // Enviar notificación WhatsApp + Email
+                this.sendEventNotification(reservationResponse, 'Digital');
+                
                 // Marcar como completada para evitar warning de navegación
                 this.eventReservationCompleted.set(true);
                 
@@ -564,6 +578,12 @@ export class EventPlanningComponent implements CanComponentDeactivate {
                 console.error('⚠️ Error actualizando estado a PAGADO_PARCIAL:', updateError);
                 // Continuar con el flujo aunque falle la actualización
                 this.paymentProcessing.set(false);
+                
+                console.log('📧 EVENTO: (Error path) Preparando para enviar notificación...');
+                
+                // Enviar notificación aunque falle la actualización de estado
+                this.sendEventNotification(reservationResponse, 'Digital');
+                
                 this.eventReservationCompleted.set(true);
                 this.router.navigate(['/confirmation', reservationResponse.id], {
                   queryParams: {
@@ -582,6 +602,11 @@ export class EventPlanningComponent implements CanComponentDeactivate {
             this.paymentProcessing.set(false);
             
             this.paymentError.set('No se pudo procesar el pago con tu tarjeta. Comunicate con tu entidad bancaria.');
+            
+            console.log('📧 EVENTO: (Pago fallido) Preparando para enviar notificación...');
+            
+            // Enviar notificación indicando que el pago está pendiente
+            this.sendEventNotification(reservationResponse, 'online_failed');
             
             // La reserva se queda con estado CONFIRMADO (no se cambia a PENDIENTE)
             // Navegar a confirmación con estado CONFIRMADO
@@ -702,6 +727,13 @@ export class EventPlanningComponent implements CanComponentDeactivate {
       next: (reservationResponse: any) => {
         console.log('✅ FRONTEND: Reserva de evento creada (presencial):', reservationResponse);
         this.paymentProcessing.set(false);
+        
+        console.log('📧 EVENTO: (Presencial) Preparando para enviar notificación...');
+        console.log('📧 EVENTO: reservationResponse =', reservationResponse);
+        
+        // Enviar notificación WhatsApp + Email
+        this.sendEventNotification(reservationResponse, 'Presencial');
+        
         this.eventReservationCompleted.set(true);
         
         // Navegar a confirmación con estado presencial
@@ -722,18 +754,53 @@ export class EventPlanningComponent implements CanComponentDeactivate {
   }
 
   // Step 2 methods
-  selectDate(date: string) {
-    this.eventReservation.update(res => ({
-      ...res,
-      selectedDate: date
-    }));
+  private loadAvailableShifts(date: string) {
+    this.loadingShifts.set(true);
+    this.eventShifts.set([]); // Clear shifts while loading
+    
+    this.bookingService.getEventShiftAvailability(date).subscribe({
+      next: (response) => {
+        console.log('✅ Disponibilidad de turnos:', response);
+        this.availableShifts.set(response.availableShifts);
+        this.occupiedShifts.set(response.occupiedShifts);
+        
+        // Build the shifts array with availability info
+        // Convert shift.id (string) to number for comparison
+        const allShifts = EVENT_SHIFTS.map(shift => {
+          const shiftIdNum = parseInt(shift.id);
+          return {
+            ...shift,
+            available: response.availableShifts.includes(shiftIdNum),
+            occupied: response.occupiedShifts.includes(shiftIdNum)
+          };
+        });
+        
+        this.eventShifts.set(allShifts);
+        this.loadingShifts.set(false);
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar turnos disponibles:', error);
+        // In case of error, show all shifts as available
+        this.eventShifts.set(EVENT_SHIFTS.map(s => ({...s, available: true, occupied: false})));
+        this.loadingShifts.set(false);
+      }
+    });
   }
 
   selectShift(shift: EventShift) {
+    // Prevent selection of occupied shifts
+    if (shift.occupied) {
+      return;
+    }
+    
     this.eventReservation.update(res => ({
       ...res,
       selectedShift: shift
     }));
+  }
+
+  isShiftDisabled(shift: EventShift): boolean {
+    return shift.occupied === true;
   }
 
   onGuestCountInput(value: string) {
@@ -873,8 +940,12 @@ export class EventPlanningComponent implements CanComponentDeactivate {
     
     this.eventReservation.update(res => ({
       ...res,
-      selectedDate: dateStr
+      selectedDate: dateStr,
+      selectedShift: undefined // Reset shift selection when date changes
     }));
+    
+    // Load available shifts for the selected date
+    this.loadAvailableShifts(dateStr);
   }
 
   previousMonth() {
@@ -1252,6 +1323,103 @@ export class EventPlanningComponent implements CanComponentDeactivate {
       // Redirect to home
       this.router.navigate(['/']);
     }, 1000);
+  }
+
+  /**
+   * Envía notificación de WhatsApp y Email para reserva de evento
+   * Reutiliza la lógica de reserva de mesa adaptándola para eventos
+   */
+  private sendEventNotification(reservationResponse: any, paymentType: string = 'Digital'): void {
+    try {
+      console.log('╔══════════════════════════════════════════════════════════════╗');
+      console.log('║  📱 EVENTO: Iniciando envío de notificación WhatsApp + Email║');
+      console.log('╚══════════════════════════════════════════════════════════════╝');
+      
+      const reservation = this.eventReservation();
+      
+      // Detectar si tiene pre-orden de comida
+      const hasPreOrder = reservation.menuItems.length > 0 && this.menuTotal() > 0;
+      
+      console.log('🔍 DEBUG - Datos de reserva de evento:');
+      console.log('   - Menu Items Count:', reservation.menuItems.length);
+      console.log('   - Menu Total:', this.menuTotal());
+      console.log('   - Has Pre-Order:', hasPreOrder);
+      console.log('   - Payment Type:', paymentType);
+      console.log('   - Event Type:', reservation.eventType?.nombre);
+      console.log('   - Shift:', reservation.selectedShift?.name);
+      
+      // Preparar items de la orden si existen
+      const orderItems = reservation.menuItems.map(item => ({
+        productName: item.item.name,
+        quantity: item.quantity,
+        unitPrice: item.item.price,
+        subtotal: item.item.price * item.quantity
+      }));
+      
+      // Preparar servicios adicionales
+      const additionalServices = reservation.additionalServices.map(service => ({
+        serviceId: service.id,
+        serviceName: service.name,
+        quantity: 1,
+        subtotal: service.price,
+        observation: null
+      }));
+      
+      // Determinar el estado de pago correcto para eventos
+      let paymentStatus = 'PAGADO';
+      if (paymentType.toLowerCase() === 'presencial') {
+        // Pago presencial en eventos siempre requiere adelanto (50%)
+        paymentStatus = 'PENDIENTE_PAGO_ONLINE';
+      }
+      
+      // Preparar datos para la notificación
+      const notificationData: WhatsAppNotificationRequest = {
+        customerName: reservation.customerName,
+        customerPhone: this.notificationService.formatPhoneNumber(reservation.customerPhone),
+        customerEmail: reservation.customerEmail || 'no-disponible@marakos.pe',
+        reservationCode: reservationResponse.code || reservationResponse.reservationCode || `EVENTO-${reservationResponse.id}`,
+        reservationDate: reservation.selectedDate,
+        reservationTime: reservation.selectedShift?.startTime || '00:00',
+        guestCount: reservation.numberOfGuests,
+        tableInfo: `Evento - ${reservation.eventType?.nombre || 'Evento Especial'}`,
+        specialRequests: reservation.specialRequests || 'Sin observaciones especiales',
+        paymentType: paymentType,
+        paymentStatus: paymentStatus,
+        totalAmount: this.calculateTotal(),
+        reservationStatus: 'CONFIRMADA',
+        reservationType: 'EVENTO',
+        reservationId: reservationResponse.id,
+        hasPreOrder: hasPreOrder,
+        orderItems: hasPreOrder ? orderItems : [],
+        // Campos específicos de eventos
+        eventType: reservation.eventType?.nombre,
+        eventShift: reservation.selectedShift ? `${reservation.selectedShift.name} (${reservation.selectedShift.timeRange}) S/ ${reservation.selectedShift.price}` : undefined,
+        tableDistribution: reservation.tableDistribution ? `${reservation.tableDistribution.name} S/ 0` : undefined,
+        linenColor: reservation.linenColor ? `${reservation.linenColor.name} S/ ${reservation.linenColor.price}` : undefined,
+        additionalServices: additionalServices.length > 0 ? additionalServices : undefined
+      };
+
+      console.log('📦 PAYLOAD COMPLETO para notificación de evento:');
+      console.log(JSON.stringify(notificationData, null, 2));
+      console.log('🚀 Llamando a notification service...');
+
+      // Enviar notificación
+      this.notificationService.sendReservationConfirmation(notificationData).subscribe({
+        next: (response) => {
+          console.log('✅ EVENTO: Notificación WhatsApp + Email enviada exitosamente');
+          console.log('📨 Respuesta del servidor:', response);
+        },
+        error: (error) => {
+          console.error('❌ EVENTO: Error enviando notificación WhatsApp + Email');
+          console.error('💥 Detalles del error:', error);
+          console.error('💥 Status:', error.status);
+          console.error('💥 Message:', error.message);
+          // La notificación falla pero no afecta el flujo principal de la reserva
+        }
+      });
+    } catch (error) {
+      console.error('❌ EVENTO: Error preparando notificación WhatsApp:', error);
+    }
   }
 
   /**

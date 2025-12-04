@@ -157,7 +157,7 @@ export const GUEST_LIMITS = {
  */
 export const DATE_CONFIG = {
   DAYS_AHEAD: 90, // Días hacia adelante disponibles para reservar
-  START_OFFSET: 1 // Comenzar desde mañana (1 día después de hoy)
+  START_OFFSET: 14 // Comenzar desde 2 semanas (14 días) después de hoy
 };
 
 /**

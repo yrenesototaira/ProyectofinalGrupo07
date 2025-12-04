@@ -219,5 +219,10 @@ export class BookingService {
     this.reservationState.set(this.initialReservationState);
   }
 
+  getEventShiftAvailability(date: string): Observable<{availableShifts: number[], occupiedShifts: number[]}> {
+    return this.http.get<{availableShifts: number[], occupiedShifts: number[]}>(
+      `${environment.apiUrlReservation}/reservation/event-shifts/availability?date=${date}`
+    );
+  }
 
 }

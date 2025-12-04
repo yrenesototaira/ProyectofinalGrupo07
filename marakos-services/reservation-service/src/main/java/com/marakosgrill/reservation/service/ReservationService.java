@@ -1,5 +1,6 @@
 package com.marakosgrill.reservation.service;
 
+import com.marakosgrill.reservation.dto.EventShiftAvailabilityResponse;
 import com.marakosgrill.reservation.dto.ReservationRequest;
 import com.marakosgrill.reservation.dto.ReservationResponse;
 import com.marakosgrill.reservation.dto.ScheduleAvailabilityResponse;
@@ -22,4 +23,6 @@ public interface ReservationService {
     ReservationResponse checkoutReservation(Integer id);
     ReservationResponse paidReservation(Integer id);
     ReservationResponse updateReservationStatus(Integer id, String status);
+    // Obtiene los turnos disponibles y ocupados para eventos en una fecha específica
+    EventShiftAvailabilityResponse getEventShiftAvailability(LocalDate date);
 }

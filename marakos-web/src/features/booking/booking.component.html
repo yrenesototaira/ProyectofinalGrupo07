@@ -58,15 +58,60 @@
             <div>
               <h3 class="text-xl font-semibold text-amber-500 mb-4">✏️ Datos del Titular</h3>
               <div class="space-y-4">
+                <!-- Document Type Selection -->
                 <div>
-                  <label for="customerDocument" class="block text-sm font-medium text-slate-300 mb-2">Documento de Identidad *</label>
+                  <label class="block text-sm font-medium text-slate-300 mb-2">Tipo de Documento *</label>
+                  <div class="flex gap-4">
+                    <button
+                      type="button"
+                      (click)="selectDocumentType('DNI')"
+                      [class.bg-amber-500]="documentType() === 'DNI'"
+                      [class.text-slate-900]="documentType() === 'DNI'"
+                      [class.bg-slate-700]="documentType() !== 'DNI'"
+                      [class.text-slate-300]="documentType() !== 'DNI'"
+                      class="flex-1 py-3 px-6 rounded-md font-semibold transition-all hover:bg-amber-400 hover:text-slate-900">
+                      DNI
+                    </button>
+                    <button
+                      type="button"
+                      (click)="selectDocumentType('CEX')"
+                      [class.bg-amber-500]="documentType() === 'CEX'"
+                      [class.text-slate-900]="documentType() === 'CEX'"
+                      [class.bg-slate-700]="documentType() !== 'CEX'"
+                      [class.text-slate-300]="documentType() !== 'CEX'"
+                      class="flex-1 py-3 px-6 rounded-md font-semibold transition-all hover:bg-amber-400 hover:text-slate-900">
+                      CEX
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Document Number Input -->
+                <div>
+                  <label for="customerDocument" class="block text-sm font-medium text-slate-300 mb-2">
+                    Número de Documento *
+                  </label>
                   <input 
                     type="text" 
                     id="customerDocument" 
                     [ngModel]="customerDocument()" 
-                    (ngModelChange)="updateCustomerField('document', $event)"
-                    placeholder="Ingresa el documento de identidad"
-                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500">
+                    (input)="onDocumentInput($event)"
+                    (blur)="onDocumentBlur()"
+                    [placeholder]="documentType() === 'DNI' ? '12345678 (8 dígitos)' : documentType() === 'CEX' ? 'A1B2C3D4E (9 caracteres)' : 'Seleccione tipo de documento'"
+                    [disabled]="!documentType()"
+                    [class.border-red-500]="documentError()"
+                    class="w-full bg-slate-700 border-slate-600 text-slate-100 rounded-md p-3 focus:ring-amber-500 focus:border-amber-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                  @if (documentError()) {
+                    <p class="mt-1 text-sm text-red-400">{{ documentError() }}</p>
+                  }
+                  @if (documentType() && !documentError()) {
+                    <p class="mt-1 text-xs text-slate-400">
+                      @if (documentType() === 'DNI') {
+                        DNI: Debe tener exactamente 8 dígitos numéricos
+                      } @else if (documentType() === 'CEX') {
+                        CEX: Debe tener exactamente 9 caracteres alfanuméricos
+                      }
+                    </p>
+                  }
                 </div>
 
                 <div>
@@ -767,13 +812,17 @@
             <h3 class="text-xl font-semibold text-amber-500 mb-4">Resumen del Monto a Pagar</h3>
             <div class="space-y-2">
               <div class="flex justify-between">
-                <span class="text-slate-300">Pre-orden de comida:</span>
-                <span class="font-semibold">{{ menuTotal() | currency:'PEN':'symbol':'1.2-2' }}</span>
+                <span class="text-slate-300">Subtotal:</span>
+                <span class="font-semibold">{{ subtotalSinIGV() | currency:'PEN':'symbol':'1.2-2' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-300">IGV (18%):</span>
+                <span class="font-semibold">{{ igvAmount() | currency:'PEN':'symbol':'1.2-2' }}</span>
               </div>
               <hr class="border-slate-600 my-3">
               <div class="flex justify-between text-xl font-bold text-amber-500">
                 <span>Total a Pagar:</span>
-                <span>{{ menuTotal() | currency:'PEN':'symbol':'1.2-2' }}</span>
+                <span>{{ totalConIGV() | currency:'PEN':'symbol':'1.2-2' }}</span>
               </div>
             </div>
           </div>
