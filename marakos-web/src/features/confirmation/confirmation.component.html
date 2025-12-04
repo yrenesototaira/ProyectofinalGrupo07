@@ -20,8 +20,13 @@
             </svg>
           </div>
           <div>
-            <h1 class="text-3xl font-bold text-slate-100">¡Reserva Confirmada!</h1>
-            <p class="text-slate-400 text-sm">Tu mesa ha sido reservada exitosamente</p>
+            @if (reservation()?.reservationType === 'EVENTO') {
+              <h1 class="text-3xl font-bold text-slate-100">¡Reserva de Evento Confirmada!</h1>
+              <p class="text-slate-400 text-sm">Tu evento ha sido reservado exitosamente</p>
+            } @else {
+              <h1 class="text-3xl font-bold text-slate-100">¡Reserva de Mesa Confirmada!</h1>
+              <p class="text-slate-400 text-sm">Tu mesa ha sido reservada exitosamente</p>
+            }
           </div>
         </div>
       }
@@ -35,7 +40,11 @@
             </svg>
           </div>
           <div>
-            <h1 class="text-3xl font-bold text-slate-100">¡Reserva Confirmada!</h1>
+            @if (reservation()?.reservationType === 'EVENTO') {
+              <h1 class="text-3xl font-bold text-slate-100">¡Reserva de Evento Confirmada!</h1>
+            } @else {
+              <h1 class="text-3xl font-bold text-slate-100">¡Reserva de Mesa Confirmada!</h1>
+            }
             <p class="text-slate-400 text-sm">Gracias por reservar con nosotros, {{ reservation()?.holderName }}</p>
           </div>
         </div>
@@ -53,7 +62,7 @@
           </p>
           <div class="bg-amber-800 p-4 rounded-lg mb-4">
             <p class="text-amber-100 text-sm">
-              💡 <strong>No te preocupes:</strong> Tu mesa está reservada. Puedes pagar directamente en el restaurante o intentar pagar en línea más tarde desde tu perfil.
+              💡 <strong>No te preocupes:</strong> Tu reserva está confirmada. Puedes pagar directamente en el restaurante o intentar pagar en línea más tarde desde tu perfil.
             </p>
           </div>
         </div>
@@ -61,13 +70,21 @@
 
       <!-- Payment Successful -->
       @else if (paymentSuccess()) {
-        <h1 class="text-4xl font-extrabold text-emerald-400 mb-4">✅ ¡Reserva y Pago Confirmados!</h1>
+        @if (reservation()?.reservationType === 'EVENTO') {
+          <h1 class="text-4xl font-extrabold text-emerald-400 mb-4">✅ ¡Reserva de Evento y Pago Confirmados!</h1>
+        } @else {
+          <h1 class="text-4xl font-extrabold text-emerald-400 mb-4">✅ ¡Reserva de Mesa y Pago Confirmados!</h1>
+        }
         <p class="text-slate-300 mb-8">Gracias por reservar y pagar con nosotros, {{ reservation()?.holderName }}. Todo está listo para tu visita.</p>
       }
 
       <!-- Default success message (no payment required) -->
       @else {
-        <h1 class="text-4xl font-extrabold text-emerald-400 mb-4">✅ ¡Reserva Confirmada!</h1>
+        @if (reservation()?.reservationType === 'EVENTO') {
+          <h1 class="text-4xl font-extrabold text-emerald-400 mb-4">✅ ¡Reserva de Evento Confirmada!</h1>
+        } @else {
+          <h1 class="text-4xl font-extrabold text-emerald-400 mb-4">✅ ¡Reserva de Mesa Confirmada!</h1>
+        }
         <p class="text-slate-300 mb-8">Gracias por reservar con nosotros, {{ reservation()?.holderName }}. Presenta este código QR al llegar.</p>
       }
 
@@ -79,9 +96,18 @@
             <h3 class="text-xl font-bold border-b border-slate-600 pb-2 mb-3">Detalles de tu Reserva</h3>
             <p><strong>ID de Reserva:</strong> <span class="font-mono text-amber-500"> {{ reservation()?.code }}</span></p>
             <p><strong>Nombre:</strong> {{ reservation()?.holderName }}</p>
-            <p><strong>Fecha y Hora:</strong> {{ reservation()?.reservationDate }} a las {{ reservation()?.reservationTime }}</p>
+            @if (reservation()?.reservationType === 'EVENTO') {
+              <p><strong>Fecha:</strong> {{ reservation()?.reservationDate }}</p>
+            } @else {
+              <p><strong>Fecha y Hora:</strong> {{ reservation()?.reservationDate }} a las {{ reservation()?.reservationTime }}</p>
+            }
             <p><strong>Comensales:</strong> {{ reservation()?.peopleCount }}</p>                
-            <p><strong>Mesa:</strong> Mesa # {{ reservation()?.tables[0]?.tableId }}</p>
+            
+            @if (reservation()?.reservationType === 'EVENTO') {
+              <p><strong>Turno:</strong> {{ getShiftName(reservation()?.eventShift) }}</p>
+            } @else {
+              <p><strong>Mesa:</strong> Mesa # {{ reservation()?.tables[0]?.tableId }}</p>
+            }
 
             @if (reservation()?.observation) {
               <p><strong>Peticiones Especiales:</strong> {{ reservation()?.observation }}</p>
@@ -95,6 +121,11 @@
                   <p class="text-slate-200 font-semibold">Estado del Pago: <span class="text-amber-400">Pendiente</span></p>
                 </div>
                 <p class="text-slate-300"><strong>Monto a Pagar:</strong> <span class="text-amber-400">{{ paymentAmount() | currency:'PEN':'symbol':'1.2-2' }}</span></p>
+                <div class="mt-2 pt-2 border-t border-amber-500/20 text-sm space-y-1">
+                  <p class="text-slate-400"><strong>Subtotal:</strong> {{ getSubtotalSinIGV() | currency:'PEN':'symbol':'1.2-2' }}</p>
+                  <p class="text-slate-400"><strong>IGV (18%):</strong> {{ getIGVAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+                  <p class="text-slate-400"><strong>Importe Total:</strong> {{ getTotalAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+                </div>
               </div>
             } @else if (isPresentialPayment()) {
           <div class="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
@@ -102,7 +133,22 @@
               <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
               <p class="text-slate-200 font-semibold">Estado del Pago: <span class="text-blue-400">Pendiente</span></p>
             </div>
-            <p class="text-slate-300"><strong>Monto a Pagar:</strong> <span class="text-amber-400">{{ paymentAmount() | currency:'PEN':'symbol':'1.2-2' }}</span></p>
+            @if (isEventReservation()) {
+              <p class="text-slate-300"><strong>Adelanto a Pagar (50%):</strong> <span class="text-amber-400">{{ getAdelantoAmount() | currency:'PEN':'symbol':'1.2-2' }}</span></p>
+              <div class="mt-2 pt-2 border-t border-blue-500/20 text-sm space-y-1">
+                <p class="text-slate-400"><strong>Subtotal:</strong> {{ getSubtotalSinIGV() | currency:'PEN':'symbol':'1.2-2' }}</p>
+                <p class="text-slate-400"><strong>IGV (18%):</strong> {{ getIGVAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+                <p class="text-slate-400"><strong>Importe Total:</strong> {{ getTotalAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+              </div>
+              <p class="text-slate-400 text-sm mt-2">💡 El saldo restante (50%) se paga el día del evento.</p>
+            } @else {
+              <p class="text-slate-300"><strong>Monto a Pagar:</strong> <span class="text-amber-400">{{ paymentAmount() | currency:'PEN':'symbol':'1.2-2' }}</span></p>
+              <div class="mt-2 pt-2 border-t border-blue-500/20 text-sm space-y-1">
+                <p class="text-slate-400"><strong>Subtotal:</strong> {{ getSubtotalSinIGV() | currency:'PEN':'symbol':'1.2-2' }}</p>
+                <p class="text-slate-400"><strong>IGV (18%):</strong> {{ getIGVAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+                <p class="text-slate-400"><strong>Importe Total:</strong> {{ getTotalAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+              </div>
+            }
             <div class="mt-3 flex items-center gap-2 text-sm text-slate-400">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -113,17 +159,45 @@
         } @else if (paymentFailed() && reservationCreated()) {
           <div class="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
             <p class="text-slate-200"><strong>Estado del Pago:</strong> <span class="text-amber-400">Pendiente</span></p>
+            <p class="text-slate-300"><strong>Monto a Pagar:</strong> <span class="text-amber-400">{{ paymentAmount() | currency:'PEN':'symbol':'1.2-2' }}</span></p>
+            <div class="mt-2 pt-2 border-t border-amber-500/20 text-sm space-y-1">
+              <p class="text-slate-400"><strong>Subtotal:</strong> {{ getSubtotalSinIGV() | currency:'PEN':'symbol':'1.2-2' }}</p>
+              <p class="text-slate-400"><strong>IGV (18%):</strong> {{ getIGVAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+              <p class="text-slate-400"><strong>Importe Total:</strong> {{ getTotalAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+            </div>
             <p class="text-slate-400 text-sm mt-2">Puedes pagar en el restaurante o intentar pagar en línea más tarde.</p>
+          </div>
+        } @else if (paymentSuccess() && isEventAdelanto()) {
+          <div class="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <p class="text-slate-200"><strong>Estado del Pago:</strong> <span class="text-blue-400">PAGO PARCIAL (Adelanto 50%) ✓</span></p>
+            <p class="text-slate-300"><strong>Adelanto Pagado:</strong> <span class="text-blue-400">{{ reservation()?.payments[0]?.amount || paymentAmount() | currency:'PEN':'symbol':'1.2-2' }}</span></p>
+            <div class="mt-2 pt-2 border-t border-blue-500/20 text-sm space-y-1">
+              <p class="text-slate-400"><strong>Subtotal:</strong> {{ getSubtotalSinIGV() | currency:'PEN':'symbol':'1.2-2' }}</p>
+              <p class="text-slate-400"><strong>IGV (18%):</strong> {{ getIGVAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+              <p class="text-slate-400"><strong>Importe Total:</strong> {{ getTotalAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+            </div>
+            <p class="text-slate-400 text-sm mt-2">💡 El saldo restante (50%) se paga el día del evento.</p>
           </div>
         } @else if (paymentSuccess()) {
           <div class="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
             <p class="text-slate-200"><strong>Estado del Pago:</strong> <span class="text-emerald-400">Pagado ✓</span></p>
-            @if (reservation()?.payments[0]) {
-              <p class="text-slate-300"><strong>Total Pagado:</strong> <span class="text-emerald-400">{{ reservation()?.payments[0]?.amount | currency:'PEN':'symbol':'1.2-2' }}</span></p>
-            }
+            <p class="text-slate-300"><strong>Monto Pagado:</strong> <span class="text-emerald-400">{{ reservation()?.payments[0]?.amount || paymentAmount() | currency:'PEN':'symbol':'1.2-2' }}</span></p>
+            <div class="mt-2 pt-2 border-t border-emerald-500/20 text-sm space-y-1">
+              <p class="text-slate-400"><strong>Subtotal:</strong> {{ getSubtotalSinIGV() | currency:'PEN':'symbol':'1.2-2' }}</p>
+              <p class="text-slate-400"><strong>IGV (18%):</strong> {{ getIGVAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+              <p class="text-slate-400"><strong>Importe Total:</strong> {{ getTotalAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+            </div>
           </div>
         } @else if (reservation()?.payments[0]?.paymentMethod && reservation()?.payments[0]?.amount > 0) {
-          <p><strong>Pago:</strong> {{ reservation()?.payments[0]?.paymentMethod }} (Total: {{ reservation()?.payments[0]?.amount | currency:'PEN':'symbol':'1.2-2' }})</p>
+          <div class="mt-4 p-4 bg-slate-700/50 border border-slate-600 rounded-lg">
+            <p class="text-slate-200"><strong>Estado del Pago:</strong> <span class="text-slate-300">{{ reservation()?.payments[0]?.paymentMethod }}</span></p>
+            <p class="text-slate-300"><strong>Monto Pagado:</strong> <span class="text-slate-300">{{ reservation()?.payments[0]?.amount | currency:'PEN':'symbol':'1.2-2' }}</span></p>
+            <div class="mt-2 pt-2 border-t border-slate-600/50 text-sm space-y-1">
+              <p class="text-slate-400"><strong>Subtotal:</strong> {{ getSubtotalSinIGV() | currency:'PEN':'symbol':'1.2-2' }}</p>
+              <p class="text-slate-400"><strong>IGV (18%):</strong> {{ getIGVAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+              <p class="text-slate-400"><strong>Importe Total:</strong> {{ getTotalAmount() | currency:'PEN':'symbol':'1.2-2' }}</p>
+            </div>
+          </div>
         }
           </div>
 
@@ -152,10 +226,10 @@
               </svg>
             </div>
             <div class="text-left flex-1">
-              <p class="text-amber-300 text-sm mb-3">El pago no pudo procesarse, pero tu reserva está confirmada.</p>
+              <p class="text-amber-300 text-sm mb-3">El pago no ha sido realizado, pero tu reserva está confirmada.</p>
               <div class="bg-slate-800/50 p-3 rounded-lg">
                 <p class="text-slate-300 text-xs leading-relaxed">
-                  <strong>¿Qué significa esto?</strong> Aunque el pago online no se completó, tu mesa está garantizada. Solo necesitas regularizar el pago antes de tu visita.
+                  <strong>¿Qué significa esto?</strong> Aunque el pago online no se completó, tu reserva está garantizada. Solo necesitas regularizar el pago antes de tu visita.
                 </p>
               </div>
             </div>
@@ -224,8 +298,8 @@
         <div class="mt-6 p-4 bg-slate-700 border border-slate-600 rounded-lg text-left">
           <h4 class="font-semibold text-slate-200 mb-2">ℹ️ Información Importante:</h4>
           <ul class="text-slate-300 text-sm space-y-1">
-            <li>• Tu mesa está <strong>garantizada</strong> para la fecha y hora seleccionadas</li>
-            <li>• Puedes pagar la pre-orden directamente en el restaurante</li>
+            <li>• Tu reserva está <strong>garantizada</strong> para la fecha y hora seleccionadas</li>
+            <li>• Puedes realizar el pago directamente en el restaurante</li>
             <li>• También puedes acceder a tus reservas desde tu perfil para intentar pagar nuevamente</li>
             <li>• Si tienes dudas, contacta al restaurante con tu código de reserva</li>
           </ul>

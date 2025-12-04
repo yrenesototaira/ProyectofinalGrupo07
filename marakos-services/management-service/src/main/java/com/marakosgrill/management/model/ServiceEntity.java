@@ -32,6 +32,9 @@ public class ServiceEntity {
     @Column(name = "icono", length = 10)
     private String icon;
 
+    @Column(name = "tipo_servicio", length = 20)
+    private String serviceType;
+
     @Column(name = "estado", length = 20)
     private String status;
 

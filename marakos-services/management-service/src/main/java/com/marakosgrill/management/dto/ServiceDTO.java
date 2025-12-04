@@ -33,6 +33,9 @@ public class ServiceDTO {
     private String icon;
 
     @Size(max = 20)
+    private String serviceType;
+
+    @Size(max = 20)
     private String status;
 
     private Integer createdBy;

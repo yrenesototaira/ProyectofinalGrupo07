@@ -32,6 +32,7 @@ public class ReservationResponse {
     private String holderName;
     private String holderEmail;
     private String observation;
+    private Integer termsAccepted;
     private Integer employeeId;
     private LocalDateTime cancellationDate;
     private LocalDateTime createdAt;
