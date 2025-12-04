@@ -18,8 +18,7 @@ public class ReservationRequest {
     private Integer customerId;
     @NotNull
     private LocalDate reservationDate;
-    @NotNull
-    private LocalTime reservationTime;
+    private LocalTime reservationTime; // Opcional para eventos
     @NotNull
     private Integer peopleCount;
     @NotNull
@@ -37,6 +36,8 @@ public class ReservationRequest {
     private String holderName;
     private String holderEmail;
     private String observation;
+    @NotNull
+    private Integer termsAccepted; // 0 = No aceptado, 1 = Aceptado
     private Integer employeeId;
     private Integer createdBy;
     private List<ReservationProductRequest> products;

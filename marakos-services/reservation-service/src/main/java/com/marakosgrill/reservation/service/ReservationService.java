@@ -21,4 +21,5 @@ public interface ReservationService {
     ReservationResponse checkinReservation(Integer id);
     ReservationResponse checkoutReservation(Integer id);
     ReservationResponse paidReservation(Integer id);
+    ReservationResponse updateReservationStatus(Integer id, String status);
 }

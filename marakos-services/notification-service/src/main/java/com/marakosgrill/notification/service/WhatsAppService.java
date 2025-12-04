@@ -197,16 +197,33 @@ public class WhatsAppService {
             // Seleccionar template según reglas de negocio:
             // 1) Si el pago online falló -> usar paymentPendingTemplate
             // 2) Si no hay pre-orden de menú -> usar sinPreordenTemplate
-            // 3) Por defecto -> confirmationTemplate
+            // 3) Por defecto (con pago exitoso y pre-orden) -> confirmationTemplate
             String templateName = confirmationTemplate;
+            
+            log.info("🔍 DEBUG Template Selection:");
+            log.info("   - Payment Status: {}", data.getPaymentStatus());
+            log.info("   - Has Pre-Order: {}", data.getHasPreOrder());
+            log.info("   - Reservation Type: {}", data.getReservationType());
+            
+            boolean isPaymentPending = false;
+            boolean isSinPreorden = false;
             if (data.getPaymentStatus() != null && "PENDIENTE_PAGO_ONLINE".equalsIgnoreCase(data.getPaymentStatus())) {
                 if (paymentPendingTemplate != null && !paymentPendingTemplate.isBlank()) {
                     templateName = paymentPendingTemplate;
+                    isPaymentPending = true;
+                    log.info("✅ Template seleccionado: {} (Pago Pendiente)", templateName);
                 }
             } else if (Boolean.FALSE.equals(data.getHasPreOrder())) {
-                if (sinPreordenTemplate != null && !sinPreordenTemplate.isBlank()) {
-                    templateName = sinPreordenTemplate;
-                }
+                // TEMPORAL: Usar template principal hasta que _sinpreorden sea categoría Utility
+                // if (sinPreordenTemplate != null && !sinPreordenTemplate.isBlank()) {
+                //     templateName = sinPreordenTemplate;
+                //     isSinPreorden = true;
+                //     log.info("✅ Template seleccionado: {} (Sin Pre-Orden)", templateName);
+                // }
+                log.info("⚠️ Sin pre-orden detectado - usando template principal (temporal)");
+                log.info("💡 Template _sinpreorden es categoría Marketing, cambiar a Utility para usarlo");
+            } else {
+                log.info("✅ Template seleccionado: {} (Con Pago y Pre-Orden)", templateName);
             }
 
             // Template con parámetros
@@ -214,8 +231,11 @@ public class WhatsAppService {
             template.put("name", templateName);
             
             Map<String, String> language = new HashMap<>();
-            language.put("code", "es"); // Español para el template personalizado
+            // TEMPORAL: Solo es_PE para payment pending, es para los demás (incluyendo sin preorden)
+            String languageCode = isPaymentPending ? "es_PE" : "es";
+            language.put("code", languageCode);
             template.put("language", language);
+            log.info("📋 Código de idioma usado: {}", languageCode);
             
             // Agregar componentes con parámetros
             java.util.List<Map<String, Object>> components = new java.util.ArrayList<>();
@@ -250,6 +270,21 @@ public class WhatsAppService {
             param4.put("text", data.getReservationTime());
             parameters.add(param4);
             
+            // Parámetro 5: Estado de la reserva
+            Map<String, Object> param5 = new HashMap<>();
+            param5.put("type", "text");
+            // Si es pago pendiente, mostrar "CONFIRMADA POR PAGAR"
+            String reservationStatus;
+            if (isPaymentPending) {
+                reservationStatus = "CONFIRMADA POR PAGAR";
+            } else {
+                reservationStatus = data.getReservationStatus() != null 
+                    ? data.getReservationStatus()
+                    : "CONFIRMADA";
+            }
+            param5.put("text", reservationStatus);
+            parameters.add(param5);
+            
             bodyComponent.put("parameters", parameters);
             components.add(bodyComponent);
             
@@ -261,6 +296,7 @@ public class WhatsAppService {
             log.info("   - Código: {}", data.getReservationCode());
             log.info("   - Fecha: {}", data.getReservationDate());
             log.info("   - Hora: {}", data.getReservationTime());
+            log.info("   - Estado: {}", reservationStatus);
             log.info("📋 Usando template: '{}'", templateName);
             log.info("📋 JSON completo: {}", objectMapper.writeValueAsString(payload));
 

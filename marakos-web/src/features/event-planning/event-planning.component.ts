@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal, effect, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -6,10 +6,23 @@ import { AuthService } from '../../core/services/auth.service';
 import { RestaurantDataService } from '../../core/services/restaurant-data.service';
 import { AdditionalServicesService } from '../../core/services/additional-services.service';
 import { EventTypeService, EventType } from '../../core/services/event-type.service';
+import { MenuService } from '../../core/services/menu.service';
+import { BookingService } from '../../core/services/booking.service';
+import { PaymentService } from '../../core/services/payment.service';
 import { MenuItem, AdditionalService } from '../../core/models/restaurant.model';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 import { CanComponentDeactivate } from '../../core/guards/can-deactivate.guard';
 import { TABLE_DISTRIBUTIONS, EVENT_SHIFTS, LINEN_COLORS, GUEST_LIMITS, DATE_CONFIG, PRICING_CONFIG } from '../../config/event-config';
+
+// Declaración global de Culqi para TypeScript
+declare global {
+  interface Window {
+    Culqi: any;
+    culqi: () => void;
+  }
+}
+
+const Culqi = window.Culqi;
 
 export interface EventShift {
   id: string;
@@ -86,6 +99,9 @@ export class EventPlanningComponent implements CanComponentDeactivate {
   private restaurantDataService = inject(RestaurantDataService);
   private additionalServicesService = inject(AdditionalServicesService);
   private eventTypeService = inject(EventTypeService);
+  private menuService = inject(MenuService);
+  private bookingService = inject(BookingService);
+  private paymentService = inject(PaymentService);
 
   // Component state
   step = signal(1);
@@ -117,11 +133,39 @@ export class EventPlanningComponent implements CanComponentDeactivate {
   // Use the same menu as booking/mesa
   menu = this.restaurantDataService.getMenu();
 
+  // Menu filtering and search (for Step 4)
+  menuItems = this.menuService.getMenuItems();
+  menuCategories = this.menuService.getCategories();
+  menuLoading = this.menuService.getLoading();
+  menuError = this.menuService.getError();
+  selectedMenuCategory = signal<string | number>('all');
+  menuSearchQuery = signal<string>('');
+  
+  // Computed filtered menu items
+  filteredMenuItems = computed(() => {
+    const query = this.menuSearchQuery();
+    const category = this.selectedMenuCategory();
+    
+    if (query.trim()) {
+      return this.menuService.searchItems(query);
+    }
+    
+    return this.menuService.getItemsByCategory(category);
+  });
+
   // Get services from the service instead of hardcoded data
   additionalServices = this.additionalServicesService.getServices();
 
   // Variable temporal para validación de documento
   documentError = signal<string>('');
+
+  // Culqi integration signals
+  culqiToken = signal<string | null>(null);
+  paymentProcessing = signal<boolean>(false);
+  paymentError = signal<string | null>(null);
+
+  // Clave pública de Culqi (debe estar en environment en producción)
+  private readonly CULQI_PUBLIC_KEY = 'pk_test_iKnf1lmmOdlUHuLu';
 
   // Event planning reservation state simplificado
   eventReservation = signal<EventPlanningReservation>({
@@ -153,6 +197,9 @@ export class EventPlanningComponent implements CanComponentDeactivate {
       next: (types) => console.log('Tipos de evento cargados:', types),
       error: (error) => console.error('Error cargando tipos de evento:', error)
     });
+
+    // Cargar menú desde el MenuService
+    this.menuService.loadMenuData();
 
     // Efecto para pre-llenar datos del usuario
     effect(() => {
@@ -186,6 +233,9 @@ export class EventPlanningComponent implements CanComponentDeactivate {
     // Generar fechas disponibles para eventos usando la misma lógica que booking/mesa
     const availableDates = this.generateAvailableEventDates();
     this.availableDates.set(availableDates);
+    
+    // Inicializar Culqi para pagos online
+    this.initializeCulqi();
   }
 
   nextStep() {
@@ -348,6 +398,327 @@ export class EventPlanningComponent implements CanComponentDeactivate {
       ...res,
       paymentMethod: method
     }));
+  }
+
+  // Inicializar Culqi.js para pagos
+  initializeCulqi() {
+    if (typeof window !== 'undefined' && Culqi) {
+      Culqi.publicKey = this.CULQI_PUBLIC_KEY;
+      
+      // Configurar Culqi con información básica
+      Culqi.settings({
+        title: 'Marakos Grill',
+        currency: 'PEN',
+        description: 'Adelanto Evento (50%)',
+        amount: 0 // Se actualizará dinámicamente
+      });
+      
+      // Definir callback global para Culqi
+      window.culqi = () => {
+        if (Culqi.token) {
+          // Token generado exitosamente
+          const token = Culqi.token.id;
+          console.log('✅ Token Culqi generado:', token);
+          
+          // Cerrar el modal de Culqi inmediatamente
+          Culqi.close();
+          
+          this.culqiToken.set(token);
+          this.processCulqiPayment(token);
+        } else if (Culqi.error) {
+          // Error al generar el token
+          console.error('❌ Error Culqi:', Culqi.error);
+          
+          // Cerrar el modal de Culqi
+          Culqi.close();
+          
+          this.paymentError.set(Culqi.error.user_message || 'Error al procesar el pago');
+          this.paymentProcessing.set(false);
+        }
+      };
+      
+      console.log('✅ Culqi.js inicializado correctamente');
+    } else {
+      console.error('❌ Culqi.js no está disponible');
+    }
+  }
+
+  // Abrir el modal de Culqi para pago del adelanto (50%)
+  openCulqiCheckout() {
+    const reservation = this.eventReservation();
+    
+    if (!reservation.customerName || !reservation.customerEmail || !reservation.customerPhone) {
+      this.paymentError.set('Por favor complete todos los datos del cliente.');
+      return;
+    }
+
+    console.log('💳 FRONTEND: Abriendo modal de Culqi para adelanto de evento');
+    this.paymentError.set(null);
+
+    // Calcular adelanto (50% del total)
+    const totalAmount = this.calculateTotal();
+    const adelantoAmount = totalAmount * 0.5;
+
+    // Actualizar configuración de Culqi con el monto del adelanto
+    Culqi.settings({
+      title: 'Marakos Grill',
+      currency: 'PEN',
+      description: `Adelanto Evento - ${reservation.eventType || 'Evento Especial'}`,
+      amount: Math.round(adelantoAmount * 100) // Culqi usa centavos
+    });
+
+    // Abrir el checkout de Culqi
+    Culqi.open();
+  }
+
+  // Procesar el pago con el token de Culqi
+  processCulqiPayment(token: string) {
+    console.log('💳 FRONTEND: Procesando pago de adelanto con token Culqi');
+    
+    // Mostrar loading mientras se procesa
+    this.paymentProcessing.set(true);
+    this.paymentError.set(null);
+    
+    const reservation = this.eventReservation();
+    
+    console.log('📱 FRONTEND: Datos del cliente para notificación:', {
+      customerName: reservation.customerName,
+      customerPhone: reservation.customerPhone,
+      customerEmail: reservation.customerEmail
+    });
+
+    // Calcular adelanto (50%)
+    const totalAmount = this.calculateTotal();
+    const adelantoAmount = totalAmount * 0.5;
+
+    // Preparar datos de la reserva de evento
+    const reservationData = {
+      customerId: this.authService.currentUser()?.idPersona ?? null,
+      reservationDate: reservation.selectedDate,
+      reservationTime: null,
+      peopleCount: reservation.numberOfGuests,
+      status: 'CONFIRMADO',
+      paymentMethod: 'Digital',
+      reservationType: 'EVENTO',
+      eventTypeId: this.getEventTypeId(reservation.eventType),
+      eventShift: reservation.selectedShift?.id,
+      tableDistributionType: reservation.tableDistribution?.id,
+      tableClothColor: reservation.linenColor?.id,
+      holderDocument: reservation.customerDocument,
+      holderPhone: reservation.customerPhone,
+      holderName: reservation.customerName,
+      holderEmail: reservation.customerEmail,
+      observation: reservation.specialRequests,
+      termsAccepted: reservation.termsAccepted ? 1 : 0,
+      employeeId: null,
+      createdBy: this.authService.currentUser()?.idUsuario ?? null,
+      tables: [],
+      products: this.getSelectedMenuProducts(),
+      events: this.getSelectedEventServices(),
+      payments: []
+    };
+
+    // Crear reserva primero
+    console.log('🚀 FRONTEND: Enviando datos de reserva de evento:', reservationData);
+    this.bookingService.confirmReservation(reservationData).subscribe({
+      next: (reservationResponse: any) => {
+        console.log('✅ FRONTEND: Reserva de evento creada:', reservationResponse);
+        
+        // Preparar solicitud de pago del adelanto (50%)
+        const paymentRequest = {
+          reservationId: reservationResponse.id,
+          amount: adelantoAmount,
+          customerEmail: reservation.customerEmail,
+          customerName: reservation.customerName,
+          customerPhone: reservation.customerPhone,
+          paymentMethod: 'CULQI_CARD',
+          culqiToken: token
+        };
+
+        // Procesar pago del adelanto en el backend
+        this.paymentService.processPayment(paymentRequest).subscribe({
+          next: (paymentResponse: any) => {
+            console.log('💳 FRONTEND: Pago de adelanto procesado exitosamente:', paymentResponse);
+            
+            // Actualizar estado de la reserva a PAGADO_PARCIAL (adelanto 50%)
+            this.bookingService.updateReservationStatus(reservationResponse.id, 'PAGADO_PARCIAL').subscribe({
+              next: () => {
+                console.log('✅ Estado de reserva de evento actualizado a PAGADO_PARCIAL');
+                this.paymentProcessing.set(false);
+                
+                // Marcar como completada para evitar warning de navegación
+                this.eventReservationCompleted.set(true);
+                
+                // Navegar a confirmación con pago exitoso
+                this.router.navigate(['/confirmation', reservationResponse.id], {
+                  queryParams: {
+                    transactionId: paymentResponse.culqiChargeId,
+                    amount: paymentResponse.amount,
+                    status: paymentResponse.status,
+                    paymentSuccess: 'true',
+                    isEventAdelanto: 'true'
+                  }
+                });
+              },
+              error: (updateError: any) => {
+                console.error('⚠️ Error actualizando estado a PAGADO_PARCIAL:', updateError);
+                // Continuar con el flujo aunque falle la actualización
+                this.paymentProcessing.set(false);
+                this.eventReservationCompleted.set(true);
+                this.router.navigate(['/confirmation', reservationResponse.id], {
+                  queryParams: {
+                    transactionId: paymentResponse.culqiChargeId,
+                    amount: paymentResponse.amount,
+                    status: paymentResponse.status,
+                    paymentSuccess: 'true',
+                    isEventAdelanto: 'true'
+                  }
+                });
+              }
+            });
+          },
+          error: (error: any) => {
+            console.error('❌ Pago de adelanto fallido pero reserva creada con estado CONFIRMADO:', error);
+            this.paymentProcessing.set(false);
+            
+            this.paymentError.set('No se pudo procesar el pago con tu tarjeta. Comunicate con tu entidad bancaria.');
+            
+            // La reserva se queda con estado CONFIRMADO (no se cambia a PENDIENTE)
+            // Navegar a confirmación con estado CONFIRMADO
+            this.eventReservationCompleted.set(true);
+            this.router.navigate(['/confirmation', reservationResponse.id], {
+              queryParams: {
+                paymentStatus: 'CONFIRMADO',
+                amount: adelantoAmount,
+                paymentPending: 'true',
+                isEventAdelanto: 'true'
+              }
+            });
+          }
+        });
+      },
+      error: (error: any) => {
+        console.error('❌ Error creando reserva de evento:', error);
+        this.paymentProcessing.set(false);
+        this.paymentError.set('Error al crear la reserva. Por favor intente nuevamente.');
+      }
+    });
+  }
+
+  // Helper para obtener ID del tipo de evento
+  private getEventTypeId(eventType: EventType | null): number | null {
+    if (!eventType) return null;
+    return eventType.idTipoEvento;
+  }
+
+  // Helper para obtener productos del menú seleccionados
+  private getSelectedMenuProducts() {
+    const reservation = this.eventReservation();
+    if (!reservation.includeMenu || reservation.menuItems.length === 0) {
+      return [];
+    }
+
+    return reservation.menuItems.map(item => ({
+      productId: item.item.id,
+      quantity: item.quantity,
+      subtotal: item.item.price * item.quantity,
+      observation: null
+    }));
+  }
+
+  // Helper para obtener servicios adicionales seleccionados
+  private getSelectedEventServices() {
+    const services = this.eventReservation().additionalServices;
+    if (!services || services.length === 0) {
+      return [];
+    }
+
+    return services.map(service => ({
+      serviceId: service.id,
+      quantity: 1,
+      subtotal: service.price,
+      observation: null
+    }));
+  }
+
+  clearPaymentError() {
+    this.paymentError.set(null);
+  }
+
+  // Confirmar reserva de evento - abre Culqi si es online o procesa directamente si es presencial
+  confirmEventReservation() {
+    const reservation = this.eventReservation();
+    
+    if (!reservation.paymentMethod) {
+      this.paymentError.set('Por favor selecciona un método de pago.');
+      return;
+    }
+
+    if (reservation.paymentMethod === 'online') {
+      // Pago online: abrir modal de Culqi
+      this.openCulqiCheckout();
+    } else {
+      // Pago presencial: crear reserva directamente
+      this.createPresentialReservation();
+    }
+  }
+
+  // Crear reserva con pago presencial
+  private createPresentialReservation() {
+    console.log('🏪 FRONTEND: Creando reserva con pago presencial');
+    
+    this.paymentProcessing.set(true);
+    this.paymentError.set(null);
+    
+    const reservation = this.eventReservation();
+    
+    const reservationData = {
+      customerId: this.authService.currentUser()?.idPersona ?? null,
+      reservationDate: reservation.selectedDate,
+      reservationTime: null,
+      peopleCount: reservation.numberOfGuests,
+      status: 'PENDIENTE_PAGO',
+      paymentMethod: 'Presencial',
+      reservationType: 'EVENTO',
+      eventTypeId: this.getEventTypeId(reservation.eventType),
+      eventShift: reservation.selectedShift?.id,
+      tableDistributionType: reservation.tableDistribution?.id,
+      tableClothColor: reservation.linenColor?.id,
+      holderDocument: reservation.customerDocument,
+      holderPhone: reservation.customerPhone,
+      holderName: reservation.customerName,
+      holderEmail: reservation.customerEmail,
+      observation: reservation.specialRequests,
+      termsAccepted: reservation.termsAccepted ? 1 : 0,
+      employeeId: null,
+      createdBy: this.authService.currentUser()?.idUsuario ?? null,
+      tables: [],
+      products: this.getSelectedMenuProducts(),
+      events: this.getSelectedEventServices(),
+      payments: []
+    };
+
+    this.bookingService.confirmReservation(reservationData).subscribe({
+      next: (reservationResponse: any) => {
+        console.log('✅ FRONTEND: Reserva de evento creada (presencial):', reservationResponse);
+        this.paymentProcessing.set(false);
+        this.eventReservationCompleted.set(true);
+        
+        // Navegar a confirmación con estado presencial
+        this.router.navigate(['/confirmation', reservationResponse.id], {
+          queryParams: {
+            paymentStatus: 'PENDIENTE_PRESENCIAL',
+            amount: this.calculateTotal() * 0.5,
+            isEventAdelanto: 'true'
+          }
+        });
+      },
+      error: (error: any) => {
+        console.error('❌ Error creando reserva presencial:', error);
+        this.paymentProcessing.set(false);
+        this.paymentError.set('Error al crear la reserva. Por favor intente nuevamente.');
+      }
+    });
   }
 
   // Step 2 methods
@@ -575,7 +946,7 @@ export class EventPlanningComponent implements CanComponentDeactivate {
   canProceedFromStep1(): boolean {
     const res = this.eventReservation();
     const hasValidDocument = res.documentType && res.customerDocument && this.documentError() === '';
-    return !!(hasValidDocument && res.customerName && res.customerEmail && res.customerPhone && res.eventType && res.paymentMethod);
+    return !!(hasValidDocument && res.customerName && res.customerEmail && res.customerPhone && res.eventType);
   }
 
   canProceedFromStep2(): boolean {
@@ -669,6 +1040,26 @@ export class EventPlanningComponent implements CanComponentDeactivate {
   getItemQuantity(itemId: number): number {
     return this.eventReservation().menuItems.find(i => i.item.id === itemId)?.quantity ?? 0;
   }
+
+  // Menu search and filtering methods
+  onMenuSearch(event: Event) {
+    const query = (event.target as HTMLInputElement).value;
+    this.menuSearchQuery.set(query);
+  }
+
+  selectMenuCategory(categoryId: string | number) {
+    this.selectedMenuCategory.set(categoryId);
+  }
+
+  refreshMenuItems() {
+    this.menuService.loadMenuData();
+  }
+
+  menuTotal = computed(() => {
+    return this.eventReservation().menuItems.reduce((total, menuItem) => 
+      total + (menuItem.item.price * menuItem.quantity), 0
+    );
+  });
 
   canProceedFromStep3(): boolean {
     const res = this.eventReservation();

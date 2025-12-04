@@ -190,8 +190,16 @@ export class AdditionalServicesService {
    * Maps API service response to our AdditionalService model
    */
   private mapApiServiceToModel(apiService: any): AdditionalService {
-    // Get tipo_servicio from API response (handle different possible field names)
-    const tipoServicio = apiService.tipo_servicio || apiService.tipoServicio || apiService.type;
+    // Get serviceType from API response (Spring Boot sends it as serviceType in camelCase)
+    const serviceType = apiService.serviceType || apiService.tipo_servicio || apiService.tipoServicio || apiService.type;
+    const mappedCategory = this.mapDatabaseTypeToCategory(serviceType);
+    
+    console.log('Mapping service:', {
+      name: apiService.name,
+      serviceType: serviceType,
+      mapped_category: mappedCategory,
+      raw_data: apiService
+    });
     
     return {
       id: apiService.id,
@@ -201,32 +209,32 @@ export class AdditionalServicesService {
       price: apiService.price || 0,
       status: apiService.status || 'DISPONIBLE',
       active: apiService.active !== false,
-      tipo_servicio: tipoServicio,
-      category: this.mapDatabaseTypeToCategory(tipoServicio),
+      tipo_servicio: serviceType,
+      category: mappedCategory,
       icon: apiService.icon || this.getIconForService(apiService.name) // Use API icon or fallback
     };
   }
 
   /**
    * Maps database tipo_servicio field to our category enum
+   * Only accepts: 'entertainment', 'service', 'catering'
    */
   private mapDatabaseTypeToCategory(tipoServicio: string): 'entertainment' | 'service' | 'catering' {
     if (!tipoServicio) return 'service'; // Default fallback
     
-    const tipo = tipoServicio.toLowerCase();
+    const tipo = tipoServicio.toLowerCase().trim();
     
-    // Map database categories to frontend categories
-    if (tipo.includes('entretenimiento') || tipo.includes('entertainment') || 
-        tipo.includes('animacion') || tipo.includes('musica')) {
+    // Direct mapping - only 3 valid categories
+    if (tipo === 'entertainment') {
       return 'entertainment';
     }
     
-    if (tipo.includes('catering') || tipo.includes('comida') || tipo.includes('bebida') || 
-        tipo.includes('gastronomia') || tipo.includes('alimentacion')) {
+    if (tipo === 'catering') {
       return 'catering';
     }
     
-    return 'service'; // Default to service category for personnel, security, etc.
+    // Default to service for any other value (including 'service')
+    return 'service';
   }
 
   /**

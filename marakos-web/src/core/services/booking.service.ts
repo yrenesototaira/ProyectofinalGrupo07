@@ -57,6 +57,10 @@ export class BookingService {
     return this.http.patch(`${environment.apiUrlReservation}/reservation/${id}/paid`, {});
   }
 
+  updateReservationStatus(id: number, status: string): Observable<any> {
+    return this.http.patch(`${environment.apiUrlReservation}/reservation/${id}/status`, { status });
+  }
+
   getAvailableTables(date: string): Observable<any> {
     return this.http.get<any>(`${environment.apiUrlReservation}/reservation/availability?date=${date}`, {});
   }
