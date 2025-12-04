@@ -69,6 +69,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .holderName(request.getHolderName())
                 .holderEmail(request.getHolderEmail())
                 .observation(request.getObservation())
+                .termsAccepted(request.getTermsAccepted() != null ? request.getTermsAccepted() : 0)
                 .employeeId(request.getEmployeeId())
                 .createdBy(request.getCreatedBy())
                 .createdAt(java.time.LocalDateTime.now())
@@ -358,6 +359,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .reservationType(reservation.getReservationType())
                 .holderName(reservation.getHolderName())
                 .holderPhone(reservation.getHolderPhone())
+                .termsAccepted(reservation.getTermsAccepted())
                 .createdAt(reservation.getCreatedAt())
                 .active(reservation.getActive())
                 .build();
@@ -418,6 +420,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .holderName(reservation.getHolderName())
                 .holderEmail(reservation.getHolderEmail())
                 .observation(reservation.getObservation())
+                .termsAccepted(reservation.getTermsAccepted())
                 .employeeId(reservation.getEmployeeId())
                 .createdAt(reservation.getCreatedAt())
                 .updatedAt(reservation.getUpdatedAt())
@@ -612,6 +615,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .holderName(reservation.getHolderName())
                 .holderEmail(reservation.getHolderEmail())
                 .observation(reservation.getObservation())
+                .termsAccepted(reservation.getTermsAccepted())
                 .employeeId(reservation.getEmployeeId())
                 .createdAt(reservation.getCreatedAt())
                 .updatedAt(reservation.getUpdatedAt())
@@ -686,6 +690,16 @@ public class ReservationServiceImpl implements ReservationService {
         return toResponse(reservation);
     }
 
+    @Override
+    public ReservationResponse updateReservationStatus(Integer id, String status) {
+        Reservation reservation = reservationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reservation not found"));
+        reservation.setStatus(status);
+        reservation.setUpdatedAt(java.time.LocalDateTime.now());
+        reservationRepository.save(reservation);
+        return toResponse(reservation);
+    }
+
     private void registerReservationNotification(Reservation reservation, String status, String message) {
         notificationService.createNotification(
                 NotificationRequest.builder()
@@ -725,6 +739,18 @@ public class ReservationServiceImpl implements ReservationService {
 
     private Integer parseShift(String shift) {
         if (shift == null) return null;
+        
+        // Intentar parsear como número primero
+        try {
+            int shiftNum = Integer.parseInt(shift);
+            if (shiftNum >= 1 && shiftNum <= 3) {
+                return shiftNum;
+            }
+        } catch (NumberFormatException e) {
+            // No es un número, continuar con el switch
+        }
+        
+        // Parsear por nombre
         switch (shift.toLowerCase()) {
             case "mañana": return 1;
             case "tarde": return 2;

@@ -84,4 +84,10 @@ public class ReservationController {
     public ResponseEntity<ReservationResponse> paidReservation(@PathVariable Integer id) {
         return ResponseEntity.ok(reservationService.paidReservation(id));
     }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ReservationResponse> updateReservationStatus(@PathVariable Integer id, 
+                                                                        @RequestBody UpdateStatusRequest request) {
+        return ResponseEntity.ok(reservationService.updateReservationStatus(id, request.getStatus()));
+    }
 }

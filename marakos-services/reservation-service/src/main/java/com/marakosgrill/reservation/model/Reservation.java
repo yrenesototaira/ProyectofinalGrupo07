@@ -27,7 +27,7 @@ public class Reservation {
     @Column(name = "fecha_reserva", nullable = false)
     private LocalDate reservationDate;
 
-    @Column(name = "hora_reserva", nullable = false)
+    @Column(name = "hora_reserva")
     private LocalTime reservationTime;
 
     @Column(name = "cantidad_personas", nullable = false)
@@ -72,6 +72,9 @@ public class Reservation {
 
     @Column(name = "observacion", length = 500)
     private String observation;
+
+    @Column(name = "tyc", nullable = false)
+    private Integer termsAccepted;
 
     @Column(name = "id_empleado")
     private Integer employeeId;

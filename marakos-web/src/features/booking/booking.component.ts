@@ -56,7 +56,7 @@ export class BookingComponent implements CanComponentDeactivate {
   
   // Step 2 signals - Date & Time
   guests = signal(2);
-  selectedDate = signal(this.getTodayDateString());
+  selectedDate = signal(''); // Inicialmente vacío para mostrar mensaje de selección
   selectedTime = signal('');
   
   // Calendar signals
@@ -118,6 +118,21 @@ export class BookingComponent implements CanComponentDeactivate {
   currentReservation = this.bookingService.currentReservation;
   menuTotal = this.bookingService.menuTotal;
   currentUser = this.authService.currentUser;
+  
+  // Computed signals para cálculos con IGV
+  // Los precios en el menú vienen SIN IGV, por lo que menuTotal es el subtotal
+  subtotalSinIGV = computed(() => {
+    return this.menuTotal(); // menuTotal ya es el subtotal (sin IGV)
+  });
+  
+  igvAmount = computed(() => {
+    const subtotal = this.subtotalSinIGV();
+    return subtotal * 0.18; // IGV = 18% del subtotal
+  });
+  
+  totalConIGV = computed(() => {
+    return this.subtotalSinIGV() + this.igvAmount(); // Total = Subtotal + IGV
+  });
   
   // Clave pública de Culqi (debe estar en environment en producción)
   private readonly CULQI_PUBLIC_KEY = 'pk_test_iKnf1lmmOdlUHuLu';
@@ -315,12 +330,20 @@ export class BookingComponent implements CanComponentDeactivate {
 
   selectPaymentType(type: 'online' | 'presencial') {
     this.paymentType.set(type);
-    
-    if (type === 'presencial') {
+  }
+
+  // Confirmar reserva según el método de pago seleccionado
+  confirmReservation() {
+    if (!this.paymentType()) {
+      this.paymentError.set('Por favor selecciona un método de pago.');
+      return;
+    }
+
+    if (this.paymentType() === 'presencial') {
       // For presential payment, finalize reservation without payment processing
       this.finalizeReservationPresencial();
     } else {
-      // For online payment, open Culqi modal immediately
+      // For online payment, open Culqi modal
       this.openCulqiCheckout();
     }
   }
@@ -383,7 +406,7 @@ export class BookingComponent implements CanComponentDeactivate {
       title: 'Marakos Grill',
       currency: 'PEN',
       description: `Reserva - Mesa #${this.selectedTable()?.number || 'TBD'}`,
-      amount: Math.round(this.menuTotal() * 100) // Culqi usa centavos
+      amount: Math.round(this.totalConIGV() * 100) // Culqi usa centavos - total con IGV
     });
 
     // Abrir el checkout de Culqi (no mostrar loading aquí, solo cuando se procesa)
@@ -420,7 +443,7 @@ export class BookingComponent implements CanComponentDeactivate {
       reservationDate: this.selectedDate(),
       reservationTime: this.selectedTime(),
       peopleCount: this.guests(),
-      status: 'PENDIENTE',
+      status: 'CONFIRMADO',
       paymentMethod: 'Digital',
       reservationType: 'MESA',
       eventTypeId: null,
@@ -432,6 +455,7 @@ export class BookingComponent implements CanComponentDeactivate {
       holderName: this.customerName(),
       holderEmail: this.customerEmail(),
       observation: this.currentReservation().specialRequests,
+      termsAccepted: 1,
       employeeId: null,
       createdBy: this.currentUser()?.idUsuario ?? null,
       tables: [
@@ -454,7 +478,7 @@ export class BookingComponent implements CanComponentDeactivate {
         // Preparar solicitud de pago con token
         const paymentRequest: PaymentRequest = {
           reservationId: reservationResponse.id,
-          amount: this.menuTotal(),
+          amount: this.totalConIGV(),
           customerEmail: this.customerEmail(),
           customerName: this.customerName(),
           customerPhone: this.customerPhone(),
@@ -466,21 +490,43 @@ export class BookingComponent implements CanComponentDeactivate {
         this.paymentService.processPayment(paymentRequest).subscribe({
           next: (paymentResponse: PaymentResponse) => {
             console.log('💳 FRONTEND: Pago procesado exitosamente:', paymentResponse);
-            this.paymentProcessing.set(false);
             
-            // Enviar notificación WhatsApp + Email con estado PAGADO
-            this.sendWhatsAppNotification(reservationResponse, 'Digital');
+            // Actualizar estado de la reserva a PAGADO
+            this.bookingService.updateReservationStatus(reservationResponse.id, 'PAGADO').subscribe({
+              next: () => {
+                console.log('✅ Estado de reserva actualizado a PAGADO');
+                this.paymentProcessing.set(false);
+                
+                // Enviar notificación WhatsApp + Email con estado PAGADO
+                this.sendWhatsAppNotification(reservationResponse, 'Digital');
+                
+                // Marcar reserva como completada
+                this.reservationCompleted.set(true);
             
-            // Marcar reserva como completada
-            this.reservationCompleted.set(true);
-            
-            // Navegar a página de confirmación
-            this.router.navigate(['/confirmation', reservationResponse.id], {
-              queryParams: {
-                transactionId: paymentResponse.culqiChargeId,
-                amount: paymentResponse.amount,
-                status: paymentResponse.status,
-                paymentSuccess: 'true'
+                // Navegar a página de confirmación
+                this.router.navigate(['/confirmation', reservationResponse.id], {
+                  queryParams: {
+                    transactionId: paymentResponse.culqiChargeId,
+                    amount: paymentResponse.amount,
+                    status: paymentResponse.status,
+                    paymentSuccess: 'true'
+                  }
+                });
+              },
+              error: (updateError) => {
+                console.error('⚠️ Error actualizando estado a PAGADO:', updateError);
+                // Continuar con el flujo aunque falle la actualización
+                this.paymentProcessing.set(false);
+                this.sendWhatsAppNotification(reservationResponse, 'Digital');
+                this.reservationCompleted.set(true);
+                this.router.navigate(['/confirmation', reservationResponse.id], {
+                  queryParams: {
+                    transactionId: paymentResponse.culqiChargeId,
+                    amount: paymentResponse.amount,
+                    status: paymentResponse.status,
+                    paymentSuccess: 'true'
+                  }
+                });
               }
             });
           },
@@ -516,7 +562,7 @@ export class BookingComponent implements CanComponentDeactivate {
       this.router.navigate(['/confirmation', reservationId], {
         queryParams: {
           paymentStatus: 'PENDIENTE',
-          amount: this.menuTotal(),
+          amount: this.totalConIGV(),
           paymentPending: 'true'
         }
       });
@@ -554,6 +600,7 @@ export class BookingComponent implements CanComponentDeactivate {
       holderName: this.customerName(),
       holderEmail: this.customerEmail(),
       observation: this.currentReservation().specialRequests,
+      termsAccepted: 1,
       employeeId: null,
       createdBy: this.currentUser()?.idUsuario ?? null,
       tables: [
@@ -676,7 +723,7 @@ export class BookingComponent implements CanComponentDeactivate {
       reservationTime: this.selectedTime(),
       peopleCount: this.guests(),
       status: 'CONFIRMADO',
-      paymentMethod: 'Digital',
+      paymentMethod: 'Presencial',
       reservationType: 'MESA',
       eventTypeId: null,
       eventShift: null,
@@ -687,6 +734,7 @@ export class BookingComponent implements CanComponentDeactivate {
       holderName: this.customerName(),
       holderEmail: this.customerEmail(),
       observation: this.currentReservation().specialRequests,
+      termsAccepted: 1,
       employeeId: null,
       createdBy: this.currentUser()?.idUsuario ?? null,
       tables: [
@@ -699,7 +747,7 @@ export class BookingComponent implements CanComponentDeactivate {
       // ],
       events: null,
       payments: [ 
-        { paymentDate: paymentDate, paymentMethod: 'Presencial', amount: this.menuTotal(), status: 'PAGADO', externalTransactionId: null, createdBy: this.currentUser()?.idUsuario ?? null }
+        { paymentDate: paymentDate, paymentMethod: 'Presencial', amount: this.totalConIGV(), status: 'PAGADO', externalTransactionId: null, createdBy: this.currentUser()?.idUsuario ?? null }
       ]
     };
 
@@ -708,7 +756,7 @@ export class BookingComponent implements CanComponentDeactivate {
       customerName: resevationData.holderName,
       customerPhone: resevationData.holderPhone,
       paymentMethod: resevationData.paymentMethod,
-      totalAmount: this.menuTotal()
+      totalAmount: this.totalConIGV()
     });
     this.bookingService.confirmReservation(resevationData).subscribe({
         next: (response) => {
@@ -767,6 +815,7 @@ export class BookingComponent implements CanComponentDeactivate {
       holderName: this.customerName(),
       holderEmail: this.customerEmail(),
       observation: this.currentReservation().specialRequests,
+      termsAccepted: 1,
       employeeId: null,
       createdBy: this.currentUser()?.idUsuario ?? null,
       tables: [
@@ -802,7 +851,7 @@ export class BookingComponent implements CanComponentDeactivate {
           this.router.navigate(['/confirmation', response.id], {
             queryParams: {
               paymentType: 'presencial',
-              amount: this.menuTotal()
+              amount: this.totalConIGV()
             }
           });
         },
@@ -1020,7 +1069,7 @@ export class BookingComponent implements CanComponentDeactivate {
         specialRequests: 'Sin observaciones especiales',
         paymentType: 'online_failed',  // Nuevo tipo para identificar pago online fallido
         paymentStatus: 'PENDIENTE_PAGO_ONLINE',  // Estado específico para pago online fallido
-        totalAmount: this.menuTotal(),
+        totalAmount: this.totalConIGV(),
         reservationStatus: 'CONFIRMADA',
         reservationType: this.reservationType(),
         reservationId: reservationResponse.id,
@@ -1049,10 +1098,19 @@ export class BookingComponent implements CanComponentDeactivate {
    */
   private sendWhatsAppNotification(reservationResponse: any, paymentType: string = 'Digital'): void {
     try {
-      console.log('📱 FRONTEND: Iniciando envío de notificación WhatsApp');
+      console.log('╔══════════════════════════════════════════════════════════════╗');
+      console.log('║  📱 FRONTEND: Iniciando envío de notificación WhatsApp      ║');
+      console.log('╚══════════════════════════════════════════════════════════════╝');
       
       // Detectar si tiene pre-orden de comida
       const hasPreOrder = this.currentReservation().menuItems.length > 0 && this.menuTotal() > 0;
+      
+      console.log('🔍 DEBUG - Datos de reserva:');
+      console.log('   - Menu Items Count:', this.currentReservation().menuItems.length);
+      console.log('   - Menu Total:', this.menuTotal());
+      console.log('   - Has Pre-Order:', hasPreOrder);
+      console.log('   - Payment Type:', paymentType);
+      console.log('   - Reservation Type:', this.reservationType());
       
       // Preparar items de la orden
       const orderItems = this.currentReservation().menuItems.map(item => ({
@@ -1061,6 +1119,16 @@ export class BookingComponent implements CanComponentDeactivate {
         unitPrice: item.item.price,
         subtotal: item.item.price * item.quantity
       }));
+      
+      // Determinar el estado de pago correcto
+      let paymentStatus = 'PAGADO';
+      if (paymentType.toLowerCase() === 'presencial' && hasPreOrder) {
+        // Pago presencial con pre-orden: hay pago pendiente
+        paymentStatus = 'PENDIENTE_PAGO_ONLINE';
+      } else if (!hasPreOrder) {
+        // Sin pre-orden: no hay pago
+        paymentStatus = 'CONFIRMADA';
+      }
       
       // Preparar datos para la notificación
       const notificationData: WhatsAppNotificationRequest = {
@@ -1074,8 +1142,8 @@ export class BookingComponent implements CanComponentDeactivate {
         tableInfo: `Mesa ${this.selectedTable()?.number || 'por asignar'}`,
         specialRequests: 'Sin observaciones especiales',
         paymentType: paymentType,
-        paymentStatus: paymentType === 'presencial' ? 'PENDIENTE' : 'PAGADO',
-        totalAmount: this.menuTotal(),
+        paymentStatus: paymentStatus,
+        totalAmount: this.totalConIGV(),
         reservationStatus: 'CONFIRMADA',
         // Nuevos campos para email mejorado con QR y monto condicional
         reservationType: this.reservationType(), // "MESA" o "EVENTO"
@@ -1084,16 +1152,22 @@ export class BookingComponent implements CanComponentDeactivate {
         orderItems: hasPreOrder ? orderItems : [] // Detalle de productos
       };
 
-      console.log('📱 FRONTEND: Datos de notificación preparados:', notificationData);
+      console.log('📦 PAYLOAD COMPLETO para notificación:');
+      console.log(JSON.stringify(notificationData, null, 2));
       console.log(`📧 Email incluirá: QR=${!!reservationResponse.id}, Monto=${hasPreOrder || this.reservationType() === 'EVENTO'}, Tipo=${this.reservationType()}`);
+      console.log('🚀 Llamando a notification service...');
 
       // Enviar notificación
       this.notificationService.sendReservationConfirmation(notificationData).subscribe({
         next: (response) => {
-          console.log('✅ FRONTEND: Notificación WhatsApp + Email enviada exitosamente:', response);
+          console.log('✅ FRONTEND: Notificación WhatsApp + Email enviada exitosamente');
+          console.log('📨 Respuesta del servidor:', response);
         },
         error: (error) => {
-          console.error('❌ FRONTEND: Error enviando notificación WhatsApp + Email:', error);
+          console.error('❌ FRONTEND: Error enviando notificación WhatsApp + Email');
+          console.error('💥 Detalles del error:', error);
+          console.error('💥 Status:', error.status);
+          console.error('💥 Message:', error.message);
           // La notificación falla pero no afecta el flujo principal de la reserva
         }
       });
